@@ -7,8 +7,10 @@ const Profile = () => {
         username: "",
         name: "",
         email: "",
-        phone: ""
+        phone: "",
+        avatar: ""  // thêm avatar vào state
     });
+
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true); // Trạng thái đang tải dữ liệu
     const [isEditing, setIsEditing] = useState(false); // Trạng thái chỉnh sửa
@@ -35,29 +37,29 @@ const Profile = () => {
                     'Authorization': `Bearer ${token}` // Gửi token trong header để xác thực
                 }
             });
-            
+
             // Kiểm tra mã phản hồi HTTP
             console.log("Mã phản hồi:", res.status); // In ra mã trạng thái
 
             if (!res.ok) {
                 throw new Error(`Không thể lấy dữ liệu hồ sơ. Mã lỗi: ${res.status}`);
             }
-        
+
             const data = await res.json();
             console.log("Dữ liệu nhận được từ API:", data); // In ra dữ liệu trả về từ API
 
             if (data.error) {
                 throw new Error(data.error);
             }
-        
-            setProfile(data); 
-            setError(""); 
-            setEditedProfile({ name: data.name, phone: data.phone }); 
+
+            setProfile(data);
+            setError("");
+            setEditedProfile({ name: data.name, phone: data.phone });
         } catch (err) {
             console.error("Lỗi lấy dữ liệu hồ sơ:", err);
-            setError("Không thể lấy dữ liệu hồ sơ"); 
+            setError("Không thể lấy dữ liệu hồ sơ");
         } finally {
-            setLoading(false); 
+            setLoading(false);
         }
     };
     useEffect(() => {
@@ -73,9 +75,9 @@ const Profile = () => {
     const handleSave = async () => {
         try {
             const token = localStorage.getItem('authToken');
-            const decodedToken = jwtDecode(token); 
+            const decodedToken = jwtDecode(token);
             const userId = decodedToken.id; // Lấy ID người dùng từ token
-    
+
             const res = await fetch(`${Constanst.DOMAIN_API}/api/users/${userId}`, {
                 method: "PUT",
                 headers: {
@@ -87,11 +89,11 @@ const Profile = () => {
                     phone: editedProfile.phone
                 })
             });
-    
+
             if (!res.ok) {
                 throw new Error("Không thể cập nhật thông tin người dùng");
             }
-    
+
             const updatedUser = await res.json();
             setProfile((prevProfile) => ({
                 ...prevProfile,
@@ -104,16 +106,28 @@ const Profile = () => {
             setError("Không thể lưu thay đổi, vui lòng thử lại.");
         }
     };
-    
+
 
     // Render thông tin profile
     const renderProfileInfo = () => (
         <div className="card p-4">
             <div className="mb-3">
+                <strong>Avatar:</strong><br />
+                {profile.avatar ? (
+                    <img
+                        src={`${Constanst.DOMAIN_API}/uploads/${profile.avatar}`}
+                        alt="Avatar"
+                        style={{ width: "150px", height: "150px", borderRadius: "50%", objectFit: "cover" }}
+                    />
+                ) : (
+                    <span>Chưa có ảnh đại diện</span>
+                )}
+            </div>
+            <div className="mb-3">
                 <strong>Username:</strong> {profile.username}
             </div>
             <div className="mb-3">
-                <strong>Name:</strong> 
+                <strong>Name:</strong>
                 {isEditing ? (
                     <input
                         type="text"
@@ -153,6 +167,7 @@ const Profile = () => {
             )}
         </div>
     );
+
 
     return (
         <div className="container mt-5">
