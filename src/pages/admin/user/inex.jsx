@@ -75,7 +75,7 @@ const UserList = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <select
-                    className="form-select"
+                    className="form-select rounded" // thêm rounded vào đây
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     style={{maxWidth: "200px"}}
@@ -126,12 +126,13 @@ const UserList = () => {
                             <td>
                                 {user.avatar ? (
                                     <img
-                                        src={user.avatar}
+                                        src={`${Constanst.DOMAIN_API}/uploads/${user.avatar}`} // phải có /uploads/
                                         alt="Avatar"
                                         width="60"
                                         height="60"
                                         style={{objectFit: "cover", borderRadius: "5px"}}
                                     />
+
                                 ) : (
                                     "Không có"
                                 )}
