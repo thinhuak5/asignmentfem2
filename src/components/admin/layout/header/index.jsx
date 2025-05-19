@@ -1,56 +1,139 @@
 import "../../../../assets/admin/css/styleadmin.css";
-import {Link} from 'react-router';
+import {Link} from "react-router";
+import {useState} from "react";
+import {FaChevronDown} from "react-icons/fa";
 
 const HeaderAdmin = () => {
-    return (
-        <>
-            <div className="sidebar d-flex flex-column p-3">
-                <img src="images/logo.png" className="img-fluid" alt="Sách"/>
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showProductSubmenu, setShowProductSubmenu] = useState(false);
+  const [showCategorySubmenu, setShowCategorySubmenu] = useState(false);
+  const [showOrderSubmenu, setShowOrderSubmenu] = useState(false);
+  const [showUserSubmenu, setShowUserSubmenu] = useState(false);
+  const [showCommentSubmenu, setShowCommentSubmenu] = useState(false);
+  const [showDashboardSubmenu, setShowDashboardSubmenu] = useState(false);
 
-                <hr/>
+  const DropdownIcon = ({isOpen}) => (
+      <span className={`ms-2 ${isOpen ? "rotate-180" : "rotate-0"}`}>
+      <FaChevronDown/>
+    </span>
+  );
 
-                <a href="/admin" style={{borderRadius: "50px"}}>
-                    <i className="ri-dashboard-line me-2"></i>Bảng điều khiển
-                </a>
-                <hr/>
+  return (
+      <>
+        <div className="sidebar d-flex flex-column p-3">
+          <img src="images/logo.png" className="img-fluid mb-3" alt="Sách"/>
+          <hr/>
 
-
-                <Link to="/admin/product" style={{borderRadius: "50px"}}>
-                    <i className="ri-chat-3-line me-2"></i>Sản Phẩm
-                </Link>
-                <Link to="/admin/category" style={{borderRadius: "50px"}}>
-                    <i className="ri-chat-3-line me-2"></i>Danh Mục
-                </Link>
-
-                <Link to="/admin/order" style={{borderRadius: "50px"}}>
-                    <i className="ri-chat-3-line me-2"></i>Đơn hàng
-                </Link>
-
-                <Link to="/admin/user" style={{borderRadius: "50px"}}>
-                    <i className="ri-chat-3-line me-2"></i>Khách hàng
-                </Link>
-
-                <Link to="/admin/comment" style={{borderRadius: "50px"}}>
-                    <i className="ri-chat-3-line me-2"></i>Bình luận
-                </Link>
+          {/* Điều khiển */}
+          <div className="sidebar-dropdown">
+            <div
+                onClick={() => setShowDashboardSubmenu(!showDashboardSubmenu)}
+                className="sidebar-link d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i className="ri-dashboard-line me-2"></i>Điều khiển
+              </div>
+              <DropdownIcon isOpen={showDashboardSubmenu}/>
             </div>
-
-            <div className="flex-grow-1">
-                <div className="header">
-                    <h5 className="m-0">Bảng điều khiển</h5>
-                    <div className="d-flex align-items-center">
-                        <div className="search-box">
-                            <i className="ri-search-line"></i>
-                            <input type="text" placeholder="Tìm kiếm..."/>
-                        </div>
-                        <div className="user-avatar ms-3">
-                            <img src="https://via.placeholder.com/40" alt="User"/>
-                        </div>
-                    </div>
+            {showDashboardSubmenu && (
+                <div className="submenu show">
+                  <Link to="/admin">Xem</Link>
                 </div>
+            )}
+          </div>
+
+          {/* Sản phẩm */}
+          <div className="sidebar-dropdown">
+            <div
+                onClick={() => setShowProductSubmenu(!showProductSubmenu)}
+                className="sidebar-link d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i className="ri-shopping-bag-line me-2"></i>Sản phẩm
+              </div>
+              <DropdownIcon isOpen={showProductSubmenu}/>
             </div>
-        </>
-    );
+            {showProductSubmenu && (
+                <div className="submenu show">
+                  <Link to="/admin/product">Danh sách sản phẩm</Link>
+                </div>
+            )}
+          </div>
+
+          {/* Danh mục */}
+          <div className="sidebar-dropdown">
+            <div
+                onClick={() => setShowCategorySubmenu(!showCategorySubmenu)}
+                className="sidebar-link d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i className="ri-folder-line me-2"></i>Danh mục
+              </div>
+              <DropdownIcon isOpen={showCategorySubmenu}/>
+            </div>
+            {showCategorySubmenu && (
+                <div className="submenu show">
+                  <Link to="/admin/category">Danh sách danh mục</Link>
+                </div>
+            )}
+          </div>
+
+          {/* Đơn hàng */}
+          <div className="sidebar-dropdown">
+            <div
+                onClick={() => setShowOrderSubmenu(!showOrderSubmenu)}
+                className="sidebar-link d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i className="ri-file-list-line me-2"></i>Đơn hàng
+              </div>
+              <DropdownIcon isOpen={showOrderSubmenu}/>
+            </div>
+            {showOrderSubmenu && (
+                <div className="submenu show">
+                  <Link to="/admin/order">Danh sách đơn hàng</Link>
+                </div>
+            )}
+          </div>
+
+          {/* Khách hàng */}
+          <div className="sidebar-dropdown">
+            <div
+                onClick={() => setShowUserSubmenu(!showUserSubmenu)}
+                className="sidebar-link d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i className="ri-user-line me-2"></i>Khách hàng
+              </div>
+              <DropdownIcon isOpen={showUserSubmenu}/>
+            </div>
+            {showUserSubmenu && (
+                <div className="submenu show">
+                  <Link to="/admin/user">Danh sách khách hàng</Link>
+                </div>
+            )}
+          </div>
+
+          {/* Bình luận */}
+          <div className="sidebar-dropdown">
+            <div
+                onClick={() => setShowCommentSubmenu(!showCommentSubmenu)}
+                className="sidebar-link d-flex justify-content-between align-items-center"
+            >
+              <div>
+                <i className="ri-message-3-line me-2"></i>Bình luận
+              </div>
+              <DropdownIcon isOpen={showCommentSubmenu}/>
+            </div>
+            {showCommentSubmenu && (
+                <div className="submenu show">
+                  <Link to="/admin/comment">Danh sách bình luận</Link>
+                </div>
+            )}
+          </div>
+        </div>
+      </>
+  );
 };
 
 export default HeaderAdmin;
