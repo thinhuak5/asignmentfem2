@@ -1,22 +1,20 @@
-import {useEffect, useState} from "react";
+import {useEffect, useState, useCallback } from "react";
 import {Link} from "react-router-dom";
 import Constanst from "../../../Constanst";
 
 const ProductClient = () => {
     const [products, setProducts] = useState([]); // Dữ liệu sản phẩm
     const [categories, setCategories] = useState([]); // Dữ liệu danh mục
-    const [selectedCategory, setSelectedCategory] = useState(null); // Danh mục đã chọn
+    const [selectedCategory, setSelectedCategory] = useState("all"); // Danh mục đã chọn, mặc định là all
     const [searchQuery, setSearchQuery] = useState(""); // Từ khóa tìm kiếm
     const [priceRange, setPriceRange] = useState("all"); // Khoảng giá đã chọn
     const [sortOrder, setSortOrder] = useState("none"); // Thứ tự sắp xếp giá
 
-    // Lấy dữ liệu sản phẩm và danh mục khi component load
     useEffect(() => {
         fetchProducts();
         fetchCategories();
     }, []);
 
-    // Hàm lấy dữ liệu sản phẩm từ API
     const fetchProducts = async () => {
         try {
             const res = await fetch(`${Constanst.DOMAIN_API}/api/products/list`);
@@ -28,7 +26,6 @@ const ProductClient = () => {
         }
     };
 
-    // Hàm lấy dữ liệu danh mục từ API
     const fetchCategories = async () => {
         try {
             const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
@@ -40,20 +37,14 @@ const ProductClient = () => {
         }
     };
 
-    // Hàm lọc sản phẩm theo tên, danh mục, khoảng giá và thứ tự sắp xếp
     const filteredProducts = products.filter(product => {
-        // Kiểm tra trạng thái sản phẩm
-        if (product.status !== 1) {
-            return false; // Ẩn sản phẩm nếu status không phải là 1
-        }
+        if (product.status !== 1) return false;
 
-        // Kiểm tra tên sản phẩm có chứa từ khóa tìm kiếm không
         const matchesSearchQuery = product.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-        // Kiểm tra sản phẩm có thuộc danh mục đã chọn không
-        const matchesCategory = selectedCategory ? product.category_id === selectedCategory : true;
+        // Nếu chọn "Tất cả sản phẩm" thì không lọc theo danh mục
+        const matchesCategory = selectedCategory === "all" ? true : product.category_id === selectedCategory;
 
-        // Kiểm tra khoảng giá
         let matchesPriceRange = true;
         if (priceRange === "0-10000") {
             matchesPriceRange = product.price >= 0 && product.price <= 10000;
@@ -61,14 +52,13 @@ const ProductClient = () => {
             matchesPriceRange = product.price >= 10000 && product.price <= 100000;
         } else if (priceRange === "100000-1000000") {
             matchesPriceRange = product.price >= 100000 && product.price <= 1000000;
-        } else if (priceRange === "1000000-100000000") {
-            matchesPriceRange = product.price >= 1000000 && product.price <= 100000000;
+        } else if (priceRange === "1000000+") {  // sửa lại giá trị này
+            matchesPriceRange = product.price >= 1000000;
         }
 
         return matchesSearchQuery && matchesCategory && matchesPriceRange;
     });
 
-    // Hàm sắp xếp sản phẩm theo giá
     const sortedProducts = () => {
         if (sortOrder === "asc") {
             return filteredProducts.sort((a, b) => a.price - b.price);
@@ -78,20 +68,34 @@ const ProductClient = () => {
         return filteredProducts;
     };
 
-    // Hàm thêm sản phẩm vào giỏ hàng
-    const handleAddToCart = (product) => {
-        const cart = JSON.parse(localStorage.getItem("cart")) || [];
-        const productInCart = cart.find(item => item.id === product.id);
+    const handleAddToCart = useCallback(async (product, quantity = 1) => {
+        if (!product) return;
 
-        if (productInCart) {
-            productInCart.quantity += 1;
-        } else {
-            cart.push({...product, quantity: 1});
+        try {
+            const token = localStorage.getItem("authToken");
+            const res = await fetch(`${Constanst.DOMAIN_API}/api/cart/add`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    product_id: product.id,
+                    quantity: quantity,
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message);
+            } else {
+                alert(data.message);
+            }
+        } catch (error) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", error);
+            alert("Có lỗi xảy ra. Vui lòng thử lại.");
         }
-
-        localStorage.setItem("cart", JSON.stringify(cart));
-        alert("Sản phẩm đã được thêm vào giỏ hàng!");
-    };
+    }, []);
 
     return (
         <div>
@@ -114,6 +118,19 @@ const ProductClient = () => {
                         <div className="col-md-3 mb-4">
                             <h5>Danh mục sản phẩm</h5>
                             <ul className="list-group">
+                                {/* Mục Tất cả sản phẩm */}
+                                <li
+                                    key="all"
+                                    className="list-group-item"
+                                    onClick={() => setSelectedCategory("all")}
+                                    style={{
+                                        cursor: 'pointer',
+                                        fontWeight: selectedCategory === "all" ? 'bold' : 'normal'
+                                    }}
+                                >
+                                    Tất cả sản phẩm
+                                </li>
+
                                 {categories.length === 0 ? (
                                     <li className="list-group-item">Không có danh mục nào</li>
                                 ) : (
@@ -121,7 +138,7 @@ const ProductClient = () => {
                                         <li
                                             key={category.id}
                                             className="list-group-item"
-                                            onClick={() => setSelectedCategory(category.id)} // Khi chọn danh mục, lưu vào selectedCategory
+                                            onClick={() => setSelectedCategory(category.id)}
                                             style={{
                                                 cursor: 'pointer',
                                                 fontWeight: selectedCategory === category.id ? 'bold' : 'normal'
@@ -139,13 +156,13 @@ const ProductClient = () => {
                                 <select
                                     className="form-select"
                                     value={priceRange}
-                                    onChange={(e) => setPriceRange(e.target.value)} // Cập nhật khoảng giá khi người dùng chọn
+                                    onChange={(e) => setPriceRange(e.target.value)}
                                 >
                                     <option value="all">Tất cả giá</option>
                                     <option value="0-10000">Từ 0 VNĐ đến 10,000 VNĐ</option>
                                     <option value="10000-100000">Từ 10,000 VNĐ đến 100,000 VNĐ</option>
                                     <option value="100000-1000000">Từ 100,000 VNĐ đến 1,000,000 VNĐ</option>
-                                    <option value="1000000-100000000">Từ 1,000,000 VNĐ đến 100,000,000 VNĐ</option>
+                                    <option value="1000000+">Lớn hơn 1,000,000 VNĐ</option>
                                 </select>
                             </div>
                         </div>
@@ -159,7 +176,7 @@ const ProductClient = () => {
                                     className="form-control"
                                     placeholder="Tìm kiếm sản phẩm..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)} // Cập nhật searchQuery khi người dùng nhập
+                                    onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
 
@@ -168,7 +185,7 @@ const ProductClient = () => {
                                 <select
                                     className="form-select"
                                     value={sortOrder}
-                                    onChange={(e) => setSortOrder(e.target.value)} // Cập nhật thứ tự sắp xếp khi người dùng chọn
+                                    onChange={(e) => setSortOrder(e.target.value)}
                                 >
                                     <option value="none">Sắp xếp theo giá</option>
                                     <option value="asc">Giá từ thấp đến cao</option>
@@ -184,16 +201,14 @@ const ProductClient = () => {
                                 ) : (
                                     sortedProducts().map((product) => (
                                         <div className="col-12 col-md-4 col-lg-3 mb-5 mb-md-0" key={product.id}>
-                                            <div className="product-item"
-                                                 style={{lineHeight: '1.7', marginBottom: '20px'}}>
+                                            <div className="product-item" style={{lineHeight: '1.7', marginBottom: '20px'}}>
                                                 <img
                                                     src={`${Constanst.DOMAIN_API}/uploads/${product.images}`}
                                                     className="img-fluid product-thumbnail"
                                                     alt={product.name}
                                                     style={{height: "250px", width: "auto", objectFit: "cover"}}
                                                 />
-                                                <h3 className="product-title"
-                                                    style={{fontSize: '16px'}}>{product.name}</h3>
+                                                <h3 className="product-title" style={{fontSize: '16px'}}>{product.name}</h3>
                                                 <strong className="product-price">
                                                     {product.price
                                                         ? product.price.toLocaleString() + " VNĐ"
