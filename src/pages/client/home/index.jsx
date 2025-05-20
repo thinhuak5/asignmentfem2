@@ -1,7 +1,10 @@
+import React from 'react';
+import { Tabs, Tab } from 'react-bootstrap';
+
 const Home = () => {
     return (
-        <div>
-            <div className="hero">
+        <div className="min-vh-100">
+            <div className="hidden hero">
                 <div className="container">
                     <div className="row justify-content-between">
                         <div className="col-lg-5">
@@ -12,265 +15,262 @@ const Home = () => {
                                     những câu chuyện và kiến thức mới mẻ.
                                 </p>
                                 <p>
-                                    <a href="" className="btn btn-secondary me-2">Mua Ngay</a>
+                                    <a href="#" className="btn btn-secondary me-2">Mua Ngay</a>
                                     <a href="#" className="btn btn-white-outline">Khám Phá</a>
                                 </p>
                             </div>
                         </div>
                         <div className="col-lg-7">
                             <div className="hero-img-wrap">
-                                <img src="images/anhnen.png" className="img-fluid" alt="Sách"/>
+                                <img src="images/anhnen.png" className="img-fluid" alt="Sách" />
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div className="product-section">
+            {/* Hero section (ẩn hiện theo nhu cầu) */}
+            <div className="d-none hero">
                 <div className="container">
-                    <div className="row">
-                        <div className="col-md-12 col-lg-3 mb-5 mb-lg-0">
-                            <h2 className="mb-4 section-title">Sách Được Tuyển Chọn Kỹ Lưỡng</h2>
+                    <div className="row align-items-center">
+                        <div className="col-lg-5 text-center text-lg-start mb-3 mb-lg-0">
+                            <h1>Sách Hay <span className="d-block">Thế Giới Tri Thức</span></h1>
                             <p className="mb-4">
-                                Khám phá những cuốn sách chất lượng, được chọn lọc để mang đến tri thức và cảm hứng.
-                                Không gì tuyệt vời hơn khi sở hữu một thư viện cá nhân đầy ý nghĩa.
+                                Khám phá thế giới qua từng trang sách. Không gì tuyệt vời hơn việc đắm mình trong
+                                những câu chuyện và kiến thức mới mẻ.
                             </p>
-                            <p><a href="shop.html" className="btn">Khám Phá</a></p>
+                            <a href="#" className="btn btn-secondary me-2 mb-2">Mua Ngay</a>
+                            <a href="#" className="btn btn-outline-secondary mb-2">Khám Phá</a>
                         </div>
-
-                        <div className="col-12 col-md-4 col-lg-3 mb-5 mb-md-0">
-                            <a className="product-item" href="cart.html">
-                                <img
-                                    src="https://tiemsach.org/wp-content/uploads/2023/07/Ebook-Dac-nhan-tam.jpg"
-                                    className="img-fluid product-thumbnail"
-                                    alt="Sách - Đắc Nhân Tâm"
-                                />
-                                <h3 className="product-title">Đắc Nhân Tâm</h3>
-                                <strong className="product-price">80.000 VNĐ</strong>
-                                <span className="icon-cross">
-                                <img src="images/cross.svg" className="img-fluid" alt="Thêm vào giỏ"/>
-                            </span>
-                            </a>
-                        </div>
-
-                        <div className="col-12 col-md-4 col-lg-3 mb-5 mb-md-0">
-                            <a className="product-item" href="cart.html">
-                                <img
-                                    src="https://upload.wikimedia.org/wikipedia/vi/9/9c/Nh%C3%A0_gi%E1%BA%A3_kim_%28s%C3%A1ch%29.jpg"
-                                    className="img-fluid product-thumbnail"
-                                    alt="Sách - Nhà Giả Kim"
-                                />
-                                <h3 className="product-title">Nhà Giả Kim</h3>
-                                <strong className="product-price">95.000 VNĐ</strong>
-                                <span className="icon-cross">
-                                <img src="images/cross.svg" className="img-fluid" alt="Thêm vào giỏ"/>
-                            </span>
-                            </a>
-                        </div>
-
-                        <div className="col-12 col-md-4 col-lg-3 mb-5 mb-md-0">
-                            <a className="product-item" href="cart.html">
-                                <img
-                                    src="https://bizweb.dktcdn.net/thumb/grande/100/197/269/products/462558750-1083111936819329-1957541486232979466-n.png?v=1730363480047"
-                                    className="img-fluid product-thumbnail"
-                                    alt="Sách - Tư Duy Nhanh Và Chậm"
-                                />
-                                <h3 className="product-title">Tư Duy Nhanh Và Chậm</h3>
-                                <strong className="product-price">220.000 VNĐ</strong>
-                                <span className="icon-cross">
-                                <img src="images/cross.svg" className="img-fluid" alt="Thêm vào giỏ"/>
-                            </span>
-                            </a>
+                        <div className="col-lg-7 text-center">
+                            <img src="images/anhnen.png" className="img-fluid" alt="Sách" />
                         </div>
                     </div>
                 </div>
             </div>
-            <div className="why-choose-section">
+
+            {/* Mini Banners */}
+            <div className="container py-4">
+                <div className="row">
+                    {[
+                        {
+                            img: "https://via.placeholder.com/400x200/FF6F61/fff?text=Thứ+4+vàng",
+                            text: "THỨ 4 NGÀY VÀNG\nFREESHIP NGẬP TRÀN"
+                        },
+                        {
+                            img: "https://via.placeholder.com/400x200/FFA07A/fff?text=Đồ+Chơi",
+                            text: "GIAN HÀNG ĐỒ CHƠI\nCÙNG VUI MUÔN NƠI"
+                        },
+                        {
+                            img: "https://via.placeholder.com/400x200/87CEFA/fff?text=Đinh+Tị+Books",
+                            text: "CÙNG ĐINH TỊ BOOKS\nGIẢM GIÁ LÊN ĐẾN 50%"
+                        },
+                        {
+                            img: "https://via.placeholder.com/400x200/FFE4B5/000?text=Best+Deals",
+                            text: "HOT PICKS, COOL PRICES!\nMAY'S BEST DEALS"
+                        }
+                    ].map((banner, index) => (
+                        <div className="col-12 col-sm-6 col-lg-3 mb-3" key={index}>
+                            <div className="bg-white shadow-sm rounded h-100 d-flex flex-column">
+                                <img src={banner.img} alt={`Banner ${index + 1}`} className="w-100" />
+                                <div className="p-2 text-center flex-grow-1 d-flex flex-column justify-content-between">
+                                    <p className="fw-bold small">
+                                        {banner.text.split('\n').map((line, i) => <span key={i}>{line}<br /></span>)}
+                                    </p>
+                                    <button className="btn btn-danger btn-sm">MUA NGAY</button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Horizontal Categories */}
+            <div className="bg-white py-3">
                 <div className="container">
-                    <div className="row justify-content-between">
-                        <div className="col-lg-6">
-                            <h2 className="section-title">Tại Sao Chọn Chúng Tôi</h2>
-                            <p>
-                                Chúng tôi cam kết mang đến cho bạn những cuốn sách chất lượng nhất cùng trải nghiệm mua
-                                sắm tuyệt vời. Sự hài lòng của bạn là ưu tiên hàng đầu của chúng tôi.
-                            </p>
-
-                            <div className="row my-5">
-                                <div className="col-6 col-md-6">
-                                    <div className="feature">
-                                        <div className="icon">
-                                            <img src="images/truck.svg" alt="Giao hàng" className="img-fluid"/>
-                                        </div>
-                                        <h3>Giao Hàng Nhanh & Miễn Phí</h3>
-                                        <p>
-                                            Sách của bạn sẽ được giao đến tận tay nhanh chóng và hoàn toàn miễn phí, đảm
-                                            bảo bạn nhận hàng trong thời gian ngắn nhất.
-                                        </p>
-                                    </div>
+                    <div className="d-flex justify-content-center gap-3 overflow-auto pb-2 flex-nowrap">
+                        {[
+                            { icon: "🌟", label: "25.05" },
+                            { icon: "⚡", label: "Flash Sale" },
+                            { icon: "🏢", label: "Đinh Tị" },
+                            { icon: "📘", label: "McBooks" },
+                            { icon: "🏷️", label: "Mã Giảm Giá" },
+                            { icon: "🆕", label: "Sản Phẩm Mới" },
+                            { icon: "💖", label: "Được Trợ Giá" },
+                            { icon: "🏪", label: "Đồ Cũ" },
+                            { icon: "📦", label: "Bán Sỉ" },
+                            { icon: "📚", label: "Manga" }
+                        ].map((item, index) => (
+                            <div key={index} className="text-center" style={{ minWidth: 80 }}>
+                                <div className="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto" style={{ width: 60, height: 60, fontSize: 24 }}>
+                                    {item.icon}
                                 </div>
-
-                                <div className="col-6 col-md-6">
-                                    <div className="feature">
-                                        <div className="icon">
-                                            <img src="images/bag.svg" alt="Mua sắm" className="img-fluid"/>
-                                        </div>
-                                        <h3>Mua Sắm Dễ Dàng</h3>
-                                        <p>
-                                            Trải nghiệm mua sách trực tuyến đơn giản với giao diện thân thiện và quy
-                                            trình đặt hàng nhanh gọn.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="col-6 col-md-6">
-                                    <div className="feature">
-                                        <div className="icon">
-                                            <img src="images/support.svg" alt="Hỗ trợ" className="img-fluid"/>
-                                        </div>
-                                        <h3>Hỗ Trợ 24/7</h3>
-                                        <p>
-                                            Đội ngũ của chúng tôi luôn sẵn sàng giải đáp mọi thắc mắc của bạn bất cứ lúc
-                                            nào, ngày hay đêm.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="col-6 col-md-6">
-                                    <div className="feature">
-                                        <div className="icon">
-                                            <img src="images/return.svg" alt="Đổi trả" className="img-fluid"/>
-                                        </div>
-                                        <h3>Đổi Trả Dễ Dàng</h3>
-                                        <p>
-                                            Chính sách đổi trả linh hoạt giúp bạn yên tâm khi mua sách, không lo lắng về
-                                            rắc rối.
-                                        </p>
-                                    </div>
-                                </div>
+                                <div className="small mt-2">{item.label}</div>
                             </div>
-                        </div>
-
-                        <div className="col-lg-5">
-                            <div className="img-wrap">
-                                <img
-                                    src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                                    alt="Sách và tri thức"
-                                    className="img-fluid"
-                                />
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>
-            <div className="we-help-section">
-                <div className="container">
-                    <div className="row justify-content-between">
-                        <div className="col-lg-7 mb-5 mb-lg-0">
-                            <div className="imgs-grid">
-                                <div className="grid grid-1">
-                                    <img
-                                        src="https://nhuoclac.com/wp-content/uploads/2014/09/tumblr_meqvadcgyz1qzb5wzo1_1280.jpg"
-                                        alt="Sách trên kệ"
-                                        className="img-fluid"
-                                    />
-                                </div>
-                                <div className="grid grid-2">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=1498&auto=format&fit=crop"
-                                        alt="Sách và cà phê"
-                                        className="img-fluid"
-                                    />
-                                </div>
-                                <div className="grid grid-3">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=1470&auto=format&fit=crop"
-                                        alt="Thư viện sách"
-                                        className="img-fluid"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="col-lg-5 ps-lg-5">
-                            <h2 className="section-title mb-4">Chúng Tôi Giúp Bạn Khám Phá Thế Giới Sách</h2>
-                            <p>
-                                Chúng tôi hỗ trợ bạn tìm kiếm và sở hữu những cuốn sách tuyệt vời nhất. Đội ngũ của
-                                chúng tôi mang đến giải pháp tối ưu để xây dựng thư viện tri thức cho riêng bạn.
-                            </p>
 
-                            <ul className="list-unstyled custom-list my-4">
-                                <li>Sách chất lượng cao, nội dung phong phú</li>
-                                <li>Dịch vụ tư vấn chọn sách tận tâm</li>
-                                <li>Lựa chọn phù hợp cho mọi sở thích đọc</li>
-                                <li>Cam kết mang lại trải nghiệm đọc sách tuyệt vời</li>
-                            </ul>
-                            <p><a href="#" className="btn">Khám Phá</a></p>
-                        </div>
-                    </div>
+            {/* Flash Sale Banner */}
+            <div style={{ backgroundColor: '#3b5d50' }} className=" text-white p-3 d-flex justify-content-between align-items-center flex-column flex-md-row text-center text-md-start">
+                <div className="mb-2 mb-md-0">
+                    <span className="text-danger fw-bold me-2">FLASH SALE</span>
+                    <span>Kết thúc trong: 01 : 11 : 50</span>
                 </div>
+                <a href="#" className="text-info">Xem tất cả &gt;</a>
             </div>
-            <div className="popular-product">
+
+            {/* Flash Sale Products */}
+            <div style={{ backgroundColor: '#88b584' }} className="py-4"> {/* xanh lá cây nhạt */}
                 <div className="container">
                     <div className="row">
-                        <div className="col-12 col-md-6 col-lg-4 mb-4 mb-lg-0">
-                            <div className="product-item-sm d-flex">
-                                <div className="thumbnail">
+                        {[...Array(6)].map((_, index) => (
+                            <div key={index} className="col-6 col-md-4 col-lg-2 mb-4">
+                                <div className="bg-white rounded shadow-sm h-100 d-flex flex-column p-2">
                                     <img
-                                        src="https://tiemsach.org/wp-content/uploads/2023/07/Ebook-Dac-nhan-tam.jpg"
-                                        alt="Sách - Đắc Nhân Tâm"
-                                        className="img-fluid"
+                                        src={`https://picsum.photos/seed/flash${index + 1}/200/200`}
+                                        alt={`Flash Sale ${index + 1}`}
+                                        className="w-100 object-cover mb-2"
                                     />
-                                </div>
-                                <div className="pt-3">
-                                    <h3>Đắc Nhân Tâm</h3>
-                                    <p>
-                                        Cuốn sách kinh điển về nghệ thuật giao tiếp, giúp bạn xây dựng mối quan hệ bền
-                                        vững.
-                                    </p>
-                                    <p><a href="#">Đọc Thêm</a></p>
+                                    <h3 className="text-sm fw-semibold mb-2">Sách Flash {index + 1}</h3>
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <p className="text-danger fw-bold mb-0">55.000 đ</p>
+                                            <p className="text-muted text-decoration-line-through small">85.000 đ</p>
+                                        </div>
+                                        <div className="bg-danger text-white small px-1 rounded">-35%</div>
+                                    </div>
+                                    <button className="btn btn-dark btn-sm w-100 mt-2">Đặt hàng</button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="col-12 col-md-6 col-lg-4 mb-4 mb-lg-0">
-                            <div className="product-item-sm d-flex">
-                                <div className="thumbnail">
-                                    <img
-                                        src="https://upload.wikimedia.org/wikipedia/vi/9/9c/Nh%C3%A0_gi%E1%BA%A3_kim_%28s%C3%A1ch%29.jpg"
-                                        alt="Sách - Nhà Giả Kim"
-                                        className="img-fluid"
-                                    />
-                                </div>
-                                <div className="pt-3">
-                                    <h3>Nhà Giả Kim</h3>
-                                    <p>
-                                        Hành trình khám phá bản thân qua câu chuyện đầy cảm hứng của Paulo Coelho.
-                                    </p>
-                                    <p><a href="#">Đọc Thêm</a></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="col-12 col-md-6 col-lg-4 mb-4 mb-lg-0">
-                            <div className="product-item-sm d-flex">
-                                <div className="thumbnail">
-                                    <img
-                                        src="https://bizweb.dktcdn.net/thumb/grande/100/197/269/products/462558750-1083111936819329-1957541486232979466-n.png?v=1730363480047"
-                                        alt="Sách - Tư Duy Nhanh Và Chậm"
-                                        className="img-fluid"
-                                    />
-                                </div>
-                                <div className="pt-3">
-                                    <h3>Tư Duy Nhanh Và Chậm</h3>
-                                    <p>
-                                        Khám phá cách bộ não hoạt động qua lăng kính tâm lý học của Daniel Kahneman.
-                                    </p>
-                                    <p><a href="#">Đọc Thêm</a></p>
-                                </div>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>
 
+
+            {/* Product Categories */}
+            <div className="container py-5">
+                <h2 className="h5 fw-bold d-flex align-items-center mb-4">
+                    <span className="me-2">📚</span>
+                    Danh mục sản phẩm
+                </h2>
+                <div className="d-flex flex-wrap justify-content-center gap-3">
+                    {[...Array(10)].map((_, index) => (
+                        <div key={index} className="text-center" style={{ width: 80 }}>
+                            <div className="border rounded-circle d-flex align-items-center justify-content-center mx-auto" style={{ width: 60, height: 60 }}>
+                                <img src="https://via.placeholder.com/40" alt={`Danh mục ${index + 1}`} className="img-fluid" />
+                            </div>
+                            <span className="small mt-2 d-block">Danh mục {index + 1}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Xu Hướng Mua Sắm */}
+            <div className="bg-gradient text-white py-4" style={{ background: 'linear-gradient(to right, #4b0082, #800080)' }}>
+                <div className="container">
+                    <h2 className="h5 text-dark fw-bold d-flex align-items-center mb-4">
+                        <span className="bg-white text-danger rounded-circle px-2 py-1 me-2">❤️</span>
+                        Xu Hướng Mua Sắm
+                    </h2>
+                    {[0, 1].map((row) => (
+                        <div key={row} className="row mb-3">
+                            {[...Array(6)].map((_, i) => {
+                                const index = row * 6 + i;
+                                return (
+                                    <div key={index} className="col-6 col-md-4 col-lg-2 mb-4">
+                                        <div className="bg-white text-dark rounded shadow-sm h-100 d-flex flex-column">
+                                            <div className="position-relative">
+                                                <img
+                                                    src={`https://picsum.photos/seed/trend${index}/300/200`}
+                                                    alt={`Xu hướng ${index + 1}`}
+                                                    className="w-100"
+                                                />
+                                                <div className="position-absolute top-0 start-0 bg-danger text-white small px-2 py-1">Giảm 30%</div>
+                                            </div>
+                                            <div className="p-2 flex-grow-1 d-flex flex-column justify-content-between">
+                                                <h3 className="small fw-semibold">Sản phẩm xu hướng {index + 1}</h3>
+                                                <div className="d-flex justify-content-between align-items-center mt-2">
+                                                    <div>
+                                                        <p className="text-danger fw-bold small">{(100000 + index * 10000).toLocaleString('vi-VN')} đ</p>
+                                                        <p className="text-muted text-decoration-line-through small">{(150000 + index * 10000).toLocaleString('vi-VN')} đ</p>
+                                                    </div>
+                                                    <div className="bg-danger text-white small px-1 rounded">-30%</div>
+                                                </div>
+                                                <button className="btn btn-danger btn-sm w-100 mt-2">Đặt hàng</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Bộ Sưu Tập Nổi Bật */}
+            <div className="container mt-5">
+                <div className="bg-light p-3 rounded">
+                    <h5 className="fw-bold text-danger mb-3 text-center">
+                        <i className="bi bi-stars"></i> BỘ SƯU TẬP NỔI BẬT
+                    </h5>
+                    <div className="d-flex flex-wrap justify-content-center gap-4">
+                        {[
+                            "Baby Three",
+                            "Doremon",
+                            "Capybara",
+                            "Conan",
+                            "One Piece",
+                            "Panda - Gấu trúc",
+                            "Disney",
+                            "Sanrio"
+                        ].map((name, idx) => (
+                            <div key={idx} className="text-center">
+                                <img
+                                    src={`https://via.placeholder.com/80?text=${name.split(" ")[0]}`}
+                                    alt={name}
+                                    className="rounded-circle mb-2"
+                                />
+                                <p className="small">{name}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+
+            {/* Thương Hiệu Nổi Bật */}
+            <div className="container mt-5 mb-5">
+                <div className="bg-white p-3 rounded shadow-sm">
+                    <h5 className="fw-bold text-danger mb-3">
+                        <i className="bi bi-shop"></i> Thương hiệu nổi bật
+                    </h5>
+                    <Tabs defaultActiveKey="Sbooks" className="mb-3">
+                        {["Sbooks", "Đinh Tị", "Patech"].map((brand, index) => (
+                            <Tab eventKey={brand} title={brand} key={index}>
+                                <div className="row">
+                                    {[...Array(6)].map((_, i) => (
+                                        <div className="col-6 col-md-4 col-lg-2 mb-3" key={i}>
+                                            <div className="border rounded p-2 h-100">
+                                                <img
+                                                    src={`https://via.placeholder.com/150x220?text=Book+${i + 1}`}
+                                                    alt="book"
+                                                    className="w-100 mb-2"
+                                                />
+                                                <p className="small mb-1 text-danger">Xu hướng 🔥</p>
+                                                <p className="small fw-bold mb-1">Tên sách mẫu {i + 1}</p>
+                                                <p className="text-muted small mb-0">Giá: <strong>69.000đ</strong></p>
+                                                <p className="text-muted small">Đã bán: {Math.floor(Math.random() * 1000)}+</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Tab>
+                        ))}
+                    </Tabs>
+                </div>
+            </div>
         </div>
     );
 };

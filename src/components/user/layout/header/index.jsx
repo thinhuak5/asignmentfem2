@@ -76,12 +76,12 @@ const HeaderClient = () =>{
                             <li className="nav-item ">
                                 <Link className="nav-link" to={"/"}>Trang Chủ</Link>
                             </li>
-                            <Link className="nav-link" to={"/product"}>Sản Phẩm</Link>
+                            <li><Link className="nav-link" to={"/product"}>Sản Phẩm</Link></li>
                             <li><Link className="nav-link" to={"/about"}>Thông tin</Link></li>
                             <li><Link className="nav-link" to={"/services"}>Dịch vụ</Link></li>
                             <li><Link className="nav-link" to={"/blog"}>Bài viết</Link></li>
                             <li><Link className="nav-link" to={"/contact"}>Liên hệ</Link></li>
-                            <li><Link className="nav-link" to={"/cartpage"}>Giỏ hàng</Link></li>
+                            <li><Link className="nav-link" to={"/cartpage"}><img src="images/cart.svg"/></Link></li>
                         </ul>
 
                         <ul className="custom-navbar-cta navbar-nav mb-2 mb-md-0 ms-5">
@@ -114,8 +114,7 @@ const HeaderClient = () =>{
                                     </ul>
                                 </li>
                             )}
-                           
-                            <li><a className="nav-link" href="cart.html"><img src="images/cart.svg"/></a></li>
+
                         </ul>
                     </div>
                 </div>
