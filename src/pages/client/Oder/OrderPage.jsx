@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'; // Thêm import useEffect
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Form, Button, Alert } from 'react-bootstrap';
+import React, {useEffect, useState} from 'react'; // Thêm import useEffect
+import {useLocation, useNavigate} from 'react-router-dom';
+import {Alert, Button, Form} from 'react-bootstrap';
 import Constanst from '../../../Constanst';
 
 const OrderPage = () => {
@@ -47,7 +47,6 @@ const OrderPage = () => {
             return;
         }
 
-        // Lọc sản phẩm có ID hợp lệ
         const validItems = cartItems.filter(item => item.id && item.quantity > 0);
 
         if (validItems.length === 0) {
@@ -59,65 +58,73 @@ const OrderPage = () => {
         const orderData = {
             user_id: userInfo.id,
             items: validItems.map(item => ({
-                productId: item.product_id, // sửa ở đây
+                productId: item.product?.id || item.product_id,
                 quantity: item.quantity,
                 price: item.product?.price || item.price
             })),
-            name: name,
-            phone: phone,
-            address: address,
+            name,
+            phone,
+            address,
             payments: parseInt(paymentMethod),
             payment_status: parseInt(paymentMethod) === 1 ? 0 : 1,
             status: 1
         };
 
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/orders/checkout`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(orderData),
-            });
-
-            if (res.ok) {
-                const result = await res.json();
-                console.log("Order placed successfully:", result);
-
-                // Gọi API xóa giỏ hàng sau khi đặt hàng thành công
-                await fetch(`${Constanst.DOMAIN_API}/api/cart/clear`, {
-                    method: 'DELETE',
+            if (paymentMethod === 1) {
+                // COD
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/orders/checkout`, {
+                    method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
-                    }
+                    },
+                    body: JSON.stringify(orderData),
                 });
 
-                alert("Đặt hàng thành công!");
+                if (res.ok) {
+                    await fetch(`${Constanst.DOMAIN_API}/api/cart/clear`, {
+                        method: 'DELETE',
+                        headers: {'Authorization': `Bearer ${token}`}
+                    });
 
-                // Xóa localStorage cart
-                localStorage.removeItem('cart');
-
-                // Chuyển trang lịch sử đơn hàng
-                navigate('/order-history');
-            } else {
-                let errorMsg = `Có lỗi xảy ra khi đặt hàng (Status: ${res.status}).`;
-                try {
+                    localStorage.removeItem('cart');
+                    alert("Đặt hàng thành công!");
+                    navigate('/order-history');
+                } else {
                     const result = await res.json();
-                    console.error("Order error response:", result);
-                    errorMsg = result.message || errorMsg;
-                } catch (e) {
-                    console.error("Could not parse error JSON:", await res.text());
+                    setError(result.message || "Có lỗi xảy ra khi đặt hàng.");
                 }
-                setError(errorMsg);
+            } else if (paymentMethod === 2) {
+                // Thanh toán qua VNPay
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/create-qr`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(orderData),
+                });
+
+                const result = await res.json();
+                console.log(result);
+                if (res) {
+                    // Chuyển hướng người dùng sang trang thanh toán VNPay
+                    window.location.href = result;
+                } else {
+                    setError(result.message || "Không thể tạo thanh toán VNPay.");
+                }
             }
-        } catch (error) {
-            console.error("Network error during order placement:", error);
-            setError("Không thể kết nối đến máy chủ để đặt hàng. Vui lòng kiểm tra kết nối mạng và thử lại.");
+
+
+        } catch (err) {
+            console.error("Order error:", err);
+            setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau.");
         } finally {
             setIsSubmitting(false);
         }
     };
+
 
 
 
@@ -171,8 +178,17 @@ const OrderPage = () => {
                         checked={paymentMethod === 1}
                         onChange={(e) => setPaymentMethod(parseInt(e.target.value))}
                     />
-                    {/* Bạn có thể thêm các phương thức thanh toán khác ở đây nếu cần */}
+                    <Form.Check
+                        type="radio"
+                        id="vnpay"
+                        label="Thanh toán VNPay (ATM, QR Code...)"
+                        name="paymentMethod"
+                        value={2}
+                        checked={paymentMethod === 2}
+                        onChange={(e) => setPaymentMethod(parseInt(e.target.value))}
+                    />
                 </Form.Group>
+
 
                 <Button variant="primary" type="submit" disabled={isSubmitting}>
                     {isSubmitting ? "Đang đặt hàng..." : "Hoàn tất đặt hàng"}
