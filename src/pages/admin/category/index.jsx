@@ -9,7 +9,7 @@ const CategoryList = () => {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);  // Fixed template string
                 const data = await res.json();
 
                 if (Array.isArray(data)) {
@@ -45,7 +45,6 @@ const CategoryList = () => {
         }
     };
 
-    // Lọc danh mục theo từ khóa tìm kiếm (không phân biệt chữ hoa/thường)
     const filteredCategories = categories.filter(category =>
         category.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -72,6 +71,9 @@ const CategoryList = () => {
                 <tr>
                     <th>Id</th>
                     <th>Tên danh mục</th>
+
+                    <th>Ảnh</th>
+
                     <th>Trạng thái</th>
                     <th>Hành động</th>
                 </tr>
@@ -81,6 +83,18 @@ const CategoryList = () => {
                     <tr key={category.id}>
                         <td>{category.id}</td>
                         <td>{category.name}</td>
+
+
+                        <td>
+                            <img
+                                src={`${Constanst.DOMAIN_API}/uploads/${category.images}`}
+                                alt="category"
+                                width="60"
+                                height="60"
+                                style={{objectFit: "cover"}}
+                            />
+
+                        </td>
                         <td>{category.status === 1 ? "Hiển thị" : "Ẩn"}</td>
                         <td>
                             <Link

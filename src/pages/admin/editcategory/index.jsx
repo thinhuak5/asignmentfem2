@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Link, useNavigate, useParams} from "react-router"; // Đổi thành 'react-router-dom'
+import {Link, useNavigate, useParams} from "react-router-dom"; // Đã đổi đúng
 import Constanst from "../../../Constanst";
 
 const EditCategory = () => {
@@ -8,7 +8,9 @@ const EditCategory = () => {
     const [category, setCategory] = useState({
         name: "",
         status: "Hiển thị",
+        images: null,      // Lưu tên file ảnh cũ
     });
+    const [newImage, setNewImage] = useState(null); // Lưu file ảnh mới
 
     useEffect(() => {
         const fetchCategory = async () => {
@@ -20,6 +22,7 @@ const EditCategory = () => {
                     setCategory({
                         name: data.name,
                         status: data.status === 1 ? "Hiển thị" : "Ẩn",
+                        images: data.images || null,
                     });
                 } else {
                     throw new Error("Không tìm thấy danh mục");
@@ -39,22 +42,29 @@ const EditCategory = () => {
         setCategory({...category, [name]: value});
     };
 
+    const handleImageChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setNewImage(e.target.files[0]);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const status = category.status === "Hiển thị" ? 1 : 0;
 
-        const data = {
-            name: category.name,
-            status: status,
-        };
+        const formData = new FormData();
+        formData.append("name", category.name);
+        formData.append("status", status);
+        formData.append("old_image", category.images || "");
+
+        if (newImage) {
+            formData.append("images", newImage);
+        }
 
         try {
             const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${id}`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
+                body: formData,
             });
 
             if (!res.ok) {
@@ -70,11 +80,10 @@ const EditCategory = () => {
         }
     };
 
-
     return (
         <div className="container mt-5">
             <h2>Sửa danh mục</h2>
-            <form onSubmit={handleSubmit} className="border p-4 bg-light rounded">
+            <form onSubmit={handleSubmit} className="border p-4 bg-light rounded" encType="multipart/form-data">
                 <div className="mb-3">
                     <label className="form-label">Tên danh mục</label>
                     <input
@@ -97,6 +106,32 @@ const EditCategory = () => {
                         <option value="Hiển thị">Hiển thị</option>
                         <option value="Ẩn">Ẩn</option>
                     </select>
+                </div>
+                <div className="mb-3">
+                    <label className="form-label">Ảnh hiện tại</label>
+                    <div>
+                        {category.images ? (
+                            <img
+                                src={`${Constanst.DOMAIN_API}/uploads/${category.images}`}
+                                alt="Ảnh danh mục"
+                                width="100"
+                                height="100"
+                                style={{objectFit: "cover"}}
+                            />
+                        ) : (
+                            <span>Chưa có ảnh</span>
+                        )}
+                    </div>
+                </div>
+                <div className="mb-3">
+                    <label className="form-label">Chọn ảnh mới (nếu muốn thay đổi)</label>
+                    <input
+                        type="file"
+                        className="form-control"
+                        name="images"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                    />
                 </div>
                 <button type="submit" className="btn btn-success me-2">
                     Cập nhật danh mục

@@ -23,18 +23,17 @@ const AddCategory = () => {
             return;
         }
 
-        const data = {
-            name: category.name,
-            status: category.status === "Hiển thị" ? 1 : 0,
-        };
+        const formData = new FormData();
+        formData.append("name", category.name);
+        formData.append("status", category.status === "Hiển thị" ? 1 : 0);
+        if (category.image) {
+            formData.append("images", category.image);
+        }
 
         try {
             const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/add`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(data),
+                body: formData,
             });
 
             if (!res.ok) {
@@ -67,6 +66,17 @@ const AddCategory = () => {
                         required
                     />
                 </div>
+                <div className="mb-3">
+                    <label className="form-label">Ảnh</label>
+                    <input
+                        type="file"
+                        className="form-control"
+                        name="image"
+                        accept="image/*"
+                        onChange={(e) => setCategory({...category, image: e.target.files[0]})}
+                    />
+                </div>
+
                 <div className="mb-3">
                     <label className="form-label">Trạng thái</label>
                     <select
