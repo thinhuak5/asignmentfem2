@@ -1,18 +1,18 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {Alert, Button, Image, Table} from 'react-bootstrap';
-import Constanst from "../../../Constanst"; // Đảm bảo đường dẫn đúng
+import {Alert, Button, Form, Image, Table} from 'react-bootstrap';
+import Constanst from "../../../Constanst";
 import {useNavigate} from 'react-router-dom';
 import {FaMinus, FaPlus, FaTrashAlt} from 'react-icons/fa';
-import {jwtDecode} from 'jwt-decode'; // *** THÊM IMPORT NÀY ***
+import {jwtDecode} from 'jwt-decode';
 
 const CartPage = () => {
     const [cart, setCart] = useState([]);
+    const [selectedItems, setSelectedItems] = useState([]); // ✅ state sản phẩm được chọn
     const [error, setError] = useState("");
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userInfo, setUserInfo] = useState(null);
     const navigate = useNavigate();
 
-    // --- Lấy giỏ hàng từ backend thay vì localStorage ---
     const getCartFromAPI = useCallback(async () => {
         const token = localStorage.getItem('authToken');
         if (token) {
@@ -27,6 +27,7 @@ const CartPage = () => {
                 if (response.ok) {
                     const cartData = await response.json();
                     setCart(cartData);
+                    setSelectedItems(cartData.map(item => item.product_id)); // ✅ mặc định chọn tất cả
                 } else {
                     throw new Error('Không thể tải giỏ hàng');
                 }
@@ -39,7 +40,6 @@ const CartPage = () => {
         }
     }, []);
 
-    // --- Lưu giỏ hàng vào backend ---
     const saveCartToAPI = async (productId, updatedCart) => {
         const token = localStorage.getItem('authToken');
         let productUpdated = {};
@@ -47,9 +47,9 @@ const CartPage = () => {
             try {
                 updatedCart.map(item => {
                     if (item.product_id === productId) {
-                        productUpdated = item
+                        productUpdated = item;
                     }
-                })
+                });
                 const response = await fetch(`${Constanst.DOMAIN_API}/api/cart/update/` + productId, {
                     method: 'PUT',
                     headers: {
@@ -61,7 +61,7 @@ const CartPage = () => {
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    console.error('Error saving cart:', errorData);  // Log lỗi nếu có
+                    console.error('Error saving cart:', errorData);
                     throw new Error('Cập nhật giỏ hàng thất bại');
                 }
                 console.log('Giỏ hàng đã được cập nhật thành công');
@@ -81,10 +81,8 @@ const CartPage = () => {
                 'Content-Type': 'application/json'
             },
         });
-    }
+    };
 
-
-    // --- Hàm check login (giải mã token) ---
     const checkLoginStatus = useCallback(() => {
         const token = localStorage.getItem('authToken');
 
@@ -121,10 +119,8 @@ const CartPage = () => {
         checkLoginStatus();
     }, [getCartFromAPI, checkLoginStatus]);
 
-    // --- Các hàm thay đổi giỏ hàng (tăng giảm số lượng, xóa sản phẩm) ---
     const handleQuantityChange = (productId, action) => {
         const updatedCart = cart.map(item => {
-            console.log(item)
             if (item.product_id === productId) {
                 let newQuantity = item.quantity;
                 if (action === 'increase' && newQuantity < 10) {
@@ -132,8 +128,7 @@ const CartPage = () => {
                 } else if (action === 'decrease' && newQuantity > 1) {
                     newQuantity -= 1;
                 }
-                console.log(newQuantity)
-                return { ...item, quantity: newQuantity };
+                return {...item, quantity: newQuantity};
             }
             return item;
         });
@@ -148,26 +143,49 @@ const CartPage = () => {
         const updatedCart = cart.filter(item => item.product_id !== productId);
         deleteCartToAPI(productId);
         setCart(updatedCart);
+        setSelectedItems(prev => prev.filter(id => id !== productId)); // cập nhật tick
+    };
+
+    const toggleSelectItem = (productId) => {
+        setSelectedItems(prev =>
+            prev.includes(productId)
+                ? prev.filter(id => id !== productId)
+                : [...prev, productId]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedItems.length === cart.length) {
+            setSelectedItems([]);
+        } else {
+            setSelectedItems(cart.map(item => item.product_id));
+        }
     };
 
     const calculateTotal = () => {
-        console.log(cart)
-        return cart.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+        return cart.reduce((total, item) => {
+            if (selectedItems.includes(item.product_id)) {
+                return total + (item.product.price * item.quantity);
+            }
+            return total;
+        }, 0);
     };
 
     const handleCheckout = () => {
         if (!isLoggedIn || !userInfo) {
-            navigate('/login', { state: { from: '/cart' } });
+            navigate('/login', {state: {from: '/cart'}});
             return;
         }
 
-        if (cart.length === 0) {
-            setError("Giỏ hàng của bạn đang trống.");
+        const selectedCartItems = cart.filter(item => selectedItems.includes(item.product_id));
+
+        if (selectedCartItems.length === 0) {
+            setError("Vui lòng chọn ít nhất một sản phẩm để thanh toán.");
             return;
         }
 
         navigate('/oder', {
-            state: {cartItems: cart, userInfo: userInfo}
+            state: {cartItems: selectedCartItems, userInfo: userInfo}
         });
     };
 
@@ -177,69 +195,90 @@ const CartPage = () => {
         }
 
         return (
-            <Table responsive hover className="align-middle">
-                <thead>
-                <tr>
-                    <th>Hình ảnh</th>
-                    <th>Tên sản phẩm</th>
-                    <th>Đơn giá</th>
-                    <th className="text-center">Số lượng</th>
-                    <th>Thành tiền</th>
-                    <th>Xóa</th>
-                </tr>
-                </thead>
-                <tbody>
-                {cart.map((item) => (
-                    <tr key={item.id}>
-                        <td>
-                            <Image
-                                src={item.product?.images ? `${Constanst.DOMAIN_API}/uploads/${item.product.images}` : "/path/to/default-image.jpg"}
-                                alt={item.product?.name}
-                                style={{width: '100px', height: 'auto', objectFit: 'contain'}}
-                                thumbnail
-                            />
-                        </td>
-                        <td>{item.product?.name}</td>
-                        <td>{item.product?.price?.toLocaleString()} VNĐ</td>
-                        <td className="text-center">
-                            <Button
-                                variant="outline-danger"
-                                size="sm"
-                                onClick={() => handleQuantityChange(item.product_id, 'decrease')}
-                                disabled={item.quantity <= 1}
-                                style={{ marginRight: '5px' }}
-                            >
-                                <FaMinus />
-                            </Button>
-                            <span style={{ margin: '0 10px', minWidth: '20px', display: 'inline-block' }}>{item.quantity}</span>
-                            <Button
-                                variant="outline-primary"
-                                size="sm"
-                                onClick={() => handleQuantityChange(item.product_id, 'increase')}
-                                disabled={item.quantity >= 10}
-                                style={{ marginLeft: '5px' }}
-                            >
-                                <FaPlus />
-                            </Button>
-                        </td>
-                        <td>{(item.product?.price * item.quantity).toLocaleString()} VNĐ</td>
-                        <td>
-                            <Button variant="danger" size="sm" onClick={() => removeFromCart(item.product_id)}>
-                                <FaTrashAlt />
-                            </Button>
-                        </td>
-                    </tr>
-                ))}
+            <>
+                <Button
+                    variant={selectedItems.length === cart.length ? "secondary" : "info"}
+                    className="mb-2"
+                    onClick={toggleSelectAll}
+                >
+                    {selectedItems.length === cart.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                </Button>
 
-                </tbody>
-                <tfoot>
-                <tr>
-                    <td colSpan={4} className="text-end"><strong>Tổng cộng:</strong></td>
-                    <td><strong>{calculateTotal().toLocaleString()} VNĐ</strong></td>
-                    <td></td>
-                </tr>
-                </tfoot>
-            </Table>
+                <Table responsive hover className="align-middle">
+                    <thead>
+                    <tr>
+                        <th>Chọn</th>
+                        <th>Hình ảnh</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Đơn giá</th>
+                        <th className="text-center">Số lượng</th>
+                        <th>Thành tiền</th>
+                        <th>Xóa</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {cart.map((item) => (
+                        <tr key={item.id}>
+                            <td>
+                                <Form.Check
+                                    type="checkbox"
+                                    checked={selectedItems.includes(item.product_id)}
+                                    onChange={() => toggleSelectItem(item.product_id)}
+                                />
+                            </td>
+                            <td>
+                                <Image
+                                    src={item.product?.images ? `${Constanst.DOMAIN_API}/uploads/${item.product.images}` : "/path/to/default-image.jpg"}
+                                    alt={item.product?.name}
+                                    style={{width: '100px', height: 'auto', objectFit: 'contain'}}
+                                    thumbnail
+                                />
+                            </td>
+                            <td>{item.product?.name}</td>
+                            <td>{item.product?.price?.toLocaleString()} VNĐ</td>
+                            <td className="text-center">
+                                <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => handleQuantityChange(item.product_id, 'decrease')}
+                                    disabled={item.quantity <= 1}
+                                    style={{marginRight: '5px'}}
+                                >
+                                    <FaMinus/>
+                                </Button>
+                                <span style={{
+                                    margin: '0 10px',
+                                    minWidth: '20px',
+                                    display: 'inline-block'
+                                }}>{item.quantity}</span>
+                                <Button
+                                    variant="outline-primary"
+                                    size="sm"
+                                    onClick={() => handleQuantityChange(item.product_id, 'increase')}
+                                    disabled={item.quantity >= 10}
+                                    style={{marginLeft: '5px'}}
+                                >
+                                    <FaPlus/>
+                                </Button>
+                            </td>
+                            <td>{(item.product?.price * item.quantity).toLocaleString()} VNĐ</td>
+                            <td>
+                                <Button variant="danger" size="sm" onClick={() => removeFromCart(item.product_id)}>
+                                    <FaTrashAlt/>
+                                </Button>
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                    <tfoot>
+                    <tr>
+                        <td colSpan={5} className="text-end"><strong>Tổng cộng:</strong></td>
+                        <td><strong>{calculateTotal().toLocaleString()} VNĐ</strong></td>
+                        <td></td>
+                    </tr>
+                    </tfoot>
+                </Table>
+            </>
         );
     };
 
