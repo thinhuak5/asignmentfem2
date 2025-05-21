@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Table, Button, Form, Spinner, Alert } from "react-bootstrap"; // Import Spinner và Alert
+import React, {useEffect, useState} from "react";
+import {Alert, Button, Form, Spinner, Table} from "react-bootstrap"; // Import Spinner và Alert
 import Constanst from "../../../Constanst";
 
 const OrderList = () => {
@@ -143,14 +143,12 @@ const OrderList = () => {
                     <thead className="table-dark">
                     <tr>
                         <th>STT</th>
-                        <th>ID</th>
                         <th>Tên</th>
                         <th>Điện thoại</th>
                         <th>Thanh toán</th>
                         <th>Trạng thái thanh toán</th>
                         <th>Trạng thái đơn hàng</th>
                         <th>Lý do hủy</th> {/* Thêm cột lý do hủy */}
-                        <th>ID Người dùng</th>
                         <th>Địa chỉ</th>
                         <th>Ngày tạo</th>
                         <th>Ngày cập nhật</th>
@@ -166,7 +164,6 @@ const OrderList = () => {
                         orders.map((order, index) => (
                             <tr key={order.id}>
                                 <td>{index + 1}</td>
-                                <td>{order.id}</td>
                                 <td>{order.name}</td>
                                 <td>{order.phone}</td>
                                 <td>
@@ -227,7 +224,6 @@ const OrderList = () => {
                                         "-" // Hiển thị dấu gạch ngang nếu không phải đơn hủy
                                     )}
                                 </td>
-                                <td>{order.user_id}</td>
                                 <td>{order.address}</td>
                                 <td>{new Date(order.createdAt).toLocaleString()}</td>
                                 <td>{new Date(order.updatedAt).toLocaleString()}</td>
