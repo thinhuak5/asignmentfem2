@@ -1,0 +1,816 @@
+/* src/assets/css/home.css */
+
+/* Variables (optional, but good for consistency) */
+:root {
+    --primary-color: #3b5d50; /* Furni template green */
+    --secondary-color: #f9bf29; /* Furni template yellow/orange */
+    --text-color: #333;
+    --light-text-color: #666;
+    --border-color: #e0e0e0;
+    --card-bg: #ffffff;
+    --shadow-light: rgba(0, 0, 0, 0.08);
+    --flash-sale-bg: #88b584; /* Light green for flash sale */
+    --trend-bg-start: #4b0082; /* Dark violet */
+    --trend-bg-end: #800080; /* Purple */
+}
+
+/* Global styles */
+body {
+    font-family: 'Inter', sans-serif; /* Or your preferred font */
+    color: var(--text-color);
+    line-height: 1.6;
+    background-color: #f8f8f8; /* Light background for the whole page */
+}
+
+/* --- Hero Section --- */
+.hero-section {
+    background-color: var(--primary-color);
+    padding: 80px 0;
+    color: white;
+}
+
+.hero-section h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.hero-section p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.hero-img-wrap img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px var(--shadow-medium);
+}
+
+.hero-button-group .btn {
+    padding: 12px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.hero-button-group .btn-secondary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: var(--primary-color);
+}
+
+.hero-button-group .btn-secondary:hover {
+    background-color: #e6a700; /* Darker yellow */
+    border-color: #e6a700;
+}
+
+.hero-button-group .btn-white-outline {
+    background-color: transparent;
+    border: 2px solid white;
+    color: white;
+}
+
+.hero-button-group .btn-white-outline:hover {
+    background-color: white;
+    color: var(--primary-color);
+}
+
+
+/* --- Mini Banners Section --- */
+.mini-banner-card {
+    background-color: var(--card-bg);
+    box-shadow: 0 2px 8px var(--shadow-light);
+    border-radius: 8px;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mini-banner-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px var(--shadow-medium);
+}
+
+.mini-banner-card img {
+    width: 100%;
+    height: 120px; /* Fixed height for consistency */
+    object-fit: cover;
+    display: block;
+}
+
+.mini-banner-content {
+    padding: 15px;
+    text-align: center;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.mini-banner-content p {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.mini-banner-content .btn {
+    font-size: 0.85rem;
+    padding: 8px 15px;
+    border-radius: 5px;
+    background-color: #dc3545; /* Bootstrap danger red */
+    border-color: #dc3545;
+}
+.mini-banner-content .btn:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+
+/* --- Horizontal Categories (Quick Links) --- */
+.quick-links-section {
+    background-color: var(--card-bg);
+    padding: 20px 0;
+    box-shadow: 0 2px 8px var(--shadow-light);
+}
+
+.quick-link-item {
+    text-align: center;
+    flex-shrink: 0; /* Prevent shrinking in flex container */
+    min-width: 80px; /* Ensure consistent width */
+    color: var(--text-color);
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+.quick-link-item:hover {
+    transform: translateY(-3px);
+    color: var(--primary-color);
+}
+
+.quick-link-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    background-color: #f0f0f0; /* Light background for icon circle */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px auto;
+    color: var(--primary-color); /* Icon color */
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+}
+
+.quick-link-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+
+/* --- Flash Sale Header --- */
+.flash-sale-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    gap: 10px; /* Space between items when wrapped */
+}
+
+.flash-sale-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--secondary-color); /* Yellow/Orange for "FLASH SALE" */
+    margin-right: 15px;
+}
+
+.flash-sale-countdown {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.flash-sale-link {
+    color: #ade8f4; /* Lighter blue for "Xem tất cả" */
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+.flash-sale-link:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+/* --- Flash Sale Products Section --- */
+.flash-sale-products-section {
+    background-color: var(--flash-sale-bg); /* Light green */
+    padding: 40px 0;
+}
+
+.flash-sale-product-card {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-light);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.flash-sale-product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px var(--shadow-medium);
+}
+
+.flash-sale-product-card img {
+    width: 100%;
+    height: 150px; /* Fixed height for images */
+    object-fit: contain; /* Ensure full image is visible */
+    margin-bottom: 10px;
+}
+
+.flash-sale-product-card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    flex-grow: 1; /* Allow title to take up available space */
+}
+
+.flash-sale-price {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--price-color); /* Reddish price */
+    margin-bottom: 0;
+}
+
+.flash-sale-original-price {
+    font-size: 0.85rem;
+    color: var(--light-text-color);
+    text-decoration: line-through;
+    margin-top: -5px; /* Adjust spacing */
+}
+
+.flash-sale-discount-badge {
+    background-color: var(--discount-color); /* Red for discount */
+    color: white;
+    font-size: 0.8rem;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.flash-sale-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 5px;
+    margin-top: 15px;
+    transition: background-color 0.2s ease;
+}
+.flash-sale-btn:hover {
+    background-color: #2f4d43; /* Darker primary */
+}
+
+
+/* --- Product Categories Section --- */
+.product-categories-section {
+    padding: 50px 0;
+    background-color: #f8f8f8; /* Match body background */
+}
+
+.product-categories-section h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.product-categories-section h2 .icon {
+    font-size: 1.5rem;
+    margin-right: 10px;
+    color: var(--primary-color);
+}
+
+.category-item {
+    text-align: center;
+    width: 90px; /* Slightly larger for category items */
+    flex-shrink: 0;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+.category-item:hover {
+    transform: translateY(-3px);
+    color: var(--primary-color);
+}
+
+.category-icon-wrapper {
+    width: 70px; /* Larger icon wrapper */
+    height: 70px;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px auto;
+    overflow: hidden; /* Ensure images fit */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.category-icon-wrapper img {
+    max-width: 80%;
+    max-height: 80%;
+    object-fit: contain;
+}
+
+.category-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+
+/* --- Trending Products Section --- */
+.trending-products-section {
+    background: linear-gradient(to right, var(--trend-bg-start), var(--trend-bg-end));
+    padding: 40px 0;
+    color: white; /* Default text color for this section */
+}
+
+.trending-products-section h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: white; /* Title is white */
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.trending-products-section h2 .icon {
+    background-color: white;
+    color: var(--discount-color); /* Red heart icon */
+    border-radius: 50%;
+    padding: 6px 10px;
+    font-size: 1.2rem;
+    margin-right: 10px;
+}
+
+.trending-product-card {
+    background-color: var(--card-bg);
+    color: var(--text-color); /* Text inside card is dark */
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-light);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden; /* For image border-radius */
+}
+
+.trending-product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px var(--shadow-medium);
+}
+
+.trending-product-image-wrapper {
+    position: relative;
+    width: 100%;
+    height: 160px; /* Fixed height for image area */
+    overflow: hidden;
+}
+
+.trending-product-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.trending-discount-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: var(--discount-color);
+    color: white;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.trending-product-content {
+    padding: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.trending-product-content h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    line-height: 1.3;
+}
+
+.trending-price-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.trending-current-price {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--price-color);
+    margin-bottom: 0;
+}
+
+.trending-original-price {
+    font-size: 0.8rem;
+    color: var(--light-text-color);
+    text-decoration: line-through;
+}
+
+.trending-discount-label {
+    background-color: var(--discount-color);
+    color: white;
+    font-size: 0.75rem;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.trending-btn {
+    background-color: var(--discount-color); /* Use red for consistency with offers */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 5px;
+    margin-top: 10px;
+    transition: background-color 0.2s ease;
+}
+.trending-btn:hover {
+    background-color: #c82333;
+}
+
+
+/* --- Featured Collections Section --- */
+.collections-section {
+    padding: 50px 0;
+    background-color: #f8f8f8;
+}
+
+.collections-section .section-header {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-light);
+    margin-bottom: 30px; /* Space between header and items */
+}
+
+.collections-section h5 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--discount-color); /* Red for "BỘ SƯU TẬP NỔI BẬT" */
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.collection-item {
+    text-align: center;
+    flex-shrink: 0; /* Prevent shrinking */
+    width: 100px; /* Fixed width for collection item */
+    text-decoration: none;
+    color: var(--text-color);
+    transition: transform 0.2s ease;
+}
+.collection-item:hover {
+    transform: translateY(-3px);
+    color: var(--primary-color);
+}
+
+.collection-item img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+    margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.collection-item p {
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ellipsis for long names */
+}
+
+
+/* --- Featured Brands Section --- */
+.brands-section {
+    padding: 50px 0;
+    background-color: #f8f8f8;
+}
+
+.brands-section .section-header {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px var(--shadow-light);
+    margin-bottom: 30px; /* Space between header and tabs */
+}
+
+.brands-section h5 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--discount-color); /* Red for "Thương hiệu nổi bật" */
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+}
+
+.brands-section h5 .icon {
+    margin-right: 10px;
+}
+
+/* React Bootstrap Tabs Customization */
+.nav-tabs {
+    border-bottom: 2px solid var(--border-color);
+    justify-content: center; /* Center the tabs */
+    margin-bottom: 20px; /* Space below tabs */
+}
+
+.nav-tabs .nav-link {
+    color: var(--light-text-color);
+    font-weight: 600;
+    padding: 10px 20px;
+    border: none;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: transparent;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--primary-color);
+    border-bottom-color: rgba(59, 93, 80, 0.5); /* Lighter primary on hover */
+}
+
+.brand-product-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    height: 100%;
+    background-color: var(--card-bg);
+    box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.brand-product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px var(--shadow-medium);
+}
+
+.brand-product-card img {
+    width: 100%;
+    height: 180px; /* Adjusted height for book image */
+    object-fit: contain;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.brand-product-card .trend-badge {
+    font-size: 0.8rem;
+    color: var(--discount-color); /* Red for "Xu hướng" */
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.brand-product-card h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 5px;
+    color: var(--text-color);
+}
+
+.brand-product-card .price-info {
+    font-size: 0.9rem;
+    color: var(--light-text-color);
+    margin-bottom: 5px;
+}
+
+.brand-product-card .price-info strong {
+    color: var(--price-color);
+    font-size: 1rem;
+}
+
+.brand-product-card .sold-info {
+    font-size: 0.8rem;
+    color: var(--light-text-color);
+}
+
+
+/* Responsive Adjustments */
+@media (max-width: 991.98px) {
+    .hero-section h1 {
+        font-size: 2.8rem;
+    }
+    .hero-section p {
+        font-size: 1rem;
+    }
+    .hero-button-group .btn {
+        padding: 10px 25px;
+        font-size: 1rem;
+    }
+
+    .mini-banner-card img {
+        height: 100px;
+    }
+    .mini-banner-content p {
+        font-size: 0.85rem;
+    }
+    .mini-banner-content .btn {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+
+    .quick-link-item {
+        min-width: 70px;
+    }
+    .quick-link-icon-wrapper {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    .quick-link-label {
+        font-size: 0.8rem;
+    }
+
+    .flash-sale-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .flash-sale-title {
+        margin-right: 0;
+        margin-bottom: 5px;
+    }
+
+    .flash-sale-product-card img {
+        height: 120px;
+    }
+    .flash-sale-product-card h3 {
+        font-size: 0.9rem;
+    }
+    .flash-sale-price {
+        font-size: 1rem;
+    }
+    .flash-sale-original-price {
+        font-size: 0.75rem;
+    }
+
+    .product-categories-section h2,
+    .trending-products-section h2,
+    .collections-section h5,
+    .brands-section h5 {
+        font-size: 1.4rem;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .category-item {
+        width: 70px;
+    }
+    .category-icon-wrapper {
+        width: 60px;
+        height: 60px;
+    }
+    .category-label {
+        font-size: 0.8rem;
+    }
+
+    .trending-product-image-wrapper {
+        height: 140px;
+    }
+    .trending-product-content h3 {
+        font-size: 0.9rem;
+    }
+    .trending-current-price {
+        font-size: 0.9rem;
+    }
+    .trending-original-price {
+        font-size: 0.7rem;
+    }
+
+    .collection-item {
+        width: 90px;
+    }
+    .collection-item img {
+        width: 70px;
+        height: 70px;
+    }
+
+    .brand-product-card img {
+        height: 160px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hero-section {
+        padding: 60px 0;
+    }
+    .hero-section h1 {
+        font-size: 2.5rem;
+    }
+    .hero-section p {
+        font-size: 0.95rem;
+    }
+    .hero-button-group .btn {
+        width: 100%;
+        margin-bottom: 10px !important;
+    }
+
+    .mini-banner-card img {
+        height: 80px;
+    }
+    .mini-banner-content p {
+        font-size: 0.8rem;
+    }
+    .mini-banner-content .btn {
+        width: 100%;
+    }
+
+    .flash-sale-products-section {
+        padding: 20px 0;
+    }
+    .flash-sale-product-card img {
+        height: 100px;
+    }
+    .flash-sale-product-card h3 {
+        font-size: 0.85rem;
+    }
+    .flash-sale-price {
+        font-size: 0.9rem;
+    }
+
+    .product-categories-section,
+    .trending-products-section,
+    .collections-section,
+    .brands-section {
+        padding: 30px 0;
+    }
+
+    .product-categories-section h2,
+    .trending-products-section h2,
+    .collections-section h5,
+    .brands-section h5 {
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+    }
+
+    .collection-item {
+        width: 80px;
+    }
+    .collection-item img {
+        width: 60px;
+        height: 60px;
+    }
+    .collection-item p {
+        font-size: 0.8rem;
+    }
+
+    .brand-product-card img {
+        height: 120px;
+    }
+    .brand-product-card h3 {
+        font-size: 0.85rem;
+    }
+    .brand-product-card .price-info strong {
+        font-size: 0.9rem;
+    }
+}

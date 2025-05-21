@@ -1,25 +1,45 @@
-import React, {useEffect, useState} from 'react'; // Thêm import useEffect
-import {useLocation, useNavigate} from 'react-router-dom';
-import {Alert, Button, Form} from 'react-bootstrap';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Alert, Button, Form } from 'react-bootstrap';
 import Constanst from '../../../Constanst';
 
 const OrderPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { cartItems, userInfo } = location.state || {}; // Lấy dữ liệu được truyền từ CartPage
-    const [name, setName] = useState(userInfo?.name || '');
-    const [phone, setPhone] = useState(userInfo?.phone || '');
+    const { cartItems, userInfo } = location.state || {};
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
-    const [paymentMethod, setPaymentMethod] = useState(1); // 1 là COD mặc định
+    const [paymentMethod, setPaymentMethod] = useState(1); // 1 = COD
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        // Nếu có thông tin userInfo được truyền, cập nhật state ban đầu
-        if (userInfo) {
-            setName(userInfo.name || '');
-            setPhone(userInfo.phone || '');
-        }
+        const fetchUserInfo = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token || !userInfo?.id) return;
+
+            try {
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/users/${userInfo.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setName(data.name || '');
+                    setPhone(data.phone || '');
+                    setAddress(data.address || '');
+                } else {
+                    console.warn('Không thể lấy thông tin người dùng.');
+                }
+            } catch (err) {
+                console.error('Lỗi khi lấy thông tin người dùng:', err);
+            }
+        };
+
+        fetchUserInfo();
     }, [userInfo]);
 
     const handlePlaceOrder = async (e) => {
@@ -85,7 +105,7 @@ const OrderPage = () => {
                 if (res.ok) {
                     await fetch(`${Constanst.DOMAIN_API}/api/cart/clear`, {
                         method: 'DELETE',
-                        headers: {'Authorization': `Bearer ${token}`}
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
 
                     localStorage.removeItem('cart');
@@ -96,7 +116,7 @@ const OrderPage = () => {
                     setError(result.message || "Có lỗi xảy ra khi đặt hàng.");
                 }
             } else if (paymentMethod === 2) {
-                // Thanh toán qua VNPay
+                // VNPay
                 const res = await fetch(`${Constanst.DOMAIN_API}/api/create-qr`, {
                     method: 'POST',
                     headers: {
@@ -107,16 +127,12 @@ const OrderPage = () => {
                 });
 
                 const result = await res.json();
-                console.log(result);
-                if (res) {
-                    // Chuyển hướng người dùng sang trang thanh toán VNPay
+                if (res.ok && result) {
                     window.location.href = result;
                 } else {
                     setError(result.message || "Không thể tạo thanh toán VNPay.");
                 }
             }
-
-
         } catch (err) {
             console.error("Order error:", err);
             setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau.");
@@ -124,9 +140,6 @@ const OrderPage = () => {
             setIsSubmitting(false);
         }
     };
-
-
-
 
     return (
         <div className="container mt-4">
@@ -188,7 +201,6 @@ const OrderPage = () => {
                         onChange={(e) => setPaymentMethod(parseInt(e.target.value))}
                     />
                 </Form.Group>
-
 
                 <Button variant="primary" type="submit" disabled={isSubmitting}>
                     {isSubmitting ? "Đang đặt hàng..." : "Hoàn tất đặt hàng"}

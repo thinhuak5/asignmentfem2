@@ -1,0 +1,292 @@
+/* src/assets/css/productclient.css */
+
+/* Global Variables */
+:root {
+    --primary-color: #3b5d50; /* Furni Green */
+    --secondary-bg-color: #f8f8f8; /* Very light grey background */
+    --card-bg-color: #ffffff;
+    --text-color: #333;
+    --light-text-color: #666;
+    --border-color: #e0e0e0;
+    --price-color: #e74c3c; /* Reddish for price */
+    --button-bg-hover: #2e4c3f;
+    --checkbox-checked-color: #28a745; /* Green for checked checkboxes */
+    --box-shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --box-shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.15);
+    --active-filter-color: #f9bf29; /* Màu vàng cam cho filter active */
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    color: var(--text-color);
+    line-height: 1.6;
+    background-color: var(--secondary-bg-color);
+}
+
+/* --- Hero Section (Top Banner) --- */
+.hero {
+    background-color: var(--primary-color);
+    padding: 80px 0;
+    color: white;
+    text-align: center;
+}
+
+.hero .intro-excerpt h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+/* --- Main Product Section Container --- */
+.untree_co-section {
+    padding: 60px 0;
+    background-color: var(--secondary-bg-color);
+}
+
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* --- Sidebar Section (Left Column - Individual Cards for Filters) --- */
+.sidebar-section {
+    background-color: var(--card-bg-color);
+    padding: 25px; /* Reduced padding slightly for individual cards */
+    border-radius: 12px;
+    box-shadow: var(--box-shadow-light);
+    margin-bottom: 25px; /* Space between filter cards */
+}
+
+.sidebar-section h5 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+}
+
+/* List group for filters */
+.list-group {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.list-group-item {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    font-size: 1.05rem;
+    color: var(--light-text-color);
+    transition: color 0.2s ease-in-out;
+    background-color: transparent; /* Ensure no default list-group-item background */
+    border: none; /* Remove default list-group-item border */
+}
+
+.list-group-item:hover {
+    color: var(--primary-color);
+}
+
+.list-group-item.active-filter {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.filter-icon {
+    margin-right: 15px;
+    font-size: 1.3em;
+    color: #bdbdbd;
+    transition: color 0.2s ease-in-out;
+}
+
+.filter-icon.checked {
+    color: var(--checkbox-checked-color);
+}
+
+/* --- Product List (Right Column) --- */
+/* Search and Sort Controls */
+.search-input,
+.sort-select {
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1.05rem;
+    color: var(--text-color);
+    background-color: var(--card-bg-color);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.sort-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 18px center;
+    background-size: 14px;
+    cursor: pointer;
+}
+
+
+/* Product Grid */
+.product-grid-row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: -15px; /* Adjust for padding in product-column */
+    margin-right: -15px; /* Adjust for padding in product-column */
+}
+
+.product-column {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding: 0 15px; /* Padding for spacing between columns */
+    margin-bottom: 30px; /* Space below each product item */
+}
+
+@media (min-width: 576px) {
+    .product-column {
+        flex: 0 0 50%; /* 2 columns on small devices */
+        max-width: 50%;
+    }
+}
+
+@media (min-width: 768px) {
+    .product-column {
+        flex: 0 0 33.3333%; /* 3 columns on medium devices */
+        max-width: 33.3333%;
+    }
+}
+
+@media (min-width: 992px) {
+    .product-column {
+        flex: 0 0 20%; /* 5 columns on large devices, as in image */
+        max-width: 20%;
+    }
+}
+
+.product-item {
+    background: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    height: 100%; /* Ensure all cards have same height */
+    padding: 15px;
+    box-shadow: var(--box-shadow-light);
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.product-item:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--box-shadow-hover);
+}
+
+.product-thumbnail-wrapper {
+    height: 180px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+    background-color: #fefefe;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.product-thumbnail {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.product-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    min-height: 2.5em; /* Consistent height for titles */
+    line-height: 1.25;
+}
+
+.product-price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--price-color);
+    margin-bottom: 15px;
+}
+
+.product-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: auto; /* Push actions to the bottom */
+    width: 100%;
+    padding: 0 5px;
+}
+
+.btn-custom-sm {
+    flex: 1;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.btn-custom-sm:hover {
+    background-color: var(--button-bg-hover);
+    transform: translateY(-3px);
+}
+
+.btn-custom-outline {
+    flex: 1;
+    background-color: var(--card-bg-color);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    padding: 10px 0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.btn-custom-outline:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-3px);
+}
+
+.btn-custom-sm .fa-icon, .btn-custom-outline .fa-icon {
+    font-size: 1.1em;
+}
+
+/* No products message */
+.no-products-message {
+    text-align: center;
+    font-size: 1.3rem;
+    color: var(--light-text-color);
+    padding: 50px;
+    background-color: var(--card-bg-color);
+    border-radius: 12px;
+    box-shadow: var(--box-shadow-light);
+    margin-top: 30px;
+}

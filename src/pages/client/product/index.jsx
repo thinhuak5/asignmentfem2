@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import Constanst from "../../../Constanst";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingCart, faEye, faCheckSquare, faSquare } from '@fortawesome/free-solid-svg-icons';
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import "../../../assets/css/productclient.css"; // Import CSS mới
 
 const ProductClient = () => {
     const [products, setProducts] = useState([]);
@@ -78,9 +79,9 @@ const ProductClient = () => {
 
     const sortedProducts = () => {
         if (sortOrder === "asc") {
-            return filteredProducts.sort((a, b) => a.price - b.price);
+            return [...filteredProducts].sort((a, b) => a.price - b.price); // Use spread to avoid direct mutation
         } else if (sortOrder === "desc") {
-            return filteredProducts.sort((a, b) => b.price - a.price);
+            return [...filteredProducts].sort((a, b) => b.price - a.price); // Use spread to avoid direct mutation
         }
         return filteredProducts;
     };
@@ -132,57 +133,32 @@ const ProductClient = () => {
                 <div className="container">
                     <div className="row">
                         {/* Cột bên trái - Danh mục và Lọc giá */}
-                        <div className="col-md-3 mb-4">
+                        <div className="col-md-3 mb-4 sidebar-section">
                             <h5>Danh mục sản phẩm</h5>
-                            <ul className="list-group" style={{ backgroundColor: 'transparent' }}>
+                            <ul className="list-group">
                                 <li
                                     key="all"
-                                    className="list-group-item"
+                                    className={`list-group-item ${selectedCategory === "all" ? 'active-filter' : ''}`}
                                     onClick={() => setSelectedCategory("all")}
-                                    style={{
-                                        cursor: 'pointer',
-                                        fontWeight: selectedCategory === "all" ? 'bold' : 'normal',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        backgroundColor: 'transparent',
-                                        border: 'none',
-                                        padding: '0.5rem 0'
-                                    }}>
+                                >
                                     <FontAwesomeIcon
                                         icon={selectedCategory === "all" ? faCheckSquare : faSquare}
-                                        className="mr-2"
-                                        style={{
-                                            color: selectedCategory === "all" ? 'green' : '#808080',
-                                            borderRadius: '3px'
-                                        }}
+                                        className={`filter-icon ${selectedCategory === "all" ? 'checked' : ''}`}
                                     />
                                     Tất cả sản phẩm
                                 </li>
                                 {categories.length === 0 ? (
-                                    <li className="list-group-item" style={{ backgroundColor: 'transparent', border: 'none', padding: '0.5rem 0' }}>Không có danh mục nào</li>
+                                    <li className="list-group-item">Không có danh mục nào</li>
                                 ) : (
                                     categories.map((category) => (
                                         <li
                                             key={category.id}
-                                            className="list-group-item"
+                                            className={`list-group-item ${selectedCategory === category.id ? 'active-filter' : ''}`}
                                             onClick={() => setSelectedCategory(category.id)}
-                                            style={{
-                                                cursor: 'pointer',
-                                                fontWeight: selectedCategory === category.id ? 'bold' : 'normal',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                backgroundColor: 'transparent',
-                                                border: 'none',
-                                                padding: '0.5rem 0'
-                                            }}
                                         >
                                             <FontAwesomeIcon
                                                 icon={selectedCategory === category.id ? faCheckSquare : faSquare}
-                                                className="mr-2"
-                                                style={{
-                                                    color: selectedCategory === category.id ? 'green' : '#808080',
-                                                    borderRadius: '3px'
-                                                }}
+                                                className={`filter-icon ${selectedCategory === category.id ? 'checked' : ''}`}
                                             />
                                             {category.name}
                                         </li>
@@ -190,80 +166,55 @@ const ProductClient = () => {
                                 )}
                             </ul>
 
-                            {/* Lọc theo giá */}
-                            <div className="mt-4">
+                            <div className="mt-4 ">
                                 <h5>Lọc theo giá</h5>
-                                <ul className="list-group" style={{ backgroundColor: 'transparent' }}>
+                                <ul className="list-group">
                                     <li
-                                        className="list-group-item"
+                                        className={`list-group-item ${selectedPriceRanges.includes("all") ? 'active-filter' : ''}`}
                                         onClick={() => handlePriceRangeChange("all")}
-                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', backgroundColor: 'transparent', border: 'none', padding: '0.5rem 0' }}
                                     >
                                         <FontAwesomeIcon
                                             icon={selectedPriceRanges.includes("all") ? faCheckSquare : faSquare}
-                                            className="mr-2"
-                                            style={{
-                                                color: selectedPriceRanges.includes("all") ? 'green' : '#808080',
-                                                borderRadius: '3px'
-                                            }}
+                                            className={`filter-icon ${selectedPriceRanges.includes("all") ? 'checked' : ''}`}
                                         />Tất cả giá
                                     </li>
                                     <li
-                                        className="list-group-item"
+                                        className={`list-group-item ${selectedPriceRanges.includes("0-10000") ? 'active-filter' : ''}`}
                                         onClick={() => handlePriceRangeChange("0-10000")}
-                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', backgroundColor: 'transparent', border: 'none', padding: '0.5rem 0' }}
                                     >
                                         <FontAwesomeIcon
                                             icon={selectedPriceRanges.includes("0-10000") ? faCheckSquare : faSquare}
-                                            className="mr-2"
-                                            style={{
-                                                color: selectedPriceRanges.includes("0-10000") ? 'green' : '#808080',
-                                                borderRadius: '3px'
-                                            }}
+                                            className={`filter-icon ${selectedPriceRanges.includes("0-10000") ? 'checked' : ''}`}
                                         />
                                         0 VNĐ - 10,000 VNĐ
                                     </li>
                                     <li
-                                        className="list-group-item"
+                                        className={`list-group-item ${selectedPriceRanges.includes("10000-100000") ? 'active-filter' : ''}`}
                                         onClick={() => handlePriceRangeChange("10000-100000")}
-                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', backgroundColor: 'transparent', border: 'none', padding: '0.5rem 0' }}
                                     >
                                         <FontAwesomeIcon
                                             icon={selectedPriceRanges.includes("10000-100000") ? faCheckSquare : faSquare}
-                                            className="mr-2"
-                                            style={{
-                                                color: selectedPriceRanges.includes("10000-100000") ? 'green' : '#808080',
-                                                borderRadius: '3px'
-                                            }}
+                                            className={`filter-icon ${selectedPriceRanges.includes("100000-100000") ? 'checked' : ''}`}
                                         />
                                         10,000 VNĐ - 100,000 VNĐ
                                     </li>
                                     <li
-                                        className="list-group-item"
+                                        className={`list-group-item ${selectedPriceRanges.includes("100000-1000000") ? 'active-filter' : ''}`}
                                         onClick={() => handlePriceRangeChange("100000-1000000")}
-                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', backgroundColor: 'transparent', border: 'none', padding: '0.5rem 0' }}
                                     >
                                         <FontAwesomeIcon
                                             icon={selectedPriceRanges.includes("100000-1000000") ? faCheckSquare : faSquare}
-                                            className="mr-2"
-                                            style={{
-                                                color: selectedPriceRanges.includes("100000-1000000") ? 'green' : '#808080',
-                                                borderRadius: '3px'
-                                            }}
+                                            className={`filter-icon ${selectedPriceRanges.includes("1000000-1000000") ? 'checked' : ''}`}
                                         />
                                         100,000 VNĐ - 1,000,000 VNĐ
                                     </li>
                                     <li
-                                        className="list-group-item"
+                                        className={`list-group-item ${selectedPriceRanges.includes("1000000-") ? 'active-filter' : ''}`}
                                         onClick={() => handlePriceRangeChange("1000000-")}
-                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', backgroundColor: 'transparent', border: 'none', padding: '0.5rem 0' }}
                                     >
                                         <FontAwesomeIcon
                                             icon={selectedPriceRanges.includes("1000000-") ? faCheckSquare : faSquare}
-                                            className="mr-2" style={{
-                                            color: selectedPriceRanges.includes("1000000-") ? 'green' : '#808080',
-                                            borderRadius: '3px'
-                                        }}
+                                            className={`filter-icon ${selectedPriceRanges.includes("1000000-") ? 'checked' : ''}`}
                                         />
                                         Lớn hơn 1,000,000 VNĐ
                                     </li>
@@ -277,7 +228,7 @@ const ProductClient = () => {
                             <div className="mb-4">
                                 <input
                                     type="text"
-                                    className="form-control"
+                                    className="search-input"
                                     placeholder="Tìm kiếm sản phẩm..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -287,7 +238,7 @@ const ProductClient = () => {
                             {/* Dropdown sắp xếp giá */}
                             <div className="mb-4">
                                 <select
-                                    className="form-select"
+                                    className="sort-select"
                                     value={sortOrder}
                                     onChange={(e) => setSortOrder(e.target.value)}
                                 >
@@ -297,55 +248,38 @@ const ProductClient = () => {
                                 </select>
                             </div>
 
-                            <div className="row">
+                            <div className="row product-grid-row">
                                 {sortedProducts().length === 0 ? (
                                     <div className="col-12">
-                                        <p>Không có sản phẩm nào</p>
+                                        <p className="no-products-message">Không có sản phẩm nào</p>
                                     </div>
                                 ) : (
                                     sortedProducts().map((product) => (
-                                        <div className="col-6 col-sm-6 col-md-4 col-lg-2 mb-4" key={product.id}>
-                                            <div className="product-item" style={{ lineHeight: '1.7', marginBottom: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                <div style={{ height: "150px", width: "100%", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                                        <div className="product-column" key={product.id}>
+                                            <div className="product-item">
+                                                <div className="product-thumbnail-wrapper">
                                                     <img
                                                         src={`${Constanst.DOMAIN_API}/uploads/${product.images}`}
-                                                        className="img-fluid product-thumbnail"
+                                                        className="product-thumbnail"
                                                         alt={product.name}
-                                                        style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
                                                     />
                                                 </div>
-                                                <h3 className="product-title" style={{ fontSize: '14px', textAlign: 'center', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', marginBottom: '5px' }}>
+                                                <h3 className="product-title">
                                                     {product.name}
                                                 </h3>
-                                                <strong className="product-price" style={{ fontSize: '14px', textAlign: 'center', marginBottom: '5px' }}>
+                                                <strong className="product-price">
                                                     {product.price ? product.price.toLocaleString() + " VNĐ" : "Giá chưa có"}
                                                 </strong>
-                                                <div style={{ display: 'flex', gap: '5px' }}>
+                                                <div className="product-actions">
                                                     <button
-                                                        className="btn btn-sm btn-primary"
+                                                        className="btn-custom-sm"
                                                         onClick={() => handleAddToCart(product)}
-                                                        style={{
-                                                            backgroundColor: '#3b5d50',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            padding: '6px 8px',
-                                                            borderRadius: '5px',
-                                                            fontSize: '12px',
-                                                            cursor: 'pointer',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                        }}
                                                     >
                                                         <FontAwesomeIcon icon={faShoppingCart} />
                                                     </button>
                                                     <Link
                                                         to={`/product/${product.id}`}
-                                                        className="btn btn-sm btn-outline-secondary"
-                                                        style={{
-                                                            fontSize: '12px',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                        }}
+                                                        className="btn-custom-outline"
                                                     >
                                                         <FontAwesomeIcon icon={faEye} />
                                                     </Link>
