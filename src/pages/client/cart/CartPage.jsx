@@ -7,7 +7,7 @@ import {jwtDecode} from 'jwt-decode';
 
 const CartPage = () => {
     const [cart, setCart] = useState([]);
-    const [selectedItems, setSelectedItems] = useState([]); // ✅ state sản phẩm được chọn
+    const [selectedItems, setSelectedItems] = useState([]); // ✅ state sản phẩm được chọn (chứa product_id)
     const [error, setError] = useState("");
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userInfo, setUserInfo] = useState(null);
@@ -23,11 +23,11 @@ const CartPage = () => {
                         'Authorization': `Bearer ${token}`
                     }
                 });
-
                 if (response.ok) {
                     const cartData = await response.json();
                     setCart(cartData);
-                    setSelectedItems(cartData.map(item => item.product_id)); // ✅ mặc định chọn tất cả
+                    // Mặc định chọn tất cả các sản phẩm khi tải giỏ hàng
+
                 } else {
                     throw new Error('Không thể tải giỏ hàng');
                 }
@@ -37,6 +37,7 @@ const CartPage = () => {
             }
         } else {
             setCart([]);
+            setSelectedItems([]); // Xóa lựa chọn nếu không đăng nhập
         }
     }, []);
 
@@ -45,6 +46,7 @@ const CartPage = () => {
         let productUpdated = {};
         if (token) {
             try {
+                // Tìm sản phẩm đã được cập nhật trong giỏ hàng mới
                 updatedCart.map(item => {
                     if (item.product_id === productId) {
                         productUpdated = item;
@@ -74,13 +76,23 @@ const CartPage = () => {
 
     const deleteCartToAPI = async (productId) => {
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`${Constanst.DOMAIN_API}/api/cart/` + productId, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-        });
+        try {
+            const response = await fetch(`${Constanst.DOMAIN_API}/api/cart/` + productId, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Xóa sản phẩm khỏi giỏ hàng thất bại.');
+            }
+            console.log('Sản phẩm đã được xóa khỏi giỏ hàng thành công.');
+        } catch (error) {
+            console.error('Lỗi khi xóa sản phẩm khỏi giỏ hàng:', error);
+            setError("Không thể xóa sản phẩm khỏi giỏ hàng.");
+        }
     };
 
     const checkLoginStatus = useCallback(() => {
@@ -123,9 +135,9 @@ const CartPage = () => {
         const updatedCart = cart.map(item => {
             if (item.product_id === productId) {
                 let newQuantity = item.quantity;
-                if (action === 'increase' && newQuantity < 10) {
+                if (action === 'increase' && newQuantity < 10) { // Giới hạn số lượng 10
                     newQuantity += 1;
-                } else if (action === 'decrease' && newQuantity > 1) {
+                } else if (action === 'decrease' && newQuantity > 1) { // Giới hạn số lượng 1
                     newQuantity -= 1;
                 }
                 return {...item, quantity: newQuantity};
@@ -136,12 +148,15 @@ const CartPage = () => {
         setCart(updatedCart);
     };
 
-    const removeFromCart = (productId) => {
+    const removeFromCart = async (productId) => {
         const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?");
         if (!confirmDelete) return;
 
+        // Xóa trên API trước
+        await deleteCartToAPI(productId);
+
+        // Sau đó cập nhật UI
         const updatedCart = cart.filter(item => item.product_id !== productId);
-        deleteCartToAPI(productId);
         setCart(updatedCart);
         setSelectedItems(prev => prev.filter(id => id !== productId)); // cập nhật tick
     };
@@ -155,7 +170,7 @@ const CartPage = () => {
     };
 
     const toggleSelectAll = () => {
-        if (selectedItems.length === cart.length) {
+        if (selectedItems.length === cart.length && cart.length > 0) { // Đảm bảo chỉ bỏ chọn nếu có sản phẩm và tất cả đã chọn
             setSelectedItems([]);
         } else {
             setSelectedItems(cart.map(item => item.product_id));
@@ -171,7 +186,7 @@ const CartPage = () => {
         }, 0);
     };
 
-    const handleCheckout = () => {
+    const handleCheckout = async () => { // Thêm async ở đây
         if (!isLoggedIn || !userInfo) {
             navigate('/login', {state: {from: '/cart'}});
             return;
@@ -184,9 +199,56 @@ const CartPage = () => {
             return;
         }
 
-        navigate('/oder', {
-            state: {cartItems: selectedCartItems, userInfo: userInfo}
-        });
+        try {
+            // Bước 1: Tiến hành tạo đơn hàng (hoặc chuyển sang trang đặt hàng)
+            // Trong ví dụ này, chúng ta sẽ chuyển dữ liệu sang trang OrderPage
+            // Nếu bạn có API tạo đơn hàng, hãy gọi ở đây trước.
+            // Ví dụ:
+            // const orderResponse = await fetch(`${Constanst.DOMAIN_API}/api/orders`, {
+            //     method: 'POST',
+            //     headers: {
+            //         'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            //         'Content-Type': 'application/json'
+            //     },
+            //     body: JSON.stringify({ items: selectedCartItems, userId: userInfo.id, /* các thông tin khác */ })
+            // });
+            //
+            // if (!orderResponse.ok) {
+            //     const errorData = await orderResponse.json();
+            //     throw new Error(errorData.message || 'Đặt hàng thất bại.');
+            // }
+
+            // Nếu đơn hàng được tạo thành công (hoặc dữ liệu đã sẵn sàng để chuyển đi)
+            // Bước 2: Gọi API để xóa các sản phẩm đã chọn khỏi giỏ hàng
+            const clearCartResponse = await fetch(`${Constanst.DOMAIN_API}/api/cart/clear-selected`, { // <--- Endpoint mới
+                method: 'POST', // Hoặc PUT, DELETE tùy theo thiết kế API của bạn
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ selectedProductIds: selectedItems }) // <--- Gửi các product_id đã chọn
+            });
+
+            if (!clearCartResponse.ok) {
+                const errorData = await clearCartResponse.json();
+                console.error('Lỗi khi xóa sản phẩm đã đặt khỏi giỏ hàng:', errorData);
+                setError("Đã đặt hàng nhưng không thể xóa các sản phẩm đã chọn khỏi giỏ hàng. Vui lòng làm mới trang.");
+                // Tùy chọn: vẫn điều hướng nếu đơn hàng đã được tạo thành công
+            } else {
+                console.log('Đã xóa thành công các sản phẩm đã đặt khỏi giỏ hàng.');
+                // Bước 3: Sau khi xóa thành công, làm mới giỏ hàng trên UI
+                await getCartFromAPI();
+            }
+
+            // Bước 4: Điều hướng đến trang đặt hàng/thanh toán với các mặt hàng đã chọn
+            navigate('/oder', {
+                state: {cartItems: selectedCartItems, userInfo: userInfo}
+            });
+
+        } catch (error) {
+            console.error("Lỗi trong quá trình thanh toán:", error);
+            setError(error.message || "Đã có lỗi xảy ra khi xử lý thanh toán.");
+        }
     };
 
     const renderCartItems = () => {
@@ -197,11 +259,11 @@ const CartPage = () => {
         return (
             <>
                 <Button
-                    variant={selectedItems.length === cart.length ? "secondary" : "info"}
+                    variant={selectedItems.length === cart.length && cart.length > 0 ? "secondary" : "info"}
                     className="mb-2"
                     onClick={toggleSelectAll}
                 >
-                    {selectedItems.length === cart.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+                    {selectedItems.length === cart.length && cart.length > 0 ? "Bỏ chọn tất cả" : "Chọn tất cả"}
                 </Button>
 
                 <Table responsive hover className="align-middle">
