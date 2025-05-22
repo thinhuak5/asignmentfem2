@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Alert, Button, Form } from 'react-bootstrap';
+import React, {useEffect, useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {Alert, Button, Form} from 'react-bootstrap';
 import Constanst from '../../../Constanst';
 
 const OrderPage = () => {
@@ -116,14 +116,24 @@ const OrderPage = () => {
                     setError(result.message || "Có lỗi xảy ra khi đặt hàng.");
                 }
             } else if (paymentMethod === 2) {
-                // VNPay
+                const vnp_Amount = validItems.reduce((total, item) => {
+                    const price = item.product?.price || item.price || 0;
+                    return total + price * item.quantity;
+                }, 0) * 100; // VNPay dùng đơn vị là đồng ×100 (vd: 10.000đ → 1.000.000)
+
+                const vnp_TxnRef = `ORDER_${Date.now()}`; // Mã giao dịch, chồng có thể tuỳ ý tạo
+
                 const res = await fetch(`${Constanst.DOMAIN_API}/api/create-qr`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(orderData),
+                    body: JSON.stringify({
+                        ...orderData,
+                        vnp_Amount,
+                        vnp_TxnRef
+                    }),
                 });
 
                 const result = await res.json();
@@ -133,6 +143,7 @@ const OrderPage = () => {
                     setError(result.message || "Không thể tạo thanh toán VNPay.");
                 }
             }
+
         } catch (err) {
             console.error("Order error:", err);
             setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau.");
