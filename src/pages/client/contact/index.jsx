@@ -1,7 +1,27 @@
-import React from "react";
 import bgImage from "../contact/poster.jpg"; // Thay đường dẫn nếu cần
+import React, { useRef } from 'react';
+import emailjs from '@emailjs/browser';
 
 const Contact = () => {
+    const form = useRef();
+
+    const sendEmail = (e) => {
+        e.preventDefault();
+
+        emailjs.sendForm(
+            'service_j7ecpgl',
+            'template_5wpey53',
+            form.current,
+            'eI2hATDjbArRM5Snh'
+        ).then(() => {
+            alert('Phản hồi đã được gửi!');
+            form.current.reset(); // Reset form sau khi gửi
+        }).catch((error) => {
+            console.error('Lỗi gửi mail:', error);
+            alert('Gửi thất bại. Vui lòng thử lại.');
+        });
+    };
+
     return (
         <div style={{
             backgroundImage: `url(${bgImage})`,
@@ -17,27 +37,25 @@ const Contact = () => {
                 padding: "30px",
                 boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
             }}>
-                <h2 className="text-center mb-4" style={{fontWeight: "bold", color: "#002776"}}>Liên Hệ</h2>
+                <h2 className="text-center mb-4" style={{ fontWeight: "bold", color: "#002776" }}>Liên Hệ</h2>
                 <p className="text-center mb-4">
-                    Trước khi gửi tin nhắn, vui lòng đọc <a href="#">Câu hỏi thường gặp (FAQ)</a>, vì hầu hết các câu
-                    hỏi đã có câu trả lời.
+                    Trước khi gửi tin nhắn, vui lòng đọc <a href="#">Câu hỏi thường gặp (FAQ)</a>.
                 </p>
                 <div className="d-flex justify-content-center mt-4">
-                    <form className="w-50" style={{
+                    <form ref={form} onSubmit={sendEmail} className="w-50" style={{
                         backgroundColor: "white",
                         padding: "20px",
                         borderRadius: "10px",
                         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
                     }}>
                         <div className="mb-3">
-                            <input type="text" className="form-control" placeholder="Tên của bạn" required/>
+                            <input type="text" name="name" className="form-control" placeholder="Tên của bạn" required />
                         </div>
                         <div className="mb-3">
-                            <input type="email" className="form-control" placeholder="Email của bạn" required/>
+                            <input type="email" name="email" className="form-control" placeholder="Email của bạn" required />
                         </div>
                         <div className="mb-3">
-                            <textarea className="form-control" placeholder="Tin nhắn của bạn" rows="5"
-                                      required></textarea>
+                            <textarea name="message" className="form-control" placeholder="Tin nhắn của bạn" rows="5" required></textarea>
                         </div>
                         <button type="submit" className="btn btn-primary w-100">Gửi tin nhắn</button>
                     </form>
@@ -45,36 +63,21 @@ const Contact = () => {
 
                 {/* Quyền lợi của khách hàng */}
                 <div className="mt-5 text-center">
-                    <h3 className="mb-3" style={{fontWeight: "bold", color: "#002776"}}>Quyền lợi của khách hàng</h3>
+                    <h3 className="mb-3" style={{ fontWeight: "bold", color: "#002776" }}>Quyền lợi của khách hàng</h3>
                     <div className="d-flex justify-content-center gap-3 flex-wrap">
-                        <div className="p-3 border rounded shadow-sm" style={{
-                            width: "220px",
-                            backgroundColor: "white",
-                            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
-                        }}>
-                            ✅ Miễn phí giao hàng cho đơn hàng từ 500.000đ.
-                        </div>
-                        <div className="p-3 border rounded shadow-sm" style={{
-                            width: "220px",
-                            backgroundColor: "white",
-                            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
-                        }}>
-                            ✅ Đổi trả dễ dàng trong vòng 7 ngày nếu có lỗi từ nhà sản xuất.
-                        </div>
-                        <div className="p-3 border rounded shadow-sm" style={{
-                            width: "220px",
-                            backgroundColor: "white",
-                            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
-                        }}>
-                            ✅ Hỗ trợ tư vấn tận tình từ đội ngũ CSKH.
-                        </div>
-                        <div className="p-3 border rounded shadow-sm" style={{
-                            width: "220px",
-                            backgroundColor: "white",
-                            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
-                        }}>
-                            ✅ Nhận ưu đãi đặc biệt khi đăng ký thành viên.
-                        </div>
+                        {["✅ Miễn phí giao hàng cho đơn hàng từ 500.000đ.",
+                          "✅ Đổi trả dễ dàng trong vòng 7 ngày nếu có lỗi từ nhà sản xuất.",
+                          "✅ Hỗ trợ tư vấn tận tình từ đội ngũ CSKH.",
+                          "✅ Nhận ưu đãi đặc biệt khi đăng ký thành viên."]
+                          .map((text, index) => (
+                            <div key={index} className="p-3 border rounded shadow-sm" style={{
+                                width: "220px",
+                                backgroundColor: "white",
+                                boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)"
+                            }}>
+                                {text}
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
