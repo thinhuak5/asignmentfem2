@@ -1,39 +1,52 @@
 import React, {useEffect, useState} from "react";
-import {Link} from 'react-router'; // ✅ Đổi đúng thành react-router-dom
+import {Link} from "react-router-dom";
 import Constanst from "../../../Constanst";
 
 const CategoryList = () => {
     const [categories, setCategories] = useState([]);
+    const [categoryParents, setCategoryParents] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [filterParentId, setFilterParentId] = useState("");
 
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchData = async () => {
             try {
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);  // Fixed template string
-                const data = await res.json();
+                const [resCat, resParents] = await Promise.all([
+                    fetch(`${Constanst.DOMAIN_API}/api/categories/list`),
+                    fetch(`${Constanst.DOMAIN_API}/api/categoryparents`)
+                ]);
+
+                const data = await resCat.json();
+                const parents = await resParents.json();
 
                 if (Array.isArray(data)) {
                     setCategories(data);
                 } else {
-                    console.error("Dữ liệu không phải là mảng:", data);
+                    console.error("Dữ liệu danh mục không hợp lệ:", data);
+                }
+
+                if (Array.isArray(parents)) {
+                    setCategoryParents(parents);
+                } else {
+                    console.error("Dữ liệu danh mục cha không hợp lệ:", parents);
                 }
             } catch (error) {
-                console.error("Lỗi khi tải danh mục:", error);
+                console.error("Lỗi khi tải dữ liệu:", error);
             }
         };
 
-        fetchCategories();
+        fetchData();
     }, []);
 
     const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc chắn muốn xóa danh mục này?")) {
             try {
                 const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${id}`, {
-                    method: 'DELETE',
+                    method: "DELETE",
                 });
 
                 if (!res.ok) {
-                    throw new Error('Không thể xóa danh mục');
+                    throw new Error("Không thể xóa danh mục");
                 }
 
                 setCategories(categories.filter(category => category.id !== id));
@@ -45,9 +58,17 @@ const CategoryList = () => {
         }
     };
 
-    const filteredCategories = categories.filter(category =>
-        category.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const getParentName = (parent_id) => {
+        const parent = categoryParents.find(p => p.id === parent_id);
+        return parent ? parent.name : "Không có";
+    };
+
+    // Lọc theo tên và theo danh mục cha nếu có
+    const filteredCategories = categories.filter(category => {
+        const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesParent = filterParentId ? category.parent_id === parseInt(filterParentId) : true;
+        return matchesSearch && matchesParent;
+    });
 
     return (
         <div className="container mt-5">
@@ -61,6 +82,16 @@ const CategoryList = () => {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
+                <select
+                    className="form-select w-25 ms-3"
+                    value={filterParentId}
+                    onChange={(e) => setFilterParentId(e.target.value)}
+                >
+                    <option value="">-- Lọc theo danh mục cha --</option>
+                    {categoryParents.map(parent => (
+                        <option key={parent.id} value={parent.id}>{parent.name}</option>
+                    ))}
+                </select>
                 <Link to="/admin/category/addcategory" className="btn btn-primary ms-3">
                     Thêm danh mục
                 </Link>
@@ -71,20 +102,17 @@ const CategoryList = () => {
                 <tr>
                     <th>Id</th>
                     <th>Tên danh mục</th>
-
                     <th>Ảnh</th>
-
                     <th>Trạng thái</th>
+                    <th>Danh mục cha</th>
                     <th>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
-                {filteredCategories.map((category) => (
+                {filteredCategories.length > 0 ? filteredCategories.map(category => (
                     <tr key={category.id}>
                         <td>{category.id}</td>
                         <td>{category.name}</td>
-
-
                         <td>
                             <img
                                 src={`${Constanst.DOMAIN_API}/uploads/${category.images}`}
@@ -93,28 +121,19 @@ const CategoryList = () => {
                                 height="60"
                                 style={{objectFit: "cover"}}
                             />
-
                         </td>
                         <td>{category.status === 1 ? "Hiển thị" : "Ẩn"}</td>
+                        <td>{getParentName(category.parent_id)}</td>
                         <td>
-                            <Link
-                                to={`/admin/category/editcategory/${category.id}`}
-                                className="btn btn-warning btn-sm me-2"
-                            >
-                                Sửa
-                            </Link>
-                            <button
-                                className="btn btn-danger btn-sm"
-                                onClick={() => handleDelete(category.id)}
-                            >
-                                Xóa
+                            <Link to={`/admin/category/editcategory/${category.id}`}
+                                  className="btn btn-warning btn-sm me-2">Sửa</Link>
+                            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(category.id)}>Xóa
                             </button>
                         </td>
                     </tr>
-                ))}
-                {filteredCategories.length === 0 && (
+                )) : (
                     <tr>
-                        <td colSpan="4" className="text-center">Không tìm thấy danh mục phù hợp</td>
+                        <td colSpan="6" className="text-center">Không tìm thấy danh mục phù hợp</td>
                     </tr>
                 )}
                 </tbody>

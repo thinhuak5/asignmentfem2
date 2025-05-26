@@ -73,7 +73,8 @@ const HeaderAdmin = () => {
             </div>
             {showCategorySubmenu && (
                 <div className="submenu show">
-                  <Link to="/admin/category">Danh sách danh mục</Link>
+                  <Link to="/admin/categoryparent">Danh sách danh mục cha</Link>
+                  <Link to="/admin/category">Danh sách danh mục con</Link>
                 </div>
             )}
           </div>
