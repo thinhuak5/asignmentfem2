@@ -1,5 +1,5 @@
-import React, {useState} from "react";
-import {Link, useNavigate} from "react-router"; // Đổi thành "react-router-dom"
+import React, {useEffect, useState} from "react";
+import {Link, useNavigate} from "react-router-dom"; // nhớ sửa về react-router-dom
 import Constanst from "../../../Constanst";
 
 const AddCategory = () => {
@@ -7,8 +7,23 @@ const AddCategory = () => {
     const [category, setCategory] = useState({
         name: "",
         status: "Hiển thị",
+        parent_id: "", // thêm vào state
     });
-    const [errorMessage, setErrorMessage] = useState("");  // Thêm trạng thái cho lỗi
+    const [categoryParents, setCategoryParents] = useState([]);
+    const [errorMessage, setErrorMessage] = useState("");
+
+    useEffect(() => {
+        const fetchCategoryParents = async () => {
+            try {
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
+                const data = await res.json();
+                setCategoryParents(data);
+            } catch (error) {
+                console.error("Lỗi khi load category parents:", error);
+            }
+        };
+        fetchCategoryParents();
+    }, []);
 
     const handleChange = (e) => {
         const {name, value} = e.target;
@@ -28,6 +43,9 @@ const AddCategory = () => {
         formData.append("status", category.status === "Hiển thị" ? 1 : 0);
         if (category.image) {
             formData.append("images", category.image);
+        }
+        if (category.parent_id) {
+            formData.append("parent_id", category.parent_id);
         }
 
         try {
@@ -49,12 +67,11 @@ const AddCategory = () => {
         }
     };
 
-
     return (
         <div className="container mt-5">
             <h2>Thêm danh mục</h2>
             <form onSubmit={handleSubmit} className="border p-4 bg-light rounded">
-                {errorMessage && <div className="alert alert-danger">{errorMessage}</div>} {/* Hiển thị lỗi nếu có */}
+                {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
                 <div className="mb-3">
                     <label className="form-label">Tên danh mục</label>
                     <input
@@ -76,7 +93,6 @@ const AddCategory = () => {
                         onChange={(e) => setCategory({...category, image: e.target.files[0]})}
                     />
                 </div>
-
                 <div className="mb-3">
                     <label className="form-label">Trạng thái</label>
                     <select
@@ -89,6 +105,23 @@ const AddCategory = () => {
                         <option value="Ẩn">Ẩn</option>
                     </select>
                 </div>
+
+                {/* DANH MỤC CHA */}
+                <div className="mb-3">
+                    <label className="form-label">Danh mục cha</label>
+                    <select
+                        className="form-select"
+                        name="parent_id"
+                        value={category.parent_id}
+                        onChange={handleChange}
+                    >
+                        <option value="">-- Chọn danh mục cha --</option>
+                        {categoryParents.map((item) => (
+                            <option key={item.id} value={item.id}>{item.name}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <button type="submit" className="btn btn-success me-2">
                     Thêm danh mục
                 </button>

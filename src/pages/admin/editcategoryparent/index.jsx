@@ -2,44 +2,33 @@ import React, {useEffect, useState} from "react";
 import {Link, useNavigate, useParams} from "react-router-dom";
 import Constanst from "../../../Constanst";
 
-const EditCategory = () => {
+const EditCategoryParent = () => {
     const {id} = useParams();
     const navigate = useNavigate();
-    const [category, setCategory] = useState({
+
+    const [categoryParent, setCategoryParent] = useState({
         name: "",
         status: "Hiển thị",
-        images: null,
-        parent_id: "", // ✅ Thêm parent_id
+        image: null,
     });
     const [newImage, setNewImage] = useState(null);
-    const [categoryParents, setCategoryParents] = useState([]); // ✅ Danh sách danh mục cha
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Lấy chi tiết danh mục cần sửa
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${id}`);
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents/${id}`);
+                if (!res.ok) throw new Error("Không tìm thấy danh mục cha");
                 const data = await res.json();
 
-                if (!res.ok) throw new Error("Không tìm thấy danh mục");
-
-                setCategory({
+                setCategoryParent({
                     name: data.name,
                     status: data.status === 1 ? "Hiển thị" : "Ẩn",
-                    images: data.images || null,
-                    parent_id: data.parent_id || "", // ✅ Gán parent_id nếu có
+                    image: data.image || null,
                 });
-
-                // Lấy danh sách danh mục cha
-                const resParents = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
-                const parentData = await resParents.json();
-                if (Array.isArray(parentData)) {
-                    setCategoryParents(parentData);
-                }
             } catch (err) {
                 console.error(err);
-                alert("Lỗi khi tải dữ liệu danh mục");
-                navigate("/admin/category");
+                alert("Lỗi khi tải dữ liệu danh mục cha");
+                navigate("/admin/categoryparent");
             }
         };
 
@@ -48,10 +37,10 @@ const EditCategory = () => {
 
     const handleChange = (e) => {
         const {name, value} = e.target;
-        setCategory({...category, [name]: value});
+        setCategoryParent({...categoryParent, [name]: value});
     };
 
-    const handleImageChange = (e) => {
+    const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
             setNewImage(e.target.files[0]);
         }
@@ -59,17 +48,15 @@ const EditCategory = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const status = category.status === "Hiển thị" ? 1 : 0;
 
         const formData = new FormData();
-        formData.append("name", category.name);
-        formData.append("status", status);
-        formData.append("old_image", category.images || "");
-        if (newImage) formData.append("images", newImage);
-        if (category.parent_id) formData.append("parent_id", category.parent_id); // ✅ Thêm parent_id
+        formData.append("name", categoryParent.name);
+        formData.append("status", categoryParent.status === "Hiển thị" ? 1 : 0);
+        formData.append("old_image", categoryParent.image || "");
+        if (newImage) formData.append("image", newImage);
 
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${id}`, {
+            const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents/${id}`, {
                 method: "PUT",
                 body: formData,
             });
@@ -79,25 +66,25 @@ const EditCategory = () => {
                 throw new Error(err.error || "Cập nhật thất bại");
             }
 
-            alert("Cập nhật danh mục thành công!");
-            navigate("/admin/category");
+            alert("Cập nhật danh mục cha thành công!");
+            navigate("/admin/categoryparent");
         } catch (err) {
             console.error(err.message);
-            alert("Lỗi khi cập nhật danh mục: " + err.message);
+            alert("Lỗi khi cập nhật danh mục cha: " + err.message);
         }
     };
 
     return (
         <div className="container mt-5">
-            <h2>Sửa danh mục</h2>
+            <h2>Sửa danh mục cha</h2>
             <form onSubmit={handleSubmit} className="border p-4 bg-light rounded" encType="multipart/form-data">
                 <div className="mb-3">
-                    <label className="form-label">Tên danh mục</label>
+                    <label className="form-label">Tên danh mục cha</label>
                     <input
                         type="text"
                         className="form-control"
                         name="name"
-                        value={category.name}
+                        value={categoryParent.name}
                         onChange={handleChange}
                         required
                     />
@@ -108,7 +95,7 @@ const EditCategory = () => {
                     <select
                         className="form-select"
                         name="status"
-                        value={category.status}
+                        value={categoryParent.status}
                         onChange={handleChange}
                     >
                         <option value="Hiển thị">Hiển thị</option>
@@ -117,29 +104,12 @@ const EditCategory = () => {
                 </div>
 
                 <div className="mb-3">
-                    <label className="form-label">Danh mục cha</label>
-                    <select
-                        className="form-select"
-                        name="parent_id"
-                        value={category.parent_id}
-                        onChange={handleChange}
-                    >
-                        <option value="">-- Chọn danh mục cha --</option>
-                        {categoryParents.map((parent) => (
-                            <option key={parent.id} value={parent.id}>
-                                {parent.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="mb-3">
                     <label className="form-label">Ảnh hiện tại</label>
                     <div>
-                        {category.images ? (
+                        {categoryParent.image ? (
                             <img
-                                src={`${Constanst.DOMAIN_API}/uploads/${category.images}`}
-                                alt="Ảnh danh mục"
+                                src={`${Constanst.DOMAIN_API}/uploads/${categoryParent.image}`}
+                                alt="Ảnh danh mục cha"
                                 width="100"
                                 height="100"
                                 style={{objectFit: "cover"}}
@@ -155,16 +125,16 @@ const EditCategory = () => {
                     <input
                         type="file"
                         className="form-control"
-                        name="images"
+                        name="image"
                         accept="image/*"
-                        onChange={handleImageChange}
+                        onChange={handleFileChange}
                     />
                 </div>
 
                 <button type="submit" className="btn btn-success me-2">
-                    Cập nhật danh mục
+                    Cập nhật danh mục cha
                 </button>
-                <Link to="/admin/category" className="btn btn-secondary">
+                <Link to="/admin/categoryparent" className="btn btn-secondary">
                     Quay lại
                 </Link>
             </form>
@@ -172,4 +142,4 @@ const EditCategory = () => {
     );
 };
 
-export default EditCategory;
+export default EditCategoryParent;
