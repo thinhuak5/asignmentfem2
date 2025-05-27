@@ -167,8 +167,8 @@ const OrderList = () => {
                                 <td>{order.name}</td>
                                 <td>{order.phone}</td>
                                 <td>
-                                    {order.payments === 1 ? "COD" :
-                                        order.payments === 2 ? "Chuyển khoản" : "Không xác định"}
+                                    {order.payment_id === 1 ? "COD" :
+                                        order.payment_id === 2 ? "Chuyển khoản" : "Không xác định"}
                                 </td>
                                 <td>
                                     {editingOrderId === order.id ? (

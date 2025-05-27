@@ -85,7 +85,7 @@ const OrderPage = () => {
             name,
             phone,
             address,
-            payments: parseInt(paymentMethod),
+            payment_id: parseInt(paymentMethod),
             payment_status: parseInt(paymentMethod) === 1 ? 0 : 1,
             status: 1
         };
