@@ -1,24 +1,45 @@
-import React from 'react';
-import { Tabs, Tab } from 'react-bootstrap';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import React, {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom'; // Thêm để điều hướng
+import Constanst from "../../../Constanst";
+
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {
-    faShoppingCart,
-    faStar,
     faBolt,
-    faShop,
-    faHeart,
     faBook,
-    faTags,
+    faBookmark,
     faBoxOpen,
     faDollarSign,
     faFire,
-    faFeatherAlt, // Added for placeholder icon, you can change
-    faBookmark, // Added for placeholder icon, you can change
-    faStore, // Added for placeholder icon, you can change
+    faHeart,
+    faShop,
+    faShoppingCart,
+    faStar,
+    faStore,
+    faTags,
 } from '@fortawesome/free-solid-svg-icons';
 import '../../../assets/css/home.css'; // Import the new CSS file
 
 const Home = () => {
+    // Đổi tên state thành categoryParents
+    const [categoryParents, setCategoryParents] = useState([]);
+    const navigate = useNavigate(); // Khai báo navigate
+
+    useEffect(() => {
+        const fetchCategoryParents = async () => {
+            try {
+                // Lấy danh sách danh mục cha
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
+                if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu danh mục cha");
+                const data = await res.json();
+                setCategoryParents(data);
+            } catch (err) {
+                console.error("Lỗi fetch category parent:", err);
+            }
+        };
+
+        fetchCategoryParents();
+    }, []);
+
     return (
         <div className="min-vh-100">
             {/* Hero Section */}
@@ -45,28 +66,23 @@ const Home = () => {
             {/* Mini Banners */}
             <div className="container py-4">
                 <div className="row">
-                    {[
-                        {
-                            img: "https://via.placeholder.com/400x200/FF6F61/fff?text=Thứ+4+vàng",
-                            title: "THỨ 4 NGÀY VÀNG",
-                            subtitle: "FREESHIP NGẬP TRÀN"
-                        },
-                        {
-                            img: "https://via.placeholder.com/400x200/FFA07A/fff?text=Đồ+Chơi",
-                            title: "GIAN HÀNG ĐỒ CHƠI",
-                            subtitle: "CÙNG VUI MUÔN NƠI"
-                        },
-                        {
-                            img: "https://via.placeholder.com/400x200/87CEFA/fff?text=Đinh+Tị+Books",
-                            title: "CÙNG ĐINH TỊ BOOKS",
-                            subtitle: "GIẢM GIÁ LÊN ĐẾN 50%"
-                        },
-                        {
-                            img: "https://via.placeholder.com/400x200/FFE4B5/000?text=Best+Deals",
-                            title: "HOT PICKS, COOL PRICES!",
-                            subtitle: "MAY'S BEST DEALS"
-                        }
-                    ].map((banner, index) => (
+                    {[{
+                        img: "https://via.placeholder.com/400x200/FF6F61/fff?text=Thứ+4+vàng",
+                        title: "THỨ 4 NGÀY VÀNG",
+                        subtitle: "FREESHIP NGẬP TRÀN"
+                    }, {
+                        img: "https://via.placeholder.com/400x200/FFA07A/fff?text=Đồ+Chơi",
+                        title: "GIAN HÀNG ĐỒ CHƠI",
+                        subtitle: "CÙNG VUI MUÔN NƠI"
+                    }, {
+                        img: "https://via.placeholder.com/400x200/87CEFA/fff?text=Đinh+Tị+Books",
+                        title: "CÙNG ĐINH TỊ BOOKS",
+                        subtitle: "GIẢM GIÁ LÊN ĐẾN 50%"
+                    }, {
+                        img: "https://via.placeholder.com/400x200/FFE4B5/000?text=Best+Deals",
+                        title: "HOT PICKS, COOL PRICES!",
+                        subtitle: "MAY'S BEST DEALS"
+                    }].map((banner, index) => (
                         <div className="col-12 col-sm-6 col-lg-3 mb-3" key={index}>
                             <div className="mini-banner-card">
                                 <img src={banner.img} alt={`Banner ${index + 1}`} />
@@ -86,18 +102,19 @@ const Home = () => {
             <div className="quick-links-section">
                 <div className="container">
                     <div className="d-flex justify-content-center gap-3 overflow-auto pb-2 flex-nowrap">
-                        {[
-                            { icon: faStar, label: "25.05" },
-                            { icon: faBolt, label: "Flash Sale" },
-                            { icon: faShop, label: "Đinh Tị" },
-                            { icon: faBook, label: "McBooks" },
-                            { icon: faTags, label: "Mã Giảm Giá" },
-                            { icon: faFire, label: "Sản Phẩm Mới" },
-                            { icon: faDollarSign, label: "Được Trợ Giá" },
-                            { icon: faBoxOpen, label: "Đồ Cũ" },
-                            { icon: faShoppingCart, label: "Bán Sỉ" },
-                            { icon: faBookmark, label: "Manga" }
-                        ].map((item, index) => (
+                        {[{icon: faStar, label: "25.05"}, {icon: faBolt, label: "Flash Sale"}, {
+                            icon: faShop,
+                            label: "Đinh Tị"
+                        }, {icon: faBook, label: "McBooks"}, {icon: faTags, label: "Mã Giảm Giá"}, {
+                            icon: faFire,
+                            label: "Sản Phẩm Mới"
+                        }, {icon: faDollarSign, label: "Được Trợ Giá"}, {
+                            icon: faBoxOpen,
+                            label: "Đồ Cũ"
+                        }, {icon: faShoppingCart, label: "Bán Sỉ"}, {
+                            icon: faBookmark,
+                            label: "Manga"
+                        }].map((item, index) => (
                             <a href="#" key={index} className="quick-link-item">
                                 <div className="quick-link-icon-wrapper">
                                     <FontAwesomeIcon icon={item.icon} />
@@ -145,7 +162,7 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* Product Categories */}
+            {/* Product Categories - Sửa thành categoryParents */}
             <div className="product-categories-section">
                 <div className="container">
                     <h2 className="mb-4">
@@ -153,14 +170,45 @@ const Home = () => {
                         Danh mục sản phẩm
                     </h2>
                     <div className="d-flex flex-wrap justify-content-center gap-3">
-                        {[...Array(10)].map((_, index) => (
-                            <a href="#" key={index} className="category-item">
-                                <div className="category-icon-wrapper">
-                                    <img src={`https://via.placeholder.com/40?text=Cat${index + 1}`} alt={`Danh mục ${index + 1}`} />
+                        {categoryParents.length > 0 ? (
+                            categoryParents.map((item, index) => (
+                                <div
+                                    key={index}
+                                    className="category-item"
+                                    style={{cursor: 'pointer'}}
+                                    onClick={() => navigate(`/product?categoryparentId=${item.id}`)}
+                                >
+                                    <div className="category-icon-wrapper">
+                                        {item.image ? (
+                                            <img
+                                                src={`${Constanst.DOMAIN_API}/uploads/${item.image}`}
+                                                alt={item.name}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={`https://via.placeholder.com/40?text=No+Image`}
+                                                alt="No Image"
+                                            />
+                                        )}
+                                    </div>
+                                    <span className="category-label">{item.name}</span>
                                 </div>
-                                <span className="category-label">Danh mục {index + 1}</span>
-                            </a>
-                        ))}
+                            ))
+                        ) : (
+                            // Phần fallback nếu chưa có categoryParents
+                            [...Array(10)].map((_, index) => (
+                                <a href="#" key={index} className="category-item">
+                                    <div className="category-icon-wrapper">
+                                        <img
+                                            src={`https://via.placeholder.com/40?text=Cat${index + 1}`}
+                                            alt={`Danh mục ${index + 1}`}
+                                        />
+                                    </div>
+                                    <span className="category-label">Danh mục {index + 1}</span>
+                                </a>
+                            ))
+                        )}
+
                     </div>
                 </div>
             </div>
@@ -179,24 +227,15 @@ const Home = () => {
                                 return (
                                     <div key={index} className="col-6 col-md-4 col-lg-2 mb-4">
                                         <div className="trending-product-card">
-                                            <div className="trending-product-image-wrapper">
+                                            <div className="trending-product-img-wrapper">
                                                 <img
-                                                    src={`https://picsum.photos/seed/trend${index}/300/200`}
+                                                    src={`https://picsum.photos/seed/trending${index + 1}/200/200`}
                                                     alt={`Xu hướng ${index + 1}`}
                                                 />
-                                                <div className="trending-discount-badge">Giảm 30%</div>
                                             </div>
-                                            <div className="trending-product-content">
-                                                <h3>Sản phẩm xu hướng {index + 1}</h3>
-                                                <div className="trending-price-info">
-                                                    <div>
-                                                        <p className="trending-current-price">{(100000 + index * 10000).toLocaleString('vi-VN')} đ</p>
-                                                        <p className="trending-original-price">{(150000 + index * 10000).toLocaleString('vi-VN')} đ</p>
-                                                    </div>
-                                                    <span className="trending-discount-label">-30%</span>
-                                                </div>
-                                                <button className="trending-btn">Đặt hàng</button>
-                                            </div>
+                                            <h3>Xu hướng {index + 1}</h3>
+                                            <p className="trending-product-price">79.000 đ</p>
+                                            <button className="trending-product-btn">Mua ngay</button>
                                         </div>
                                     </div>
                                 );
@@ -206,67 +245,25 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* Featured Collections */}
-            <div className="collections-section">
+            {/* Brands Section */}
+            <div className="brands-section py-4">
                 <div className="container">
-                    <div className="section-header">
-                        <h5 className="fw-bold text-center">
-                            <FontAwesomeIcon icon={faStar} className="me-2" /> BỘ SƯU TẬP NỔI BẬT
-                        </h5>
-                    </div>
-                    <div className="d-flex flex-wrap justify-content-center gap-4">
-                        {[
-                            "Baby Three",
-                            "Doremon",
-                            "Capybara",
-                            "Conan",
-                            "One Piece",
-                            "Panda - Gấu trúc",
-                            "Disney",
-                            "Sanrio"
-                        ].map((name, idx) => (
-                            <a href="#" key={idx} className="collection-item">
-                                <img
-                                    src={`https://via.placeholder.com/80?text=${name.split(" ")[0]}`}
-                                    alt={name}
-                                />
-                                <p>{name}</p>
-                            </a>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Featured Brands */}
-            <div className="brands-section mb-5">
-                <div className="container">
-                    <div className="section-header">
-                        <h5 className="fw-bold">
-                            <FontAwesomeIcon icon={faStore} className="icon" /> Thương hiệu nổi bật
-                        </h5>
-                    </div>
-                    <Tabs defaultActiveKey="Sbooks" className="mb-3">
-                        {["Sbooks", "Đinh Tị", "Patech"].map((brand, index) => (
-                            <Tab eventKey={brand} title={brand} key={index}>
-                                <div className="row">
-                                    {[...Array(6)].map((_, i) => (
-                                        <div className="col-6 col-md-4 col-lg-2 mb-3" key={i}>
-                                            <div className="brand-product-card">
-                                                <img
-                                                    src={`https://via.placeholder.com/150x220?text=Book+${i + 1}`}
-                                                    alt="book"
-                                                />
-                                                <p className="trend-badge">Xu hướng <FontAwesomeIcon icon={faFire} /></p>
-                                                <h3>Tên sách mẫu {i + 1}</h3>
-                                                <p className="price-info">Giá: <strong>69.000đ</strong></p>
-                                                <p className="sold-info">Đã bán: {Math.floor(Math.random() * 1000)}+</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                    <h2 className="mb-4">
+                        <FontAwesomeIcon icon={faStore} className="icon"/>
+                        Thương hiệu nổi bật
+                    </h2>
+                    <div className="row justify-content-center align-items-center">
+                        {[...Array(6)].map((_, index) => (
+                            <div key={index} className="col-6 col-md-2 text-center mb-3">
+                                <div className="brand-logo-wrapper">
+                                    <img
+                                        src={`https://picsum.photos/seed/brand${index + 1}/120/120`}
+                                        alt={`Thương hiệu ${index + 1}`}
+                                    />
                                 </div>
-                            </Tab>
+                            </div>
                         ))}
-                    </Tabs>
+                    </div>
                 </div>
             </div>
         </div>
