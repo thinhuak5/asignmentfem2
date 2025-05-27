@@ -28,6 +28,10 @@ import EditUser from './pages/admin/edituser';
 import CategoryParentList from './pages/admin/categoryparent/';
 import AddCategoryParent from './pages/admin/addcategoryparent';
 import EditCategoryParent from './pages/admin/editcategoryparent';
+import PaymentResult from './pages/client/PaymentResult';
+import AddProduct from './pages/admin/addproduct';
+import AddCategory from './pages/admin/addcategory';
+import EditCategory from './pages/admin/editcategory';
 
 function App() {
 
