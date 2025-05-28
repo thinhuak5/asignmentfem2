@@ -4,32 +4,29 @@ import "../../../../assets/css/tiny-slider.css";
 import "../../../../assets/css/style.css";
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import {Link, useNavigate} from 'react-router'; // đường dẫn click bằng thẻ link=\
+import {Link, useNavigate} from 'react-router';
 import {jwtDecode} from 'jwt-decode';
 
-const HeaderClient = () =>{
+const HeaderClient = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userName, setUserName] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         const checkAuthStatus = () => {
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('authToken'); 
             if (token) {
                 try {
                     const decodedToken = jwtDecode(token);
-                    // Kiểm tra xem token còn hạn không (exp tính bằng giây, Date.now() tính bằng mili giây)
                     if (decodedToken.exp * 1000 > Date.now()) {
                         setIsLoggedIn(true);
-                        setUserName(decodedToken.name); // Lấy tên từ payload token
+                        setUserName(decodedToken.name);
                     } else {
-                        // Token hết hạn -> Xóa và coi như chưa đăng nhập
-                        handleLogout(false); // Gọi logout nhưng không điều hướng
+                        handleLogout(false);
                     }
                 } catch (error) {
-                    // Token không hợp lệ -> Xóa và coi như chưa đăng nhập
                     console.error("Lỗi giải mã token:", error);
-                    handleLogout(false); // Gọi logout nhưng không điều hướng
+                    handleLogout(false);
                 }
             } else {
                 setIsLoggedIn(false);
@@ -40,7 +37,6 @@ const HeaderClient = () =>{
         checkAuthStatus();
         window.addEventListener('storage', checkAuthStatus);
 
-        // Dọn dẹp listener khi component unmount
         return () => {
             window.removeEventListener('storage', checkAuthStatus);
         };
@@ -55,7 +51,6 @@ const HeaderClient = () =>{
             navigate('/login');
         }
     };
-
 
     return (
         <>
