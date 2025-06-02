@@ -85,7 +85,7 @@ const OrderPage = () => {
             name,
             phone,
             address,
-            payment_id: parseInt(paymentMethod),
+            payments: parseInt(paymentMethod),
             payment_status: parseInt(paymentMethod) === 1 ? 0 : 1,
             status: 1
         };
@@ -142,28 +142,7 @@ const OrderPage = () => {
                 } else {
                     setError(result.message || "Không thể tạo thanh toán VNPay.");
                 }
-            } else if (paymentMethod === 3) {
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/payments/momo`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        amount: validItems.reduce((total, item) => total + (item.product?.price || item.price) * item.quantity, 0),
-                        orderId: `ORDER_${Date.now()}`
-                    }),
-                });
-
-                const result = await res.json();
-
-                if (res.ok && result.payUrl) {
-                    window.location.href = result.payUrl;
-                } else {
-                    setError(result.message || "Không thể tạo thanh toán MoMo.");
             }
-            }
-
 
         } catch (err) {
             console.error("Order error:", err);
@@ -230,15 +209,6 @@ const OrderPage = () => {
                         name="paymentMethod"
                         value={2}
                         checked={paymentMethod === 2}
-                        onChange={(e) => setPaymentMethod(parseInt(e.target.value))}
-                    />
-                    <Form.Check
-                        type="radio"
-                        id="momo"
-                        label="Thanh toán MoMo"
-                        name="paymentMethod"
-                        value={3}
-                        checked={paymentMethod === 3}
                         onChange={(e) => setPaymentMethod(parseInt(e.target.value))}
                     />
                 </Form.Group>

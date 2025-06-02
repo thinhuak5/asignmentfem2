@@ -1,11 +1,10 @@
-import React, { useEffect } from "react";
+import React, {useEffect} from "react";
 import axios from "axios";
-import { useForm } from "react-hook-form";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import {useForm} from "react-hook-form";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import emailjs from "@emailjs/browser";
 import Constanst from "../../../Constanst"; // Đường dẫn tới file config của bạn
-import { GoogleOAuthProvider } from "@react-oauth/google";
-import { GoogleLogin } from "@react-oauth/google";
+
 const Register = () => {
   const navigate = useNavigate();
   const [queryParams] = useSearchParams();
@@ -107,7 +106,9 @@ const Register = () => {
           templateParams,
           "eI2hATDjbArRM5Snh"
         );
-        alert("mail chào mừng gửi thành công");
+          alert(
+              "mail chào mừng gửi thành công"
+          );
         console.log("Mail chào mừng đã được gửi thành công");
       } catch (mailError) {
         console.error("Lỗi gửi mail chào mừng:", mailError);
@@ -121,33 +122,13 @@ const Register = () => {
       console.error("Lỗi đăng ký:", err);
       if (err.response) {
         alert(
-          `Đăng ký thất bại: ${
-            err.response.data.message || "Có lỗi xảy ra từ server"
-          }`
+            `Đăng ký thất bại: ${err.response.data.message || "Có lỗi xảy ra từ server"}`
         );
       } else if (err.request) {
         alert("Đăng ký thất bại: Không thể kết nối đến server.");
       } else {
         alert(`Đăng ký thất bại: ${err.message}`);
       }
-    }
-  };
-  const handleSuccess = async (response) => {
-    const { credential } = response;
-    try {
-      const res = await axios.post(`${Constanst.DOMAIN_API}/api/login-google`, {
-        tokenGoogle: credential,
-      });
-      localStorage.setItem("authToken", res.data.token);
-      console.log(res.data.token); // Phải là chuỗi JWT
-      alert(res.data.message || "Đăng nhập Google thành công!");
-      window.location.href = "/";
-    } catch (err) {
-      console.error("Lỗi đăng nhập Google:", err);
-      alert(
-        err?.response?.data?.message ||
-          "Đăng nhập Google thất bại, vui lòng thử lại!"
-      );
     }
   };
 
@@ -158,9 +139,7 @@ const Register = () => {
           <div className="col-md-8 col-lg-6 col-xl-5">
             <div className="card p-4 shadow-lg border-0 rounded-3">
               <h3 className="mb-4 text-center fw-bold">
-                {queryParams.get("id")
-                  ? "Cập nhật thông tin"
-                  : "Đăng ký tài khoản"}
+                  {queryParams.get("id") ? "Cập nhật thông tin" : "Đăng ký tài khoản"}
               </h3>
               <form onSubmit={handleSubmit(handleRegister)}>
                 {/* Username */}
@@ -170,23 +149,16 @@ const Register = () => {
                   </label>
                   <input
                     type="text"
-                    className={`form-control ${
-                      errors.username ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${errors.username ? "is-invalid" : ""}`}
                     id="username"
                     placeholder="Nhập tên đăng nhập"
                     {...register("username", {
                       required: "Vui lòng nhập tên đăng nhập",
-                      minLength: {
-                        value: 3,
-                        message: "Tên đăng nhập tối thiểu 3 ký tự",
-                      },
+                        minLength: {value: 3, message: "Tên đăng nhập tối thiểu 3 ký tự"},
                     })}
                   />
                   {errors.username && (
-                    <div className="invalid-feedback">
-                      {errors.username.message}
-                    </div>
+                      <div className="invalid-feedback">{errors.username.message}</div>
                   )}
                 </div>
 
@@ -197,9 +169,7 @@ const Register = () => {
                   </label>
                   <input
                     type="text"
-                    className={`form-control ${
-                      errors.name ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${errors.name ? "is-invalid" : ""}`}
                     id="name"
                     placeholder="Nhập họ và tên"
                     {...register("name", {
@@ -207,9 +177,7 @@ const Register = () => {
                     })}
                   />
                   {errors.name && (
-                    <div className="invalid-feedback">
-                      {errors.name.message}
-                    </div>
+                      <div className="invalid-feedback">{errors.name.message}</div>
                   )}
                 </div>
 
@@ -220,9 +188,7 @@ const Register = () => {
                   </label>
                   <input
                     type="email"
-                    className={`form-control ${
-                      errors.email ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${errors.email ? "is-invalid" : ""}`}
                     id="email"
                     placeholder="Nhập địa chỉ email"
                     {...register("email", {
@@ -234,9 +200,7 @@ const Register = () => {
                     })}
                   />
                   {errors.email && (
-                    <div className="invalid-feedback">
-                      {errors.email.message}
-                    </div>
+                      <div className="invalid-feedback">{errors.email.message}</div>
                   )}
                 </div>
 
@@ -247,24 +211,19 @@ const Register = () => {
                   </label>
                   <input
                     type="tel"
-                    className={`form-control ${
-                      errors.phone ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${errors.phone ? "is-invalid" : ""}`}
                     id="phone"
                     placeholder="Nhập số điện thoại"
                     {...register("phone", {
                       required: "Vui lòng nhập số điện thoại",
                       pattern: {
-                        value:
-                          /^(0|\+84)(\s|\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\d)(\s|\.)?(\d{3})(\s|\.)?(\d{3})$/,
+                          value: /^(0|\+84)(\s|\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\d)(\s|\.)?(\d{3})(\s|\.)?(\d{3})$/,
                         message: "Số điện thoại không hợp lệ",
                       },
                     })}
                   />
                   {errors.phone && (
-                    <div className="invalid-feedback">
-                      {errors.phone.message}
-                    </div>
+                      <div className="invalid-feedback">{errors.phone.message}</div>
                   )}
                 </div>
 
@@ -275,9 +234,7 @@ const Register = () => {
                   </label>
                   <input
                     type="password"
-                    className={`form-control ${
-                      errors.password ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${errors.password ? "is-invalid" : ""}`}
                     id="password"
                     placeholder="Nhập mật khẩu"
                     {...register("password", {
@@ -285,16 +242,11 @@ const Register = () => {
                         value: !queryParams.get("id"),
                         message: "Vui lòng nhập mật khẩu",
                       },
-                      minLength: {
-                        value: 6,
-                        message: "Mật khẩu tối thiểu 6 ký tự",
-                      },
+                        minLength: {value: 6, message: "Mật khẩu tối thiểu 6 ký tự"},
                     })}
                   />
                   {errors.password && (
-                    <div className="invalid-feedback">
-                      {errors.password.message}
-                    </div>
+                      <div className="invalid-feedback">{errors.password.message}</div>
                   )}
                   {queryParams.get("id") && (
                     <small className="form-text text-muted">
@@ -310,9 +262,7 @@ const Register = () => {
                   </label>
                   <input
                     type="file"
-                    className={`form-control ${
-                      errors.avatar ? "is-invalid" : ""
-                    }`}
+                    className={`form-control ${errors.avatar ? "is-invalid" : ""}`}
                     id="avatar"
                     accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
                     {...register("avatar", {
@@ -320,9 +270,7 @@ const Register = () => {
                     })}
                   />
                   {errors.avatar && (
-                    <div className="invalid-feedback">
-                      {errors.avatar.message}
-                    </div>
+                      <div className="invalid-feedback">{errors.avatar.message}</div>
                   )}
                 </div>
 
@@ -331,21 +279,8 @@ const Register = () => {
                   {queryParams.get("id") ? "Cập nhật" : "Đăng ký"}
                 </button>
               </form>
-              <GoogleOAuthProvider clientId="174189579193-5an9p6b13u20aeut0qdhkrudiflha8gk.apps.googleusercontent.com">
-                <GoogleLogin
-                  onSuccess={handleSuccess}
-                  onError={() => {
-                    console.log("Login Failed");
-                  }}
-                  useOneTap={false}
-                  text="signin_with"
-                  shape="pill"
-                  theme="outline"
-                  size="large"
-                  width="300"
-                />
-              </GoogleOAuthProvider>
-              {!queryParams.get("id") && (
+
+                {!queryParams.get("id") && (
                 <p className="mt-3 text-center">
                   Đã có tài khoản? <a href="/login">Đăng nhập ngay</a>
                 </p>

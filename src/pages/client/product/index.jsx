@@ -12,9 +12,10 @@ const ProductClient = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [categoryParents, setCategoryParents] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState({type: "all", id: null});
+    const [selectedCategory, setSelectedCategory] = useState("all");
+    const [selectedParentCategory, setSelectedParentCategory] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedPriceRange, setSelectedPriceRange] = useState("all");  // chỉ chọn 1 khoảng giá
+    const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
     const [sortOrder, setSortOrder] = useState("none");
     const [openParentCategories, setOpenParentCategories] = useState([]);
 
@@ -29,11 +30,12 @@ const ProductClient = () => {
     useEffect(() => {
         const params = queryString.parse(location.search);
         if (params.categoryparentId) {
-            setSelectedCategory({type: "parent", id: parseInt(params.categoryparentId)});
-        } else if (params.categoryId) {
-            setSelectedCategory({type: "category", id: parseInt(params.categoryId)});
-        } else {
-            setSelectedCategory({type: "all", id: null});
+            setSelectedCategory("parent");
+            setSelectedParentCategory(parseInt(params.categoryparentId));
+        }
+        if (params.categoryId) {
+            setSelectedCategory(parseInt(params.categoryId));
+            setSelectedParentCategory(null);
         }
     }, [location.search]);
 
@@ -67,9 +69,13 @@ const ProductClient = () => {
         }
     };
 
-    // Chọn 1 khoảng giá
     const handlePriceRangeChange = (range) => {
-        setSelectedPriceRange(range);
+        const isSelected = selectedPriceRanges.includes(range);
+        if (isSelected) {
+            setSelectedPriceRanges(selectedPriceRanges.filter(r => r !== range));
+        } else {
+            setSelectedPriceRanges([...selectedPriceRanges, range]);
+        }
     };
 
     const toggleParentCategory = (parentId) => {
@@ -80,28 +86,31 @@ const ProductClient = () => {
         }
     };
 
-    // Lọc sản phẩm theo các điều kiện
     const filteredProducts = products.filter(product => {
         if (product.status !== 1) return false;
         const matchesSearchQuery = product.name.toLowerCase().includes(searchQuery.toLowerCase());
 
         let matchesCategory = true;
-        if (selectedCategory.type === "parent" && selectedCategory.id) {
-            const childCategories = categories.filter(c => c.parent_id === selectedCategory.id).map(c => c.id);
+        if (selectedCategory === "parent" && selectedParentCategory) {
+            const childCategories = categories.filter(c => c.parent_id === selectedParentCategory).map(c => c.id);
             matchesCategory = childCategories.includes(product.category_id);
-        } else if (selectedCategory.type === "category" && selectedCategory.id) {
-            matchesCategory = product.category_id === selectedCategory.id;
+        } else if (selectedCategory !== "all") {
+            matchesCategory = product.category_id === selectedCategory;
         }
 
-        let matchesPriceRange = selectedPriceRange === "all";
+        let matchesPriceRange = selectedPriceRanges.length === 0 || selectedPriceRanges.includes("all");
         if (!matchesPriceRange) {
-            const [minStr, maxStr] = selectedPriceRange.split('-');
-            const min = parseFloat(minStr);
-            const max = maxStr ? parseFloat(maxStr) : NaN;
-            if (!isNaN(min) && !isNaN(max)) {
-                matchesPriceRange = product.price >= min && product.price <= max;
-            } else if (!isNaN(min) && isNaN(max)) {
-                matchesPriceRange = product.price >= min;
+            for (const range of selectedPriceRanges) {
+                const [minStr, maxStr] = range.split('-');
+                const min = parseFloat(minStr);
+                const max = parseFloat(maxStr);
+                if (!isNaN(min) && !isNaN(max) && product.price >= min && product.price <= max) {
+                    matchesPriceRange = true;
+                    break;
+                } else if (!isNaN(min) && isNaN(max) && product.price >= min) {
+                    matchesPriceRange = true;
+                    break;
+                }
             }
         }
 
@@ -152,55 +161,62 @@ const ProductClient = () => {
                 <div className="container">
                     <div className="row">
                         <div className="col-md-3 mb-4 sidebar-section">
+
                             <div className="categories-dropdown">
                                 <h5>Danh mục sản phẩm</h5>
-                                <ul className="list-group">
+                                <ul>
                                     <li
-                                        className={`list-group-item ${selectedCategory.type === "all" ? "active-filter" : ""}`}
-                                        onClick={() => setSelectedCategory({type: "all", id: null})}
+                                        className={selectedCategory === "all" ? "active-filter" : ""}
+                                        onClick={() => {
+                                            setSelectedCategory("all");
+                                            setSelectedParentCategory(null);
+                                        }}
                                     >
-                                        <FontAwesomeIcon
-                                            icon={selectedCategory.type === "all" ? faCheckSquare : faSquare}
-                                            className="filter-icon"/> Tất cả sản phẩm
+                                        <FontAwesomeIcon icon={faCheckSquare} className="filter-icon"/> Tất cả sản phẩm
                                     </li>
 
                                     {categoryParents.map(parent => (
-                                        <li key={parent.id} className="list-group-item">
+                                        <li key={parent.id}>
                                             <div
-                                                className={`d-flex justify-content-between align-items-center ${selectedCategory.type === "parent" && selectedCategory.id === parent.id ? "active-filter" : ""}`}
-                                                onClick={() => setSelectedCategory({type: "parent", id: parent.id})}
+                                                className={`d-flex justify-content-between align-items-center ${selectedParentCategory === parent.id && selectedCategory === "parent" ? "active-filter" : ""}`}
+                                                onClick={() => {
+                                                    setSelectedParentCategory(parent.id);
+                                                    setSelectedCategory("parent");
+                                                }}
                                             >
                                                 <div>
                                                     <FontAwesomeIcon
-                                                        icon={selectedCategory.type === "parent" && selectedCategory.id === parent.id ? faCheckSquare : faSquare}
+                                                        icon={selectedParentCategory === parent.id && selectedCategory === "parent" ? faCheckSquare : faSquare}
                                                         className="filter-icon"
                                                     /> {parent.name}
                                                 </div>
-                                                <div onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleParentCategory(parent.id);
-                                                }}>
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleParentCategory(parent.id);
+                                                    }}
+                                                >
                                                     <FaChevronDown
-                                                        className={`ms-2 chevron-icon ${openParentCategories.includes(parent.id) ? "rotate-180" : ""}`}/>
+                                                        className={`ms-2 chevron-icon ${openParentCategories.includes(parent.id) ? "rotate-180" : ""}`}
+                                                    />
                                                 </div>
                                             </div>
 
                                             {openParentCategories.includes(parent.id) && (
-                                                <ul className="list-group"
-                                                    style={{paddingLeft: "15px", marginTop: "8px"}}>
+                                                <ul>
                                                     {categories.filter(c => c.parent_id === parent.id).map(sub => (
                                                         <li
                                                             key={sub.id}
-                                                            className={`list-group-item ${selectedCategory.type === "category" && selectedCategory.id === sub.id ? "active-filter" : ""}`}
-                                                            onClick={() => setSelectedCategory({
-                                                                type: "category",
-                                                                id: sub.id
-                                                            })}
+                                                            className={selectedCategory === sub.id ? "active-filter" : ""}
+                                                            onClick={() => {
+                                                                setSelectedCategory(sub.id);
+                                                                setSelectedParentCategory(null);
+                                                            }}
                                                         >
                                                             <FontAwesomeIcon
-                                                                icon={selectedCategory.type === "category" && selectedCategory.id === sub.id ? faCheckSquare : faSquare}
-                                                                className="filter-icon"
-                                                            /> {sub.name}
+                                                                icon={selectedCategory === sub.id ? faCheckSquare : faSquare}
+                                                                className="filter-icon"/>
+                                                            {sub.name}
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -208,7 +224,6 @@ const ProductClient = () => {
                                         </li>
                                     ))}
                                 </ul>
-
                             </div>
 
                             <div className="mt-4">
@@ -221,14 +236,11 @@ const ProductClient = () => {
                                         {label: "100,000 VNĐ - 1,000,000 VNĐ", value: "100000-1000000"},
                                         {label: "Lớn hơn 1,000,000 VNĐ", value: "1000000-"}
                                     ].map(range => (
-                                        <li
-                                            key={range.value}
-                                            className={`list-group-item ${selectedPriceRange === range.value ? 'active-filter' : ''}`}
-                                            onClick={() => handlePriceRangeChange(range.value)}
-                                            style={{cursor: "pointer"}}
-                                        >
+                                        <li key={range.value}
+                                            className={`list-group-item ${selectedPriceRanges.includes(range.value) ? 'active-filter' : ''}`}
+                                            onClick={() => handlePriceRangeChange(range.value)}>
                                             <FontAwesomeIcon
-                                                icon={selectedPriceRange === range.value ? faCheckSquare : faSquare}
+                                                icon={selectedPriceRanges.includes(range.value) ? faCheckSquare : faSquare}
                                                 className="filter-icon"
                                             /> {range.label}
                                         </li>
@@ -239,13 +251,8 @@ const ProductClient = () => {
 
                         <div className="col-md-9">
                             <div className="mb-4">
-                                <input
-                                    type="text"
-                                    className="search-input"
-                                    placeholder="Tìm kiếm sản phẩm..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
+                                <input type="text" className="search-input" placeholder="Tìm kiếm sản phẩm..."
+                                       value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}/>
                             </div>
                             <div className="mb-4">
                                 <select className="sort-select" value={sortOrder}

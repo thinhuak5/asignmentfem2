@@ -1,7 +1,8 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {useLocation, useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {Accordion, Alert, Badge, Button, Container, Form, Image, Modal, Spinner, Table,} from 'react-bootstrap';
 import Constanst from "../../../Constanst"; // Đảm bảo đường dẫn đúng
+
 const OrderHistory = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -24,26 +25,6 @@ const OrderHistory = () => {
         "Không liên hệ được với người bán/shop",
         "Khác (ghi rõ lý do)",
     ];
-
-    // Đổi tên biến location từ useLocation:
-    const routerLocation = useLocation();
-
-// Đặt setPaymentMessage trước useEffect:
-    const [paymentMessage, setPaymentMessage] = useState(null);
-
-// Sửa lại useEffect dùng routerLocation:
-    useEffect(() => {
-        const params = new URLSearchParams(routerLocation.search);
-        const message = params.get('message');
-        if (message === 'success') {
-            setPaymentMessage({variant: 'success', text: 'Thanh toán đơn hàng thành công!'});
-        } else if (message === 'failed') {
-            setPaymentMessage({variant: 'danger', text: 'Thanh toán thất bại. Vui lòng thử lại.'});
-        } else if (message === 'error') {
-            setPaymentMessage({variant: 'warning', text: 'Đã có lỗi xảy ra trong quá trình thanh toán.'});
-        }
-    }, [routerLocation.search]);
-
 
     // Hàm định dạng ngày tháng
     const formatDate = (dateString) => {
@@ -239,11 +220,6 @@ const OrderHistory = () => {
     return (
         <Container className="mt-4 mb-5 min-vh-100">
             <h2 className="mb-4 text-center">Lịch sử Đơn Hàng</h2>
-            {paymentMessage && (
-                <Alert variant={paymentMessage.variant} className="mt-3">
-                    {paymentMessage.text}
-                </Alert>
-            )}
 
             {error && <Alert variant="danger">{error}</Alert>}
 
@@ -271,9 +247,8 @@ const OrderHistory = () => {
                                 <p><strong>Điện thoại:</strong> {order.phone}</p>
                                 <p><strong>Địa chỉ:</strong> {order.address}</p>
                                 <p><strong>Thanh
-                                    toán:</strong> {getPaymentMethod(order.payment_id)} - {getPaymentStatus(order.payment_status)}
+                                    toán:</strong> {getPaymentMethod(order.payments)} - {getPaymentStatus(order.payment_status)}
                                 </p>
-
                                 {order.status === 0 && order.cancellation_reason && (
                                     <p className="text-danger"><strong>Lý do hủy:</strong> {order.cancellation_reason}</p>
                                 )}
