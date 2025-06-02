@@ -1,0 +1,229 @@
+/* assets/css/review.css hoặc thêm vào productdetail.css */
+
+.product-review-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.product-review-section h5 {
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.review-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.average-rating-display {
+    text-align: center;
+    min-width: 150px;
+}
+
+.rating-score {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #f89903;
+    /* Orange color for rating */
+}
+
+.star-rating .star-icon {
+    color: #f89903;
+    /* Orange color for stars */
+    margin: 0 2px;
+    font-size: 1.2rem;
+    /* Adjust size as needed */
+}
+
+.review-breakdown {
+    flex-grow: 1;
+}
+
+.review-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.review-row .stars {
+    width: 60px;
+    /* Adjust as needed */
+    color: #555;
+}
+
+.progress-bar-container {
+    flex-grow: 1;
+    height: 10px;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    margin: 0 10px;
+    overflow: hidden;
+    /* Important for rounded corners on progress bar */
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #f89903;
+    /* Orange color for progress */
+    border-radius: 5px;
+    transition: width 0.3s ease-in-out;
+}
+
+.review-row .percentage {
+    width: 60px;
+    /* Adjust as needed */
+    text-align: right;
+    color: #555;
+}
+
+.view-reviews-btn,
+.review-form button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+    margin-top: 10px;
+}
+
+.view-reviews-btn:hover,
+.review-form button:hover {
+    background-color: #0056b3;
+}
+
+.review-form button[type="submit"] {
+    background-color: #28a745;
+    /* Green for submit */
+}
+
+.review-form button[type="submit"]:hover {
+    background-color: #1e7e34;
+}
+
+.review-form button[type="button"] {
+    background-color: #6c757d;
+    /* Gray for cancel */
+}
+
+.review-form button[type="button"]:hover {
+    background-color: #545b62;
+}
+
+
+.review-form {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+    border: 1px solid #ddd;
+}
+
+.review-form h5 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.review-form .form-group {
+    margin-bottom: 15px;
+}
+
+.review-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.star-rating-input .star-icon {
+    font-size: 1.8rem;
+    color: #ccc;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.star-rating-input .star-icon.interactive:hover,
+.star-rating-input .star-icon.selected {
+    color: #f89903;
+}
+
+.form-control {
+    /* Basic styling for textarea and select */
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+textarea.form-control {
+    min-height: 80px;
+}
+
+
+.reviews-list {
+    margin-top: 30px;
+}
+
+.review-item {
+    border-bottom: 1px solid #eee;
+    padding: 15px 0;
+}
+
+.review-item:last-child {
+    border-bottom: none;
+}
+
+.review-author {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.reviewer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+    object-fit: cover;
+}
+
+.review-author strong {
+    font-size: 1rem;
+}
+
+.review-date {
+    font-size: 0.85rem;
+    color: #777;
+    margin-left: 8px;
+}
+
+.review-item .star-rating {
+    /* For displaying stars of existing reviews */
+    margin-bottom: 8px;
+}
+
+.review-item .star-rating .star-icon {
+    font-size: 1rem;
+    /* Smaller stars for listed reviews */
+}
+
+.review-comment {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #333;
+    white-space: pre-wrap;
+    /* Preserve line breaks in comments */
+}
+
+.info-text {
+    color: #555;
+    font-style: italic;
+    margin-top: 15px;
+}
