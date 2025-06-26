@@ -1,0 +1,63 @@
+/* OrderList.css */
+
+.order-list-container {
+    padding: 40px 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+}
+
+.order-list-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+    font-size: 15px;
+}
+
+.table thead th {
+    background-color: #343a40;
+    color: #fff;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+textarea.form-control {
+    resize: none;
+}
+
+.pagination {
+    gap: 5px;
+}
+
+.page-item.active .page-link {
+    background-color: #343a40;
+    border-color: #343a40;
+    color: #fff;
+}
+
+.page-link {
+    color: #343a40;
+    border-radius: 5px;
+}
+
+.page-link:hover {
+    background-color: #dee2e6;
+}
+
+.btn-sm {
+    padding: 3px 10px;
+    font-size: 14px;
+    border-radius: 6px;
+}
+
+.ms-2 {
+    margin-left: 8px !important;
+}
