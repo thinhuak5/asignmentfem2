@@ -1,6 +1,6 @@
 const Dashboard = () =>{
     return (
-        <div className="container mt-5">
+        <div className="container">
             <h2>Dashboard</h2>
             <div className="row">
                 <div className="col-md-4">

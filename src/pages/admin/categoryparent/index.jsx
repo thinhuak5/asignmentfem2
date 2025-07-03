@@ -38,7 +38,7 @@ const CategoryParentList = () => {
     );
 
     return (
-        <div className="container mt-5">
+        <div className="container">
             <h2>Danh sách danh mục cha</h2>
 
             {/* Thanh công cụ: tìm kiếm + thêm mới */}

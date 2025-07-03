@@ -165,7 +165,7 @@ const EditProduct = () => {
   if (!product) return <div>Đang tải dữ liệu sản phẩm...</div>;
 
   return (
-    <div className="container mt-5">
+    <div className="container">
       <h2>Sửa sản phẩm</h2>
 
       <form

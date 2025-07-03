@@ -14,7 +14,7 @@ const HeaderClient = () => {
 
     useEffect(() => {
         const checkAuthStatus = () => {
-            const token = localStorage.getItem('authToken'); 
+            const token = localStorage.getItem('authToken');
             if (token) {
                 try {
                     const decodedToken = jwtDecode(token);
@@ -54,7 +54,7 @@ const HeaderClient = () => {
 
     return (
         <>
-            <nav className="custom-navbar navbar navbar navbar-expand-md navbar-dark bg-dark"
+            <nav className="custom-navbar navbar navbar navbar-expand-md navbar-dark "
                  arial-label="Furni navigation bar">
 
                 <div className="container">

@@ -133,7 +133,7 @@ const OrderList = () => {
     };
 
     return (
-        <div className="container mt-5">
+        <div className="container">
             <h2>Danh sách đơn hàng</h2>
             {loading && (
                 <div className="text-center">

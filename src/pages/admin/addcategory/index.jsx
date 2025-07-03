@@ -68,7 +68,7 @@ const AddCategory = () => {
     };
 
     return (
-        <div className="container mt-5">
+        <div className="container">
             <h2>Thêm danh mục</h2>
             <form onSubmit={handleSubmit} className="border p-4 bg-light rounded">
                 {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}

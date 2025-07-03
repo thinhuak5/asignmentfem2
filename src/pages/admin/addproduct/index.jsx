@@ -110,7 +110,7 @@ const AddProduct = () => {
   };
 
   return (
-    <div className="container mt-5">
+    <div className="container">
       <h2>Thêm sản phẩm</h2>
       <form
         onSubmit={handleSubmit(onSubmit)}

@@ -32,7 +32,8 @@ import PaymentResult from './pages/client/PaymentResult';
 import AddProduct from './pages/admin/addproduct';
 import AddCategory from './pages/admin/addcategory';
 import EditCategory from './pages/admin/editcategory';
-
+import ForgotPassword from './pages/client/forgot-password';
+import ChangePassword from './pages/client/forgot-password/change';
 function App() {
 
 
@@ -45,6 +46,8 @@ function App() {
                    element={<ProductClient/>}/>
             <Route path="/product/:id" element={<ProductDetail/>}/>
             <Route path='login' element={<Login/>}/>
+            <Route path='forgot-password' element={<ForgotPassword/>}/>
+            <Route path='forgot-password/change' element={<ChangePassword/>}/>
             <Route path='about' element={<About/>}/>
             <Route path='services' element={<Services/>}/>
             <Route path='blog' element={<Blog/>}/>

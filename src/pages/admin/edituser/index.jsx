@@ -45,7 +45,7 @@ const EditUser = () => {
     if (!user) return <p>Đang tải...</p>;
 
     return (
-        <div className="container mt-5">
+        <div className="container">
             <Card>
                 <Card.Body>
                     <Card.Title>Chỉnh sửa trạng thái người dùng: {user.name}</Card.Title>

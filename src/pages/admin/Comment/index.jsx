@@ -29,7 +29,7 @@ const Comment = () => {
     ];
 
     return (
-        <div className="container mt-5">
+        <div className="container">
             <h2>Danh sách bình luận</h2>
             <table className="table table-bordered table-striped">
                 <thead className="table-dark">
