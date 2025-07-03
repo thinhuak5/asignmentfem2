@@ -75,7 +75,7 @@ const EditCategoryParent = () => {
     };
 
     return (
-        <div className="container mt-5">
+        <div className="container">
             <h2>Sửa danh mục cha</h2>
             <form onSubmit={handleSubmit} className="border p-4 bg-light rounded" encType="multipart/form-data">
                 <div className="mb-3">

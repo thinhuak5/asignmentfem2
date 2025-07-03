@@ -71,7 +71,7 @@ const CategoryList = () => {
     });
 
     return (
-        <div className="container mt-5">
+        <div className="container">
             <h2>Danh sách danh mục</h2>
 
             <div className="d-flex justify-content-between align-items-center mb-3">

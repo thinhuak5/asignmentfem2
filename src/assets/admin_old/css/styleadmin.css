@@ -1,0 +1,236 @@
+/* Footer */
+.footer-admin {
+  text-align: center;
+  padding: 15px;
+  background: #f8f9fa;
+  color: #333;
+  border-top: 2px solid #ddd;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-admin .container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-admin p {
+  margin: 5px 0;
+}
+
+.footer-admin a {
+  color: #3B5D50;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.footer-admin a:hover {
+  text-decoration: underline;
+}
+
+/* Footer links */
+.footer-links {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.footer-links li {
+  display: inline;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 2px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  width: calc(100% - 250px);
+  left: 250px;
+  top: 0;
+  z-index: 1000;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  background: #f1f1f1;
+  border-radius: 20px;
+  padding: 5px 12px;
+}
+
+.search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 6px;
+  width: 180px;
+}
+
+/* Avatar */
+.user-avatar {
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar img {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  margin-left: 15px;
+  border: 2px solid #ddd;
+}
+
+/* Layout */
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.content {
+  margin-left: 270px;
+  padding: 20px;
+  flex-grow: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background: #fff;
+  color: black;
+  padding: 20px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar a,
+.sidebar-link {
+  display: block;
+  padding: 12px 18px;
+  margin: 8px 0;
+  color: black;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 18px;
+}
+
+.sidebar-link i {
+  font-size: 22px;
+  margin-right: 12px;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+/* Hover effect — đồng bộ */
+.sidebar a:hover,
+.sidebar-link:hover,
+.submenu a:hover,
+.dropdown-menu-admin a:hover {
+  background: #d0ebff;
+  color: #1971c2;
+}
+
+
+/* Sidebar icon khi hover */
+.sidebar-link:hover i {
+  color: #1971c2;
+  transform: rotate(10deg);
+}
+
+/* Submenu */
+.submenu a {
+  display: block;
+  padding: 10px 18px;
+  margin: 5px 0;
+  color: #333;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.submenu a:hover {
+  transform: translateX(5px);
+}
+
+/* Dropdown */
+.dropdown-menu-admin {
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  overflow: hidden;
+  min-width: 150px;
+  z-index: 1000;
+}
+
+.dropdown-menu-admin a {
+  display: block;
+  padding: 10px 15px;
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+/* Dropdown hover xử lý trên cụm .dropdown-menu-admin a:hover */
+
+/* Sidebar dropdown animation */
+.sidebar-dropdown .submenu {
+  display: none;
+  padding-left: 15px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-dropdown .submenu.show {
+  display: block;
+  animation: fadeSlide 0.3s ease-in-out;
+}
+
+/* Animation */
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+  transition: transform 0.3s ease-in-out;
+}
+
+.rotate-0 {
+  transform: rotate(0deg);
+  transition: transform 0.3s ease-in-out;
+}
+

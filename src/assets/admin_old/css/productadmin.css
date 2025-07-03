@@ -1,0 +1,80 @@
+/* Container tổng */
+.product-list-container {
+    width: 100%;
+    max-width: 2000px;
+    margin: 20px auto;
+    padding: 30px;
+}
+
+/* Bảng sản phẩm */
+.product-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 2px solid #ddd;
+    background: white;
+    font-size: 18px;
+}
+
+.product-table th, .product-table td {
+    padding: 16px 22px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+/* Ảnh sản phẩm */
+.product-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+/* Nút chỉnh sửa và xóa */
+.product-edit-btn, .product-delete-btn {
+    padding: 14px 20px;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 10px;
+    transition: all 0.2s ease-in-out;
+}
+
+.product-edit-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.product-edit-btn:hover {
+    background-color: #0056b3;
+}
+
+.product-delete-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+.product-delete-btn:hover {
+    background-color: #a71d2a;
+}
+
+/* Màu sắc cho trạng thái */
+.product-status {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 160px;
+    text-align: center;
+    margin: 0 auto;
+}
+
+.pending {
+    color: #ff9800; /* Màu cam */
+}
+
+.paid {
+    color: #4caf50; /* Màu xanh lá */
+}
+
+.canceled {
+    color: #f44336; /* Màu đỏ */
+}

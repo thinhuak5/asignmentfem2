@@ -15,7 +15,7 @@ const EditComment = ({comment, onSave, onCancel}) => {
 
     return (
 
-        <div className="container mt-5">
+        <div className="container">
             <h2>Chỉnh sửa trạng thái bình luận</h2>
             <form onSubmit={handleSubmit}>
                 <div className="mb-3">
