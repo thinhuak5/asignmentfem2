@@ -168,7 +168,7 @@ const Sidebar = () => {
             <li className="sidebar-item">
               <Link
                   className="sidebar-link"
-                  to="/admin/category"
+                  to="/admin/categoryparent"
                   aria-expanded="false"
               >
                 <i className="ti ti-category fs-6"></i>
@@ -209,6 +209,18 @@ const Sidebar = () => {
               >
                 <i className="ti ti-message-circle fs-6"></i>
                 <span className="hide-menu">Bình luận</span>
+              </Link>
+            </li>
+
+            {/* contact */}
+             <li className="sidebar-item">
+              <Link
+                  className="sidebar-link"
+                  to="/admin/contact"
+                  aria-expanded="false"
+              >
+                <i className="ti ti-mail fs-6"></i>
+                <span className="hide-menu">Hỗ trợ</span>
               </Link>
             </li>
 
