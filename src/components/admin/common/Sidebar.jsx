@@ -220,7 +220,7 @@ const Sidebar = () => {
                   aria-expanded="false"
               >
                 <i className="ti ti-mail fs-6"></i>
-                <span className="hide-menu">Hỗ trợ</span>
+                <span className="hide-menu">Hỗ trợ mail</span>
               </Link>
             </li>
 
