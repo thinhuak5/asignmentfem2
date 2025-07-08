@@ -34,6 +34,9 @@ import AddCategory from './pages/admin/addcategory';
 import EditCategory from './pages/admin/editcategory';
 import ForgotPassword from './pages/client/forgot-password';
 import ChangePassword from './pages/client/forgot-password/change';
+import ContactMessages from './pages/admin/contactMessages';
+import ContactMessageID from './pages/admin/contactMessageID';
+
 function App() {
 
 
@@ -74,6 +77,8 @@ function App() {
         <Route path="category" element={<CategoryList/>}/>
         <Route path="category/addcategory" element={<AddCategory/>}/>
         <Route path="category/editcategory/:id" element={<EditCategory/>}/>
+          <Route path="contact" element={<ContactMessages/>}/>
+          <Route path="contact/reply/:id" element={<ContactMessageID/>}/>
         {/* Route danh mục cha */}
         <Route path="categoryparent" element={<CategoryParentList/>}/>
         <Route path="categoryparent/add" element={<AddCategoryParent/>}/>
