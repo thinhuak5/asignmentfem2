@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {Link} from "react-router-dom";
 
 const Sidebar = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
@@ -162,7 +162,17 @@ const Sidebar = () => {
                 aria-expanded="false"
               >
                 <i className="ti ti-category fs-6"></i>
-                <span className="hide-menu">Danh Mục</span>
+                <span className="hide-menu">Danh Mục Con</span>
+              </Link>
+            </li>
+            <li className="sidebar-item">
+              <Link
+                  className="sidebar-link"
+                  to="/admin/category"
+                  aria-expanded="false"
+              >
+                <i className="ti ti-category fs-6"></i>
+                <span className="hide-menu">Danh Mục Cha</span>
               </Link>
             </li>
 
