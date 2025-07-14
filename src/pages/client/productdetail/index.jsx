@@ -66,9 +66,6 @@ const ProductDetail = () => {
         quantity: data.quantity,
       };
 
-      // Combine default product and actual variations
-      // We assume actual variations from backend (data.variations) have their own unique 'id'
-      // and also reference the main product via a 'product_id' field (which is handled by backend logic)
       const allVariants = data.variations && data.variations.length > 0
         ? [defaultVariant, ...data.variations.map(v => ({ ...v, name: v.name || v.value }))]
         : [defaultVariant];
@@ -187,14 +184,9 @@ const ProductDetail = () => {
       quantity,
     };
 
-    // If the selected variant's ID is different from the main product's ID,
-    // it means a specific variation is chosen.
     if (selectedVariant.id !== product.id) {
       dataToSend.variation_id = selectedVariant.id; // Send the variation's ID
     }
-    // If selectedVariant.id IS the same as product.id, it implies the "default product" is selected,
-    // and 'variation_id' will not be added to dataToSend, which correctly results in a 'null' or 'undefined'
-    // value on the backend for variation_id, as per your backend controller logic.
 
     console.log("Dữ liệu gửi đến API giỏ hàng:", dataToSend); // LOG the payload
     console.log("Product ID (URL param):", productId);
@@ -412,6 +404,7 @@ const renderPriceSection = () => {
         </div>
         <div className="col-md-7">
           <div className="product-main-details">
+            <h1 className="mb-2 product-title-custom">{product.name}</h1>
             <p className="product-meta">
               Nhà cung cấp: <strong>{product.supplier || publisherName}</strong>
             </p>
@@ -421,7 +414,6 @@ const renderPriceSection = () => {
             <p className="product-meta">
               Tác giả: <strong>{authorName}</strong>
             </p>
-            <h1 className="mb-2 product-title-custom">{product.name}</h1>
 
             {/* Product Variant Selection */}
             {productVariations.length > 0 && (

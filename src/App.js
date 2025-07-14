@@ -36,6 +36,9 @@ import ForgotPassword from './pages/client/forgot-password';
 import ChangePassword from './pages/client/forgot-password/change';
 import ContactMessages from './pages/admin/contactMessages';
 import ContactMessageID from './pages/admin/contactMessageID';
+import ChatGPTComponent from './components/ChatGPTComponent';
+import ChatGNMComponent from './components/ChatGNMComponent';
+import ChatBoxMessage from './components/ChatBoxMessage';
 
 function App() {
 
@@ -61,6 +64,9 @@ function App() {
             <Route path='oder' element={<OrderPage/>}/>
             <Route path='order-history' element={<OrderHistory/>}/>
             <Route path="/payment-result" element={<PaymentResult/>}/>
+            <Route path="/chatGPT" element={<ChatGPTComponent/>}/>
+            <Route path="/chatGNM" element={<ChatGNMComponent/>}/>
+            <Route path="/chatBox" element={<ChatBoxMessage/>}/>
         </Route> {/* Trang user */}
 
       {/* Admin Routes */}
