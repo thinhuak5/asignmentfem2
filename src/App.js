@@ -39,6 +39,9 @@ import ContactMessageID from './pages/admin/contactMessageID';
 import ChatGPTComponent from './components/ChatGPTComponent';
 import ChatGNMComponent from './components/ChatGNMComponent';
 import ChatBoxMessage from './components/ChatBoxMessage';
+import DiscountAdmin from './pages/admin/discount';
+import AddDiscount from './pages/admin/discount/addDiscount';
+import EditDiscount from './pages/admin/discount/editDiscount';
 
 function App() {
 
@@ -89,6 +92,10 @@ function App() {
         <Route path="categoryparent" element={<CategoryParentList/>}/>
         <Route path="categoryparent/add" element={<AddCategoryParent/>}/>
         <Route path="categoryparent/edit/:id" element={<EditCategoryParent/>}/>
+        {/* Route mã giảm giá */}
+        <Route path="discount" element={<DiscountAdmin/>}/>
+        <Route path="discount/add" element={<AddDiscount/>}/>
+        <Route path="discount/edit/:id" element={<EditDiscount/>}/>
       </Route>
     </Routes>
   );

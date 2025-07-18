@@ -224,6 +224,17 @@ const Sidebar = () => {
               </Link>
             </li>
 
+            <li className="sidebar-item">
+              <Link
+                className="sidebar-link"
+                to="/admin/discount"
+                aria-expanded="false"
+              >
+                <i className="ti ti-discount fs-6"></i>
+                <span className="hide-menu">Mã giảm giá</span>
+              </Link>
+            </li>
+
             {/* System section */}
             <li className="nav-small-cap">
               <iconify-icon
