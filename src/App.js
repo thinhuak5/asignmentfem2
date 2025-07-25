@@ -18,6 +18,7 @@ import EditProduct from "./pages/admin/editproduct";
 import CategoryList from "./pages/admin/category";
 import Register from './pages/client/register';
 import Comment from './pages/admin/Comment'
+import AdminCommentEdit from './pages/admin/Comment/Comment_Edit/AdminCommentEdit';
 import EditComment from './pages/admin/Comment/Comment_Edit'
 import ProductDetail from './pages/client/productdetail';
 import CartPage from './pages/client/cart/CartPage';
@@ -39,6 +40,7 @@ import ContactMessageID from './pages/admin/contactMessageID';
 import ChatGPTComponent from './components/ChatGPTComponent';
 import ChatGNMComponent from './components/ChatGNMComponent';
 import ChatBoxMessage from './components/ChatBoxMessage';
+
 
 function App() {
 
@@ -76,6 +78,7 @@ function App() {
         <Route path="user" element={<User/>}/>
         <Route path="user/edituser/:id" element={<EditUser/>}/>
         <Route path="comment" element={<Comment/>}/>
+         <Route path="/admin/review_edit/:reviewId" element={<AdminCommentEdit />} />
         <Route path="comment_edit" element={<EditComment/>}/>
         <Route path="product" element={<Product/>}/>
         <Route path="product/addproduct" element={<AddProduct/>}/>
