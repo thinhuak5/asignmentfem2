@@ -227,3 +227,241 @@ textarea.form-control {
     font-style: italic;
     margin-top: 15px;
 }
+
+/* ======================================= */
+/*      STYLES FOR PRODUCT REVIEW SECTION    */
+/* ======================================= */
+
+/* --- Container cho cả danh sách review --- */
+.reviews-list {
+    margin-top: 2rem;
+    border-top: 1px solid #eee;
+    padding-top: 1.5rem;
+}
+
+/* --- Style cho từng mục review --- */
+.review-item {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.review-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* --- Header của review (avatar, tên, ngày) --- */
+.review-author {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0.75rem;
+}
+
+.reviewer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #ddd;
+}
+
+.review-author strong {
+    font-size: 1rem;
+    color: #333;
+}
+
+.review-author .review-date {
+    font-size: 0.8rem;
+    color: #777;
+}
+
+/* --- Style cho sao và bình luận --- */
+.review-item .star-rating {
+    margin-bottom: 0.75rem;
+}
+
+.review-item .star-rating .star-icon {
+    font-size: 1rem;
+    /* Kích thước sao trong danh sách */
+    color: #ffc107;
+}
+
+.review-comment {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: #555;
+    white-space: pre-wrap;
+    /* Giữ lại các khoảng xuống dòng trong comment */
+}
+
+
+/* === PHẦN QUAN TRỌNG: BỐ CỤC HÌNH ẢNH REVIEW === */
+
+/* --- Container bọc các hình ảnh --- */
+.review-images {
+    display: flex;
+    /* Dùng Flexbox để xếp hàng ngang */
+    flex-wrap: wrap;
+    /* Cho phép xuống dòng nếu không đủ chỗ */
+    gap: 10px;
+    /* Khoảng cách 10px giữa các ảnh */
+    margin-top: 15px;
+    /* Khoảng cách với phần bình luận ở trên */
+}
+
+/* --- Style cho từng ảnh thumbnail --- */
+.review-image-item {
+    width: 80px;
+    /* Chiều rộng của thumbnail */
+    height: 80px;
+    /* Chiều cao của thumbnail (tạo thành hình vuông) */
+    object-fit: cover;
+    /* Rất quan trọng: Đảm bảo ảnh lấp đầy mà không bị méo, phần thừa sẽ được cắt đi */
+    border-radius: 8px;
+    /* Bo tròn góc cho mềm mại */
+    border: 1px solid #e0e0e0;
+    /* Viền xám nhạt */
+    cursor: pointer;
+    /* Biểu tượng con trỏ tay khi di chuột qua */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    /* Hiệu ứng chuyển động mượt mà */
+}
+
+/* --- Hiệu ứng khi người dùng di chuột vào ảnh --- */
+.review-image-item:hover {
+    transform: scale(1.08);
+    /* Phóng to nhẹ ảnh */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    /* Thêm bóng đổ để nổi bật */
+}
+
+/* --- Nút hành động Sửa/Xóa --- */
+.review-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+/* === CSS CHO RESPONSIVE (TRÊN THIẾT BỊ DI ĐỘNG) === */
+@media (max-width: 576px) {
+
+    /* Giảm kích thước ảnh thumbnail trên màn hình nhỏ */
+    .review-image-item {
+        width: 65px;
+        height: 65px;
+    }
+
+    .review-author {
+        flex-wrap: wrap;
+        /* Cho phép wrap nếu tên quá dài */
+    }
+}
+
+/* ======================================= */
+/*    STYLES FOR REVIEW FORM IMAGE MANAGEMENT   */
+/* ======================================= */
+
+/* --- Container chung cho cả ảnh cũ và ảnh mới preview --- */
+.current-images-preview,
+.new-images-preview {
+    display: flex;
+    /* Dùng Flexbox để xếp hàng ngang */
+    flex-wrap: wrap;
+    /* Cho phép xuống dòng nếu không đủ chỗ */
+    gap: 12px;
+    /* Khoảng cách giữa các ảnh preview */
+    padding: 10px;
+    /* Padding bên trong container */
+    background-color: #f8f9fa;
+    /* Màu nền nhẹ để phân biệt */
+    border: 1px dashed #ced4da;
+    /* Viền nét đứt */
+    border-radius: 8px;
+    /* Bo góc */
+    margin-top: 10px;
+    /* Khoảng cách với label */
+}
+
+/* --- Style cho từng mục ảnh preview (cả cũ và mới) --- */
+.image-preview-item {
+    position: relative;
+    /* Cần thiết để định vị nút xóa */
+    width: 90px;
+    /* Chiều rộng của thumbnail */
+    height: 90px;
+    /* Chiều cao của thumbnail */
+    border-radius: 8px;
+    /* Bo góc */
+    overflow: hidden;
+    /* Ẩn các phần thừa của ảnh và nút xóa nếu nó lòi ra ngoài */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    /* Bóng đổ nhẹ */
+}
+
+/* --- Style cho thẻ <img> bên trong item preview --- */
+.image-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Lấp đầy khung mà không bị méo */
+    transition: transform 0.2s ease;
+}
+
+.image-preview-item:hover img {
+    transform: scale(1.05);
+    /* Phóng to nhẹ ảnh khi hover */
+}
+
+/* --- Nút xóa (chữ X) trên ảnh preview khi sửa --- */
+.delete-image-btn {
+    position: absolute;
+    /* Định vị tuyệt đối so với .image-preview-item */
+    top: 5px;
+    /* Cách lề trên 5px */
+    right: 5px;
+    /* Cách lề phải 5px */
+
+    /* Style cho nút */
+    background-color: rgba(0, 0, 0, 0.6);
+    /* Nền đen mờ */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    /* Bo tròn thành hình tròn */
+    width: 24px;
+    height: 24px;
+
+    /* Căn giữa chữ X */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+
+    /* Hiệu ứng */
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    opacity: 0;
+    /* Mặc định ẩn đi */
+}
+
+/* --- Hiển thị nút xóa khi hover vào item preview --- */
+.image-preview-item:hover .delete-image-btn {
+    opacity: 1;
+}
+
+/* --- Hiệu ứng khi hover vào nút xóa --- */
+.delete-image-btn:hover {
+    background-color: #dc3545;
+    /* Đổi sang màu đỏ khi hover */
+    transform: scale(1.1);
+}
+
+/* --- Cải thiện input file --- */
+#review-image-upload {
+    margin-top: 15px;
+    /* Thêm khoảng cách nếu có ảnh preview ở trên */
+}

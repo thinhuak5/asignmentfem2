@@ -40,6 +40,27 @@ const ProductDetail = () => {
   const [selectedOrderItemId, setSelectedOrderItemId] = useState("");
   const [isLoadingEligibility, setIsLoadingEligibility] = useState(false);
 
+  // --- State MỚI cho form review và edit ---
+  const [reviewImages, setReviewImages] = useState([]);
+  const [editingReview, setEditingReview] = useState(null); // Lưu review đang được sửa
+  const [imagesToDelete, setImagesToDelete] = useState([]); // Lưu ID của ảnh cũ cần xóa
+  const [currentUser, setCurrentUser] = useState(null); 
+
+  useEffect(() => {
+    const fetchUser = async () => {
+        if(token){
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                setCurrentUser({ id: payload.id, name: payload.name }); // Giả sử token có id và name
+            } catch(e) {
+                console.error("Invalid token", e);
+                localStorage.removeItem("authToken");
+            }
+        }
+    };
+    fetchUser();
+  }, [token]);
+
   // --- API Fetch Functions ---
 
   const fetchProductDetail = useCallback(async () => {
@@ -227,42 +248,151 @@ const ProductDetail = () => {
     setShowReviewForm(eligibilityResult.success && eligibilityResult.items?.length > 0);
   };
 
+  // const handleSubmitReview = async (e) => {
+  //   e.preventDefault();
+  //   if (!token) return alert("Vui lòng đăng nhập.");
+  //   if (userRating === 0) return alert("Vui lòng chọn số sao đánh giá.");
+  //   if (!selectedOrderItemId) return alert("Lỗi: Không xác định được mục đơn hàng để đánh giá. Vui lòng thử tải lại trang.");
+
+  //   setIsSubmittingReview(true);
+  //   try {
+  //     const res = await fetch(`${Constanst.DOMAIN_API}/api/products/${productId}/reviews`, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+  //       body: JSON.stringify({ rating: userRating, comment: userComment, order_item_id: selectedOrderItemId }),
+  //     });
+  //     const data = await res.json();
+  //     alert(data.message || (res.ok ? "Đánh giá đã được gửi thành công!" : "Đã xảy ra lỗi khi gửi đánh giá."));
+
+  //     if (res.ok) {
+  //       setShowReviewForm(false);
+  //       setUserRating(0);
+  //       setUserComment("");
+  //       fetchProductReviews(); // Re-fetch reviews to update the list and stats
+  //       const updatedEligibleItems = eligibleOrderItems.filter((item) => item.id !== selectedOrderItemId);
+  //       setEligibleOrderItems(updatedEligibleItems);
+  //       if (updatedEligibleItems.length > 0) {
+  //         setSelectedOrderItemId(updatedEligibleItems[0].id);
+  //       } else {
+  //         setSelectedOrderItemId("");
+  //         setReviewEligibilityMessage("Bạn đã đánh giá tất cả các mục đủ điều kiện cho sản phẩm này.");
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error submitting review:", error);
+  //     alert("Lỗi kết nối khi gửi đánh giá.");
+  //   } finally {
+  //     setIsSubmittingReview(false);
+  //   }
+  // };
+
+  const handleReviewImageChange = (e) => {
+    if (e.target.files) {
+        setReviewImages(Array.from(e.target.files));
+    }
+  };
+
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!token) return alert("Vui lòng đăng nhập.");
     if (userRating === 0) return alert("Vui lòng chọn số sao đánh giá.");
-    if (!selectedOrderItemId) return alert("Lỗi: Không xác định được mục đơn hàng để đánh giá. Vui lòng thử tải lại trang.");
+    if (!selectedOrderItemId) return alert("Lỗi: Không xác định được mục đơn hàng để đánh giá.");
 
     setIsSubmittingReview(true);
-    try {
-      const res = await fetch(`${Constanst.DOMAIN_API}/api/products/${productId}/reviews`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ rating: userRating, comment: userComment, order_item_id: selectedOrderItemId }),
-      });
-      const data = await res.json();
-      alert(data.message || (res.ok ? "Đánh giá đã được gửi thành công!" : "Đã xảy ra lỗi khi gửi đánh giá."));
 
-      if (res.ok) {
-        setShowReviewForm(false);
-        setUserRating(0);
-        setUserComment("");
-        fetchProductReviews(); // Re-fetch reviews to update the list and stats
-        const updatedEligibleItems = eligibleOrderItems.filter((item) => item.id !== selectedOrderItemId);
-        setEligibleOrderItems(updatedEligibleItems);
-        if (updatedEligibleItems.length > 0) {
-          setSelectedOrderItemId(updatedEligibleItems[0].id);
-        } else {
-          setSelectedOrderItemId("");
-          setReviewEligibilityMessage("Bạn đã đánh giá tất cả các mục đủ điều kiện cho sản phẩm này.");
+    // Sử dụng FormData để gửi cả text và file
+    const formData = new FormData();
+    formData.append('rating', userRating);
+    formData.append('comment', userComment);
+    formData.append('order_item_id', selectedOrderItemId);
+    reviewImages.forEach(file => {
+        formData.append('images', file); // 'images' phải trùng với key trong middleware upload.array()
+    });
+
+    try {
+        const res = await fetch(`${Constanst.DOMAIN_API}/api/products/${productId}/reviews`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` }, // Không cần 'Content-Type', browser tự set cho FormData
+            body: formData,
+        });
+        const data = await res.json();
+        alert(data.message || (res.ok ? "Đánh giá đã được gửi thành công!" : "Lỗi!"));
+
+        if (res.ok) {
+            // Reset form và ẩn đi
+            setShowReviewForm(false);
+            setUserRating(0);
+            setUserComment("");
+            setReviewImages([]);
+            fetchProductReviews(); // Tải lại danh sách review
+            // Cập nhật lại danh sách có thể review
+            const updatedEligibleItems = eligibleOrderItems.filter((item) => item.id !== parseInt(selectedOrderItemId));
+            setEligibleOrderItems(updatedEligibleItems);
+            if (updatedEligibleItems.length > 0) {
+              setSelectedOrderItemId(updatedEligibleItems[0].id.toString());
+            } else {
+              setSelectedOrderItemId("");
+              setReviewEligibilityMessage("Bạn đã đánh giá tất cả các mục đủ điều kiện.");
+            }
         }
-      }
     } catch (error) {
-      console.error("Error submitting review:", error);
-      alert("Lỗi kết nối khi gửi đánh giá.");
+        console.error("Error submitting review:", error);
+        alert("Lỗi kết nối khi gửi đánh giá.");
     } finally {
-      setIsSubmittingReview(false);
+        setIsSubmittingReview(false);
     }
+  };
+
+  const handleUpdateReview = async (e) => {
+      e.preventDefault();
+      if (!editingReview) return;
+
+      setIsSubmittingReview(true);
+      const formData = new FormData();
+      formData.append('rating', userRating);
+      formData.append('comment', userComment);
+      formData.append('imagesToDelete', JSON.stringify(imagesToDelete)); // Gửi mảng ID ảnh cần xóa
+      reviewImages.forEach(file => {
+          formData.append('images', file); // Ảnh mới
+      });
+
+      try {
+          const res = await fetch(`${Constanst.DOMAIN_API}/api/reviews/${editingReview.id}`, {
+              method: 'PUT',
+              headers: { Authorization: `Bearer ${token}` },
+              body: formData
+          });
+          const data = await res.json();
+          alert(data.message || "Cập nhật thành công!");
+          if (res.ok) {
+              setEditingReview(null); // Thoát khỏi chế độ sửa
+              fetchProductReviews(); // Tải lại reviews
+          }
+      } catch (error) {
+          console.error("Error updating review:", error);
+          alert("Lỗi kết nối khi cập nhật.");
+      } finally {
+          setIsSubmittingReview(false);
+      }
+  };
+
+  // Hàm để bắt đầu chế độ chỉnh sửa
+  const handleEditClick = (review) => {
+      setEditingReview(review);
+      setUserRating(review.rating);
+      setUserComment(review.comment);
+      setReviewImages([]); // Reset ảnh mới
+      setImagesToDelete([]); // Reset ảnh cần xóa
+      window.scrollTo({ top: document.querySelector('.product-review-section').offsetTop, behavior: 'smooth' });
+  };
+  
+  // Hàm để hủy chỉnh sửa
+  const cancelEdit = () => {
+      setEditingReview(null);
+      setUserRating(0);
+      setUserComment('');
+      setReviewImages([]);
+      setImagesToDelete([]);
   };
 
   const getProductImages = () => {
@@ -315,68 +445,160 @@ const renderPriceSection = () => {
 };
 
   const renderReviewForm = () => {
-    if (!showReviewForm || eligibleOrderItems.length === 0) return null;
+    // Không render gì nếu không ở trong chế độ tạo mới hoặc chỉnh sửa
+    if (!showReviewForm && !editingReview) {
+      return null;
+    }
 
-    const selectedItemDetails = eligibleOrderItems.find((it) => it.id === selectedOrderItemId);
+    // Lấy thông tin chi tiết của mục đơn hàng đang được chọn (chỉ dùng khi tạo mới)
+    const selectedItemDetails = !editingReview 
+        ? eligibleOrderItems.find((it) => it.id.toString() === selectedOrderItemId.toString()) 
+        : null;
 
     return (
-      <form onSubmit={handleSubmitReview} className="review-form">
-        <h5>Viết đánh giá của bạn</h5>
-        {eligibleOrderItems.length > 1 && (
-          <div className="form-group">
-            <label htmlFor="orderItemSelect">Đánh giá cho mục đơn hàng:</label>
-            <select
-              id="orderItemSelect"
-              className="form-control"
-              value={selectedOrderItemId}
-              onChange={(e) => setSelectedOrderItemId(e.target.value)}
-            >
-              {eligibleOrderItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  Đơn hàng #{item.order_id} - Ngày mua: {new Date(item.order_date).toLocaleDateString()}
-                </option>
-              ))}
-            </select>
-          </div>
+      <form onSubmit={editingReview ? handleUpdateReview : handleSubmitReview} className="review-form">
+        <h5 className="mb-3">{editingReview ? 'Chỉnh sửa đánh giá của bạn' : 'Viết đánh giá của bạn'}</h5>
+
+        {/* === PHẦN CHỌN ĐƠN HÀNG (CHỈ HIỂN THỊ KHI TẠO MỚI) === */}
+        {!editingReview && (
+          <>
+            {eligibleOrderItems.length > 1 && (
+              <div className="form-group">
+                <label htmlFor="orderItemSelect">Đánh giá cho mục đơn hàng:</label>
+                <select
+                  id="orderItemSelect"
+                  className="form-control"
+                  value={selectedOrderItemId}
+                  onChange={(e) => setSelectedOrderItemId(e.target.value)}
+                >
+                  {eligibleOrderItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      Đơn hàng #{item.order_id} - Ngày mua: {new Date(item.order_date).toLocaleDateString()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {eligibleOrderItems.length === 1 && selectedItemDetails && (
+              <p className="info-text">
+                Đánh giá sản phẩm bạn đã mua (Đơn hàng #{selectedItemDetails.order_id}, vào{" "}
+                {new Date(selectedItemDetails.order_date).toLocaleDateString()}).
+              </p>
+            )}
+          </>
         )}
-        {eligibleOrderItems.length === 1 && selectedItemDetails && (
-          <p className="info-text">
-            Đánh giá sản phẩm bạn đã mua (Đơn hàng #{selectedItemDetails.order_id}, vào{" "}
-            {new Date(selectedItemDetails.order_date).toLocaleDateString()}).
-          </p>
-        )}
+
+        {/* === PHẦN ĐÁNH GIÁ SAO VÀ BÌNH LUẬN (CHUNG CHO CẢ 2 CHẾ ĐỘ) === */}
         <div className="form-group">
           <label>Đánh giá của bạn:</label>
           <div className="star-rating-input">{renderStars(userRating, setUserRating)}</div>
         </div>
         <div className="form-group">
-          <label htmlFor="userComment">Bình luận của bạn (tùy chọn):</label>
+          <label htmlFor="userComment">Bình luận của bạn:</label>
           <textarea
             id="userComment"
             className="form-control"
             rows="4"
             value={userComment}
             onChange={(e) => setUserComment(e.target.value)}
+            placeholder="Hãy chia sẻ cảm nhận của bạn về sản phẩm..."
           ></textarea>
         </div>
-        <button type="submit" className="btn btn-primary" disabled={isSubmittingReview}>
-          {isSubmittingReview ? "Đang gửi..." : "Gửi đánh giá"}
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary ms-2"
-          onClick={() => {
-            setShowReviewForm(false);
-            setReviewEligibilityMessage("");
-          }}
-        >
-          Hủy
-        </button>
+
+        {/* === PHẦN QUẢN LÝ HÌNH ẢNH === */}
+        <div className="form-group">
+          <label>Hình ảnh đính kèm (tùy chọn):</label>
+          
+          {/* Hiển thị các ảnh đã có khi ở chế độ chỉnh sửa */}
+          {editingReview && editingReview.images && editingReview.images.length > 0 && (
+            <div className="current-images-preview mb-2">
+              {editingReview.images
+                .filter(img => !imagesToDelete.includes(img.id)) // Lọc ra những ảnh không bị đánh dấu xóa
+                .map(img => (
+                  <div key={img.id} className="image-preview-item">
+                    <img src={`${Constanst.DOMAIN_API}/uploads/${img.image_url}`} alt="Ảnh đánh giá cũ" />
+                    <button 
+                      type="button" 
+                      className="delete-image-btn"
+                      onClick={() => setImagesToDelete(prev => [...prev, img.id])}
+                      title="Xóa ảnh này"
+                    >
+                      X
+                    </button>
+                  </div>
+                ))
+              }
+            </div>
+          )}
+
+          {/* Input để upload ảnh mới */}
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            className="form-control"
+            onChange={handleReviewImageChange}
+            id="review-image-upload"
+          />
+          <small className="form-text text-muted">Bạn có thể chọn nhiều ảnh (tối đa 5).</small>
+          
+          {/* Preview các ảnh mới vừa được chọn */}
+          {reviewImages.length > 0 && (
+             <div className="new-images-preview mt-2">
+                 {reviewImages.map((file, index) => (
+                     <div key={index} className="image-preview-item">
+                         <img src={URL.createObjectURL(file)} alt={`Ảnh mới ${index + 1}`} />
+                     </div>
+                 ))}
+             </div>
+          )}
+        </div>
+
+        {/* === NÚT HÀNH ĐỘNG === */}
+        <div className="review-form-actions mt-3">
+          <button type="submit" className="btn btn-primary" disabled={isSubmittingReview}>
+            {isSubmittingReview 
+              ? "Đang xử lý..." 
+              : (editingReview ? "Cập nhật đánh giá" : "Gửi đánh giá")}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary ms-2"
+            onClick={editingReview ? cancelEdit : () => setShowReviewForm(false)}
+            disabled={isSubmittingReview}
+          >
+            Hủy
+          </button>
+        </div>
       </form>
     );
-  };
+};
 
-  return (
+const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa đánh giá này không?")) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`${Constanst.DOMAIN_API}/api/reviews/${reviewId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        alert(data.message || "Xóa thành công!");
+
+        if (res.ok) {
+            fetchProductReviews(); // Tải lại danh sách review sau khi xóa
+            // Cũng có thể cần tải lại danh sách eligible items
+            fetchEligibleOrderItemsForReview(); 
+        }
+    } catch (error) {
+        console.error("Error deleting review:", error);
+        alert("Lỗi kết nối khi xóa đánh giá.");
+    }
+};
+
+    return (
     <div className="product-detail-container container">
       {/* Product Info Section */}
       <div className="row product-info-wrapper">
@@ -416,7 +638,7 @@ const renderPriceSection = () => {
             </p>
 
             {/* Product Variant Selection */}
-            {productVariations.length > 0 && (
+            {productVariations.length > 1 && ( // Chỉ hiển thị nếu có nhiều hơn 1 biến thể (bao gồm cả mặc định)
               <div className="product-variants mb-3">
                 <h6 className="mb-2">Chọn phiên bản:</h6>
                 <div className="d-flex gap-2 flex-wrap">
@@ -426,7 +648,7 @@ const renderPriceSection = () => {
                       className={`btn btn-outline-primary ${selectedVariant?.id === variant.id ? "active" : ""}`}
                       onClick={() => {
                         setSelectedVariant(variant);
-                        setQuantity(1);
+                        setQuantity(1); // Reset số lượng khi đổi phiên bản
                       }}
                     >
                       {variant.name} 
@@ -470,23 +692,8 @@ const renderPriceSection = () => {
                 </a>
               </span>
             </div>
-            <div className="delivery-item">
-              <FontAwesomeIcon icon={faTruck} />
-              <span>
-                Giao hàng tiêu chuẩn: Dự kiến giao <strong>Thứ Sáu - 23/05</strong> (Example)
-              </span>
-            </div>
           </div>
           <div className="col-md-6">
-            <div className="promo-item">
-              <FontAwesomeIcon icon={faMoneyBillWave} />
-              <span>
-                Ưu đãi liên quan:{" "}
-                <a href="#" className="delivery-link">
-                  Xem thêm
-                </a>
-              </span>
-            </div>
             <div className="promo-item">
               <FontAwesomeIcon icon={faShieldAlt} />
               <span>
@@ -502,38 +709,14 @@ const renderPriceSection = () => {
         <h5>Thông tin chi tiết</h5>
         <table className="product-details-table">
           <tbody>
-            <tr>
-              <td>Mã hàng</td>
-              <td>{product.product_code || product.id || "Updating"}</td>
-            </tr>
-            <tr>
-              <td>Nhà cung cấp</td>
-              <td>{product.supplier || publisherName}</td>
-            </tr>
-            <tr>
-              <td>Tác giả</td>
-              <td>{authorName}</td>
-            </tr>
-            <tr>
-              <td>NXB</td>
-              <td>{publisherName}</td>
-            </tr>
-            <tr>
-              <td>Trọng lượng (gr)</td>
-              <td>{product.weight_g || "300"}</td>
-            </tr>
-            <tr>
-              <td>Kích thước bao bì</td>
-              <td>{product.dimensions || "20 x 14 x 2 cm"}</td>
-            </tr>
-            <tr>
-              <td>Số trang</td>
-              <td>{product.pages || "250"}</td>
-            </tr>
-            <tr>
-              <td>Hình thức</td>
-              <td>{product.format || "Bìa mềm"}</td>
-            </tr>
+            <tr><td>Mã hàng</td><td>{product.product_code || product.id || "Updating"}</td></tr>
+            <tr><td>Nhà cung cấp</td><td>{product.supplier || publisherName}</td></tr>
+            <tr><td>Tác giả</td><td>{authorName}</td></tr>
+            <tr><td>NXB</td><td>{publisherName}</td></tr>
+            <tr><td>Trọng lượng (gr)</td><td>{product.weight_g || "300"}</td></tr>
+            <tr><td>Kích thước bao bì</td><td>{product.dimensions || "20 x 14 x 2 cm"}</td></tr>
+            <tr><td>Số trang</td><td>{product.pages || "250"}</td></tr>
+            <tr><td>Hình thức</td><td>{product.format || "Bìa mềm"}</td></tr>
           </tbody>
         </table>
       </div>
@@ -544,7 +727,7 @@ const renderPriceSection = () => {
         <div
           className="product-description-content"
           dangerouslySetInnerHTML={{
-            __html: product.description || "No description available for this product.",
+            __html: product.description || "Chưa có mô tả cho sản phẩm này.",
           }}
         ></div>
       </div>
@@ -552,6 +735,8 @@ const renderPriceSection = () => {
       {/* Product Review Section */}
       <div className="product-review-section">
         <h5>Đánh giá sản phẩm ({totalReviews} đánh giá)</h5>
+        
+        {/* Phần tổng quan đánh giá */}
         {totalReviews > 0 && (
           <div className="review-summary">
             <div className="average-rating-display">
@@ -579,29 +764,33 @@ const renderPriceSection = () => {
           </div>
         )}
 
-        {!showReviewForm && (
-          <>
-            {token && (
-              <button className="view-reviews-btn" onClick={handleWriteReviewClick} disabled={isLoadingEligibility}>
-                {isLoadingEligibility ? "Đang kiểm tra..." : "Viết đánh giá"}
-              </button>
-            )}
-            {reviewEligibilityMessage && !isLoadingEligibility && (
-              <p className="info-text" style={{ color: eligibleOrderItems.length > 0 ? "initial" : "red" }}>
-                {reviewEligibilityMessage}
-              </p>
-            )}
-            {!token && (
+        {/* Logic hiển thị nút "Viết đánh giá" hoặc thông báo */}
+        {!showReviewForm && !editingReview && (
+          <div className="write-review-prompt">
+            {token ? ( // Nếu đã đăng nhập
+              <>
+                <button className="view-reviews-btn" onClick={handleWriteReviewClick} disabled={isLoadingEligibility}>
+                  {isLoadingEligibility ? "Đang kiểm tra..." : "Viết đánh giá"}
+                </button>
+                {reviewEligibilityMessage && !isLoadingEligibility && (
+                  <p className="info-text mt-2" style={{ color: eligibleOrderItems.length > 0 ? "initial" : "red" }}>
+                    {reviewEligibilityMessage}
+                  </p>
+                )}
+              </>
+            ) : ( // Nếu chưa đăng nhập
               <p className="info-text">
                 Vui lòng <a href="/login">đăng nhập</a> để viết đánh giá.
               </p>
             )}
-          </>
+          </div>
         )}
 
-        {renderReviewForm()}
+        {/* Hiển thị form khi cần (tạo mới hoặc sửa) */}
+        {(showReviewForm || editingReview) && renderReviewForm()}
 
-        <div className="reviews-list">
+        {/* Danh sách các đánh giá */}
+        <div className="reviews-list mt-4">
           {reviews.length > 0 ? (
             reviews.map((review) => (
               <div key={review.id} className="review-item">
@@ -611,18 +800,44 @@ const renderPriceSection = () => {
                     alt={review.user?.name || "User"}
                     className="reviewer-avatar"
                   />
-                  <strong>{review.user?.name || "Người dùng ẩn danh"}</strong>
-                  <span className="review-date">
-                    {" "}
-                    - {new Date(review.review_date || review.createdAt).toLocaleDateString()}
-                  </span>
+                  <div>
+                    <strong>{review.user?.name || "Người dùng ẩn danh"}</strong>
+                    <span className="review-date">
+                      {" "}
+                      - {new Date(review.review_date || review.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
                 <div className="star-rating">{renderStars(review.rating)}</div>
                 {review.comment && <p className="review-comment">{review.comment}</p>}
+
+                {/* Hiển thị hình ảnh của review */}
+                {review.images && review.images.length > 0 && (
+                    <div className="review-images">
+                        {review.images.map(image => (
+                            <img 
+                                key={image.id}
+                                src={`${Constanst.DOMAIN_API}/uploads/${image.image_url}`} 
+                                alt={`Ảnh đánh giá ${image.id}`}
+                                className="review-image-item"
+                                // Optional: Thêm onClick để mở ảnh lớn hơn trong một modal
+                            />
+                        ))}
+                    </div>
+                )}
+                
+                {/* Nút Sửa và Xóa, chỉ hiển thị cho chủ nhân của review và khi không ở chế độ edit */}
+                {currentUser && currentUser.id === review.user_id && !editingReview && (
+                    <div className="review-actions">
+                        <button onClick={() => handleEditClick(review)} className="btn btn-sm btn-outline-primary me-2">Sửa</button>
+                        <button onClick={() => handleDeleteReview(review.id)} className="btn btn-sm btn-outline-danger">Xóa</button>
+                    </div>
+                )}
               </div>
             ))
           ) : (
-            !showReviewForm && <p className="info-text">Chưa có đánh giá nào cho sản phẩm này.</p>
+            // Chỉ hiển thị thông báo "chưa có review" nếu không có form nào đang mở
+            !showReviewForm && !editingReview && <p className="info-text">Chưa có đánh giá nào cho sản phẩm này.</p>
           )}
         </div>
       </div>
