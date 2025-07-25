@@ -20,7 +20,9 @@ const CategoryParentList = () => {
             })
                 .then((res) => {
                     if (res.ok) {
-                        setCategoryParents(categoryParents.filter((item) => item.id !== id));
+                        setCategoryParents(
+                            categoryParents.filter((item) => item.id !== id)
+                        );
                         alert("Xóa danh mục thành công");
                     } else {
                         alert("Xóa thất bại");
@@ -75,7 +77,7 @@ const CategoryParentList = () => {
                             <td>
                                 {item.image ? (
                                     <img
-                                        src={`${Constanst.DOMAIN_API}/uploads/${item.image}`}
+                                        src={item.image}
                                         alt={item.name}
                                         width="60"
                                         height="60"

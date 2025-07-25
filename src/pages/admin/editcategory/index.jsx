@@ -31,7 +31,9 @@ const EditCategory = () => {
                 });
 
                 // Lấy danh sách danh mục cha
-                const resParents = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
+                const resParents = await fetch(
+                    `${Constanst.DOMAIN_API}/api/categoryparents`
+                );
                 const parentData = await resParents.json();
                 if (Array.isArray(parentData)) {
                     setCategoryParents(parentData);
@@ -90,7 +92,11 @@ const EditCategory = () => {
     return (
         <div className="container">
             <h2>Sửa danh mục</h2>
-            <form onSubmit={handleSubmit} className="border p-4 bg-light rounded" encType="multipart/form-data">
+            <form
+                onSubmit={handleSubmit}
+                className="border p-4 bg-light rounded"
+                encType="multipart/form-data"
+            >
                 <div className="mb-3">
                     <label className="form-label">Tên danh mục</label>
                     <input
@@ -138,7 +144,7 @@ const EditCategory = () => {
                     <div>
                         {category.images ? (
                             <img
-                                src={`${Constanst.DOMAIN_API}/uploads/${category.images}`}
+                                src={category.images}
                                 alt="Ảnh danh mục"
                                 width="100"
                                 height="100"

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
+import React, {useEffect, useState} from "react";
+import {jwtDecode} from "jwt-decode";
 import Constanst from "../../../Constanst";
-import { Link } from "react-router";
+import {Link} from "react-router";
+
 const globalStyles = {
   fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
   color: "#333",
@@ -357,7 +358,6 @@ const Profile = () => {
     const data = await res.json();
     setProvinces(data);
   };
-
   const fetchDistricts = async (provinceCode) => {
     const res = await fetch(
       `https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`
@@ -459,7 +459,7 @@ const Profile = () => {
       <div style={styles.profileAvatarWrapper}>
         {profile.avatar ? (
           <img
-            src={`${Constanst.DOMAIN_API}/uploads/${profile.avatar}`}
+              src={profile.avatar}
             alt="Avatar"
             style={styles.profileAvatarImg}
           />
@@ -641,7 +641,7 @@ const Profile = () => {
           <div style={styles.sidebarAvatar}>
             {profile.avatar ? (
               <img
-                src={`${Constanst.DOMAIN_API}/uploads/${profile.avatar}`}
+                  src={profile.avatar}
                 alt="Avatar"
                 style={styles.sidebarAvatar}
               />

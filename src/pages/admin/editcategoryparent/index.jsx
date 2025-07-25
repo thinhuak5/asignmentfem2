@@ -16,7 +16,9 @@ const EditCategoryParent = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents/${id}`);
+                const res = await fetch(
+                    `${Constanst.DOMAIN_API}/api/categoryparents/${id}`
+                );
                 if (!res.ok) throw new Error("Không tìm thấy danh mục cha");
                 const data = await res.json();
 
@@ -56,10 +58,13 @@ const EditCategoryParent = () => {
         if (newImage) formData.append("image", newImage);
 
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents/${id}`, {
-                method: "PUT",
-                body: formData,
-            });
+            const res = await fetch(
+                `${Constanst.DOMAIN_API}/api/categoryparents/${id}`,
+                {
+                    method: "PUT",
+                    body: formData,
+                }
+            );
 
             if (!res.ok) {
                 const err = await res.json();
@@ -77,7 +82,11 @@ const EditCategoryParent = () => {
     return (
         <div className="container">
             <h2>Sửa danh mục cha</h2>
-            <form onSubmit={handleSubmit} className="border p-4 bg-light rounded" encType="multipart/form-data">
+            <form
+                onSubmit={handleSubmit}
+                className="border p-4 bg-light rounded"
+                encType="multipart/form-data"
+            >
                 <div className="mb-3">
                     <label className="form-label">Tên danh mục cha</label>
                     <input
@@ -108,7 +117,7 @@ const EditCategoryParent = () => {
                     <div>
                         {categoryParent.image ? (
                             <img
-                                src={`${Constanst.DOMAIN_API}/uploads/${categoryParent.image}`}
+                                src={categoryParent.image}
                                 alt="Ảnh danh mục cha"
                                 width="100"
                                 height="100"
@@ -119,7 +128,6 @@ const EditCategoryParent = () => {
                         )}
                     </div>
                 </div>
-
                 <div className="mb-3">
                     <label className="form-label">Chọn ảnh mới (nếu muốn thay đổi)</label>
                     <input

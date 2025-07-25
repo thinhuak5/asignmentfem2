@@ -1,361 +1,435 @@
-/* src/assets/css/productclient.css */
-
-/* Global Variables */
-:root {
-    --primary-color: #3b5d50; /* Furni Green */
-    --secondary-bg-color: #f8f8f8; /* Very light grey background */
-    --card-bg-color: #ffffff;
-    --text-color: #333;
-    --light-text-color: #666;
-    --border-color: #e0e0e0;
-    --price-color: #e74c3c; /* Reddish for price */
-    --button-bg-hover: #2e4c3f;
-    --checkbox-checked-color: #28a745; /* Green for checked checkboxes */
-    --box-shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --box-shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.15);
-    --active-filter-color: #f9bf29; /* Màu vàng cam cho filter active */
-}
-
+/* General Body and Container Styles */
 body {
-    font-family: 'Inter', sans-serif;
-    color: var(--text-color);
-    line-height: 1.6;
-    background-color: var(--secondary-bg-color);
-}
-
-/* --- Hero Section (Top Banner) --- */
-.hero {
-    background-color: var(--primary-color);
-    padding: 80px 0;
-    color: white;
-    text-align: center;
-}
-
-.hero .intro-excerpt h1 {
-    font-size: 3.5rem;
-    font-weight: 700;
-    margin-bottom: 0;
-}
-
-/* --- Main Product Section Container --- */
-.untree_co-section {
-    padding: 60px 0;
-    background-color: var(--secondary-bg-color);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f2f5; /* Light grey background for the whole page */
 }
 
 .container {
-    max-width: 1280px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 15px;
 }
 
-/* --- Sidebar Section (Left Column - Individual Cards for Filters) --- */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-left: -15px;
+    margin-right: -15px;
+}
+
+.col-md-3, .col-md-9 {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.col-md-3 {
+    flex: 0 0 25%;
+    max-width: 25%;
+}
+
+.col-md-9 {
+    flex: 0 0 75%;
+    max-width: 75%;
+}
+
+.col-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+/* Main Content Section */
+.untree_co-section.product-section {
+    padding: 20px 0; /* Reduced padding */
+}
+
+/* Sidebar Section (Filters) */
 .sidebar-section {
-    background-color: var(--card-bg-color);
-    padding: 25px; /* Reduced padding slightly for individual cards */
-    border-radius: 12px;
-    box-shadow: var(--box-shadow-light);
-    margin-bottom: 25px; /* Space between filter cards */
+    background-color: #fff;
+    padding: 20px 15px; /* Adjust padding */
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03); /* Lighter shadow */
+    min-height: calc(100vh - 40px); /* Ensure sidebar is tall */
+    position: sticky; /* Make sidebar sticky */
+    top: 20px; /* Space from top */
+    align-self: flex-start; /* Align to the start of the row */
 }
 
 .sidebar-section h5 {
-    font-size: 1.35rem;
-    font-weight: 600;
-    margin-bottom: 15px;
-    color: var(--primary-color);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 15px;
-}
-
-
-/* --- Product List (Right Column) --- */
-/* Search and Sort Controls */
-.search-input,
-.sort-select {
-    width: 100%;
-    padding: 12px 20px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 1.05rem;
-    color: var(--text-color);
-    background-color: var(--card-bg-color);
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
-}
-
-.sort-select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 18px center;
-    background-size: 14px;
-    cursor: pointer;
-}
-
-
-/* Product Grid */
-.product-grid-row {
-    display: flex;
-    flex-wrap: wrap;
-    margin-left: -15px; /* Adjust for padding in product-column */
-    margin-right: -15px; /* Adjust for padding in product-column */
-}
-
-.product-column {
-    flex: 0 0 100%;
-    max-width: 100%;
-    padding: 0 15px; /* Padding for spacing between columns */
-    margin-bottom: 30px; /* Space below each product item */
-}
-
-@media (min-width: 576px) {
-    .product-column {
-        flex: 0 0 50%; /* 2 columns on small devices */
-        max-width: 50%;
-    }
-}
-
-@media (min-width: 768px) {
-    .product-column {
-        flex: 0 0 33.3333%; /* 3 columns on medium devices */
-        max-width: 33.3333%;
-    }
-}
-
-@media (min-width: 992px) {
-    .product-column {
-        flex: 0 0 20%; /* 5 columns on large devices, as in image */
-        max-width: 20%;
-    }
-}
-
-.product-item {
-    background: var(--card-bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    height: 100%; /* Ensure all cards have same height */
-    padding: 15px;
-    box-shadow: var(--box-shadow-light);
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-}
-
-.product-item:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--box-shadow-hover);
-}
-
-.product-thumbnail-wrapper {
-    height: 180px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 15px;
-    background-color: #fefefe;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.product-thumbnail {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    display: block;
-}
-
-.product-title {
-    font-size: 1rem;
-    font-weight: 500;
-    margin-bottom: 8px;
-    color: var(--text-color);
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    min-height: 2.5em; /* Consistent height for titles */
-    line-height: 1.25;
-}
-
-.product-price {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--price-color);
-    margin-bottom: 15px;
-}
-
-.product-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-top: auto; /* Push actions to the bottom */
-    width: 100%;
-    padding: 0 5px;
-}
-
-.btn-custom-sm {
-    flex: 1;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 10px 0;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-}
-
-.btn-custom-sm:hover {
-    background-color: var(--button-bg-hover);
-    transform: translateY(-3px);
-}
-
-.btn-custom-outline {
-    flex: 1;
-    background-color: var(--card-bg-color);
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-    padding: 10px 0;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-}
-
-.btn-custom-outline:hover {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-    transform: translateY(-3px);
-}
-
-.btn-custom-sm .fa-icon, .btn-custom-outline .fa-icon {
-    font-size: 1.1em;
-}
-
-/* No products message */
-.no-products-message {
-    text-align: center;
-    font-size: 1.3rem;
-    color: var(--light-text-color);
-    padding: 50px;
-    background-color: var(--card-bg-color);
-    border-radius: 12px;
-    box-shadow: var(--box-shadow-light);
-    margin-top: 30px;
-}
-
-
-/* Danh mục sản phẩm */
-.categories-dropdown .filter-icon {
-    margin-right: 8px;
-    color: var(--light-text-color);
-    transition: color 0.2s ease-in-out;
-}
-
-.categories-dropdown .filter-icon.checked {
-    color: var(--primary-color);
-}
-
-.categories-dropdown .chevron-icon {
-    transition: transform 0.3s ease;
-}
-
-.categories-dropdown .chevron-icon.rotate-180 {
-    transform: rotate(180deg);
-}
-
-.categories-dropdown .active-filter {
-    background-color: #f0f0f0;
+    font-size: 1rem; /* Smaller font size */
+    color: #333;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee; /* Lighter border */
+    padding-bottom: 8px;
     font-weight: bold;
-    color: var(--primary-color);
 }
 
-.categories-dropdown ul {
-    padding-left: 0;
-    list-style: none;
-    margin-bottom: 0;
-    display: block;
-}
-
-.categories-dropdown li {
-    padding: 10px 12px;
-    cursor: pointer;
-    border-bottom: 1px solid #eee;
-    display: block;
-}
-
-.categories-dropdown li:last-child {
-    border-bottom: none;
-}
-
-.categories-dropdown li ul {
-    padding-left: 16px;
-    margin-top: 5px;
-    border-left: 2px solid #ddd;
-    display: block;
-}
-
-.categories-dropdown li ul li {
-    border-bottom: none;
-    padding: 8px 12px;
-    font-size: 14px;
-    display: block;
-}
-
-.categories-dropdown h5 {
-    margin-bottom: 12px;
-}
-
-/* List group for filters */
 .list-group {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
+/* Base style for all list items in sidebar */
 .list-group-item {
+    padding: 8px 0;
     cursor: pointer;
+    color: #555;
+    transition: color 0.2s ease-in-out;
     display: flex;
     align-items: center;
-    padding: 12px 0;
-    font-size: 1.05rem;
-    color: var(--light-text-color);
-    transition: color 0.2s ease-in-out;
-    background-color: transparent;
-    border: none;
+    position: relative;
+    font-size: 0.9rem; /* Smaller font for list items */
 }
 
 .list-group-item:hover {
-    color: var(--primary-color);
-    background-color: #f9f9f9;
+    color: #3b5d50; /* Dark green on hover */
 }
 
 .list-group-item.active-filter {
+    color: #3b5d50; /* Dark green for active */
     font-weight: bold;
-    color: var(--primary-color);
-    background-color: #f0f0f0;
 }
 
 .filter-icon {
-    margin-right: 15px;
-    font-size: 1.3em;
-    color: var(--light-text-color);
-    transition: color 0.2s ease-in-out;
+    margin-right: 8px;
+    color: #666; /* Gray for unselected icons */
+    font-size: 0.9rem; /* Smaller icon */
 }
 
-.filter-icon.checked {
-    color: var(--primary-color);
+.list-group-item.active-filter .filter-icon {
+    color: #3b5d50; /* Dark green for active icon */
 }
 
-.transition-icon {
-    transition: transform 0.3s ease;
+/* Styles for parent category items */
+.category-parent-item {
+    /* No special padding here, let the content handle it */
+}
+
+.category-parent-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%; /* Ensure content fills available space */
+    padding-right: 15px; /* Add some padding to the right for the chevron */
+}
+
+/* Custom chevron/toggle icon */
+.toggle-icon {
+    font-size: 0.8rem;
+    color: #666;
+    margin-left: 10px; /* Space between text and icon */
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.toggle-icon.rotated {
+    transform: rotate(180deg); /* Rotate for expand/collapse */
+}
+
+/* Styles for child category list */
+.category-child-list {
+    list-style: none;
+    padding-left: 0; /* Remove default list padding */
+    margin-top: 5px; /* Space from parent */
+    position: relative;
+    border-left: 1px solid #ccc; /* Vertical line */
+    margin-left: 20px; /* Indent the entire child list */
+    padding-bottom: 0px; /* Remove padding at bottom of child list if any */
+}
+
+/* Style for individual child list item */
+.category-child-list > .list-group-item {
+    padding-left: 20px; /* Further indent for text within child item */
+    /* Add a small horizontal line from the vertical line to the item */
+    position: relative;
+}
+
+.category-child-list > .list-group-item::before {
+    content: '';
+    position: absolute;
+    left: 0; /* Align with the vertical line */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%);
+    width: 10px; /* Length of the horizontal line */
+    height: 1px;
+    background-color: #ccc;
+}
+
+/* Specific filter group styling for "Khoảng giá" */
+.filter-group {
+    margin-top: 20px;
+}
+
+.filter-group-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.filter-group-item input[type="checkbox"] {
+    margin-right: 8px;
+    accent-color: #3b5d50; /* Dark green for checkbox */
+    transform: scale(1.1); /* Slightly larger checkbox */
+    display: none; /* Hide default checkbox, use FontAwesomeIcon instead */
+}
+
+.filter-group-item label {
+    font-size: 0.9rem;
+    color: #555;
+    cursor: pointer;
+    display: flex; /* To align icon and text */
+    align-items: center;
+}
+
+/* Price range input fields */
+.price-range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px; /* Space before button */
+}
+
+.price-range-inputs input {
+    width: calc(50% - 10px); /* Adjust width for two inputs and gap */
+    padding: 6px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.price-range-inputs span {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.apply-price-btn {
+    background-color: #3b5d50; /* Dark green button */
+    color: #fff;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    width: 100%;
+    transition: background-color 0.2s ease;
+}
+
+.apply-price-btn:hover {
+    background-color: #218838; /* Slightly darker green on hover */
+}
+
+/* Main Product Content Area */
+.search-input {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+}
+
+/* Sorting options (Phổ biến, Mới nhất, etc.) - Flat buttons */
+.sort-options-bar {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Reduced gap */
+    margin-bottom: 20px;
+    background-color: #fff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03); /* Lighter shadow */
+}
+
+.sort-options-bar span {
+    font-weight: normal; /* Normal font weight */
+    color: #666; /* Lighter color */
+    margin-right: 10px; /* Space after "Sắp xếp theo:" */
+    font-size: 0.95rem;
+}
+
+.sort-option-btn {
+    background: none;
+    border: none;
+    padding: 8px 12px; /* Slightly more padding */
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #555;
+    border-radius: 4px; /* Slightly smaller radius */
+    transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap; /* Prevent text wrapping */
+}
+
+.sort-option-btn.active-sort, .sort-option-btn:hover {
+    background-color: #3b5d50; /* Dark green active/hover */
+    color: #fff;
+}
+
+.product-grid-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* Adjust minmax for better fit */
+    gap: 15px; /* Reduced gap between products */
+}
+
+.product-column {
+    /* flex: 0 0 25%; max-width: 25%; */ /* Managed by grid, but keep for older browser fallback */
+    padding: 0px; /* No internal padding for grid items */
+    box-sizing: border-box;
+}
+
+@media (max-width: 992px) {
+    .product-grid-row {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+
+    .col-md-3, .col-md-9 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .sidebar-section {
+        margin-bottom: 20px;
+        position: static; /* Disable sticky on smaller screens */
+        top: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .product-grid-row {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .sort-options-bar {
+        flex-wrap: wrap; /* Allow sort buttons to wrap */
+        justify-content: center;
+    }
+
+    .sort-options-bar span {
+        width: 100%; /* Make "Sắp xếp theo:" take full width */
+        text-align: center;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    .product-grid-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Product Card Styles */
+.product-item {
+    background-color: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 10px; /* Reduced padding */
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); /* Lighter shadow */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden; /* Ensure content doesn't break out */
+}
+
+.product-item:hover {
+    transform: translateY(-3px); /* Smaller hover effect */
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.product-thumbnail-wrapper {
+    height: 160px; /* Slightly smaller fixed height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 8px; /* Reduced margin */
+}
+
+.product-thumbnail {
+    max-width: 100%;
+    max-height: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.product-title {
+    font-size: 0.95rem; /* Slightly smaller font */
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 8px; /* Reduced margin */
+    height: 38px; /* Adjusted height for title */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-weight: normal; /* Less bold */
+}
+
+.product-price {
+    font-size: 1rem; /* Slightly smaller price font */
+    color: #dc3545; /* Red for price */
+    font-weight: bold;
+    margin-bottom: 10px; /* Reduced margin */
+}
+
+.product-actions {
+    display: flex;
+    justify-content: center;
+    gap: 5px; /* Reduced gap */
+    margin-top: auto;
+}
+
+.btn-custom-sm {
+    background-color: #3b5d50; /* Dark green for add to cart */
+    color: #fff;
+    border: none;
+    padding: 8px 10px; /* Adjusted padding */
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem; /* Smaller font */
+    transition: background-color 0.2s ease;
+    display: flex; /* For icon inside button */
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-custom-sm:hover {
+    background-color: #218838; /* Slightly darker green on hover */
+}
+
+.btn-custom-outline {
+    background-color: transparent;
+    color: #3b5d50; /* Dark green border for outline */
+    border: 1px solid #3b5d50;
+    padding: 8px 10px; /* Adjusted padding */
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.85rem; /* Smaller font */
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    display: flex; /* For icon inside button */
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-custom-outline:hover {
+    background-color: #3b5d50;
+    color: #fff;
+}
+
+.no-products-message {
+    text-align: center;
+    color: #666;
+    font-size: 1.1rem;
+    padding: 30px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }

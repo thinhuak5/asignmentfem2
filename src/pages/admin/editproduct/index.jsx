@@ -279,41 +279,41 @@ const EditProduct = () => {
 
         {/* Ảnh hiện tại (nhiều ảnh) */}
         {currentImages.length > 0 && (
-          <div className="mb-3">
-            <label className="form-label">Ảnh hiện tại</label>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {currentImages.map((img, idx) => (
-                <div key={img} style={{ position: "relative" }}>
-                  <img
-                    src={`${Constanst.DOMAIN_API}/uploads/${img}`}
-                    alt="Ảnh hiện tại"
-                    width="100"
-                    height="100"
-                    style={{ objectFit: "cover", border: "1px solid #ccc" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage(img)}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      right: 0,
-                      background: "red",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: 24,
-                      height: 24,
-                      cursor: "pointer",
-                    }}
-                    title="Xóa ảnh này"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+            <div className="mb-3">
+              <label className="form-label">Ảnh hiện tại</label>
+              <div style={{display: "flex", gap: 10, flexWrap: "wrap"}}>
+                {currentImages.map((img, idx) => (
+                    <div key={img} style={{position: "relative"}}>
+                      <img
+                          src={img}
+                          alt="Ảnh hiện tại"
+                          width="100"
+                          height="100"
+                          style={{objectFit: "cover", border: "1px solid #ccc"}}
+                      />
+                      <button
+                          type="button"
+                          onClick={() => handleRemoveImage(img)}
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            background: "red",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: 24,
+                            height: 24,
+                            cursor: "pointer",
+                          }}
+                          title="Xóa ảnh này"
+                      >
+                        ×
+                      </button>
+                    </div>
+                ))}
+              </div>
             </div>
-          </div>
         )}
 
         {/* Chọn hình ảnh mới (nhiều ảnh) */}

@@ -203,17 +203,7 @@ const ProductList = () => {
                   {Array.isArray(product.productImages) &&
                   product.productImages.length > 0 ? (
                     <img
-                      src={`${Constanst.DOMAIN_API}/uploads/${product.productImages[0].image_url}`}
-                      alt="product"
-                      width="60"
-                      height="60"
-                      style={{ objectFit: "cover" }}
-                    />
-                  ) : product.images ? (
-                    <img
-                      src={`${Constanst.DOMAIN_API}/uploads/${
-                        product.images.split(",")[0]
-                      }`}
+                        src={product.productImages[0].image_url}
                       alt="product"
                       width="60"
                       height="60"

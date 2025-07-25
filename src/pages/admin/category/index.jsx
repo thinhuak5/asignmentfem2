@@ -114,13 +114,17 @@ const CategoryList = () => {
                         <td>{category.id}</td>
                         <td>{category.name}</td>
                         <td>
-                            <img
-                                src={`${Constanst.DOMAIN_API}/uploads/${category.images}`}
-                                alt="category"
-                                width="60"
-                                height="60"
-                                style={{objectFit: "cover"}}
-                            />
+                            {category.images ? (
+                                <img
+                                    src={category.images}
+                                    alt="category"
+                                    width="60"
+                                    height="60"
+                                    style={{objectFit: "cover"}}
+                                />
+                            ) : (
+                                <span>Không có ảnh</span>
+                            )}
                         </td>
                         <td>{category.status === 1 ? "Hiển thị" : "Ẩn"}</td>
                         <td>{getParentName(category.parent_id)}</td>
