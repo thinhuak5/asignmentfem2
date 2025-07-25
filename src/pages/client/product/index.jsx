@@ -28,6 +28,7 @@ const fetchData = async (url, errorMessage = "Lỗi khi tải dữ liệu:") => 
   }
 };
 
+// Component con cho hiển thị sản phẩm
 const ProductCard = ({ product, onAddToCart }) => (
   <div className="product-column">
     <div className="product-item">
@@ -39,7 +40,7 @@ const ProductCard = ({ product, onAddToCart }) => (
             className="product-thumbnail"
             alt={product.name}
           />
-          ) : product.images ? ( 
+          ) : product.images ? ( // Fallback for old 'images' field
           <img
               src={product.images.split(",")[0]}
             className="product-thumbnail"
