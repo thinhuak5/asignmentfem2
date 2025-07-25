@@ -35,23 +35,50 @@ const OrderHistory = () => {
   useEffect(() => {
     const params = new URLSearchParams(routerLocation.search);
     const message = params.get("message");
+
     if (message === "success") {
       setPaymentMessage({
         variant: "success",
         text: "Thanh toán đơn hàng thành công!",
       });
-    } else if (message === "failed") {
+
+      const token = localStorage.getItem("authToken");
+      const cartItemIds = JSON.parse(sessionStorage.getItem("vnp_cart_item_ids") || "[]");
+
+      if (cartItemIds.length > 0) {
+        fetch(`${Constanst.DOMAIN_API}/api/vnpay-success`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({cartItemIds}),
+        })
+            .then((res) => res.json())
+            .then((data) => {
+              console.log("Xóa cart sau VNPAY:", data);
+              sessionStorage.removeItem("vnp_cart_item_ids");
+              localStorage.removeItem("cart");
+              // Tùy: reload lại cart context nếu có
+            })
+            .catch((err) => console.error("Lỗi khi xóa cart:", err));
+      }
+    }
+
+    if (message === "failed") {
       setPaymentMessage({
         variant: "danger",
         text: "Thanh toán thất bại. Vui lòng thử lại.",
       });
-    } else if (message === "error") {
-      setPaymentMessage({
-        variant: "warning",
-        text: "Đã có lỗi xảy ra trong quá trình thanh toán.",
-      });
     }
+
+    // Xoá query `message` sau vài giây cho đẹp
+    setTimeout(() => {
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }, 3000);
   }, [routerLocation.search]);
+
 
   // Hàm định dạng ngày tháng
   const formatDate = (dateString) => {
