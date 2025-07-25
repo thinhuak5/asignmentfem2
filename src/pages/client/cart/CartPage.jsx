@@ -283,14 +283,14 @@ const CartPage = () => {
     }, 0);
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (!isLoggedIn || !userInfo) {
       navigate("/login", { state: { from: "/cart" } });
       return;
     }
 
-    const selectedCartItems = cart.filter(
-      (item) => selectedItems.includes(item.id) // FIX LOGIC: Filter by cart item ID
+    const selectedCartItems = cart.filter((item) =>
+        selectedItems.includes(item.id)
     );
 
     if (selectedCartItems.length === 0) {
@@ -298,43 +298,15 @@ const CartPage = () => {
       return;
     }
 
-    // Map selected cart items to their unique cart IDs for clearing on backend
-    const selectedCartItemIdsToClear = selectedCartItems.map((item) => item.id); // FIX LOGIC: Send selected cart item IDs
-
-    try {
-      const clearCartResponse = await fetch(
-        `${Constanst.DOMAIN_API}/api/cart/clear-selected-items`, // FIX LOGIC: Endpoint for clearing by cart item ID
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            selectedCartItemIds: selectedCartItemIdsToClear,
-          }), // Send selected cart item IDs
-        }
-      );
-
-      if (!clearCartResponse.ok) {
-        const errorData = await clearCartResponse.json();
-        console.error("Lỗi khi xóa sản phẩm đã đặt khỏi giỏ hàng:", errorData);
-        setError(
-          "Đã đặt hàng nhưng không thể xóa các sản phẩm đã chọn khỏi giỏ hàng. Vui lòng làm mới trang."
-        );
-      } else {
-        console.log("Đã xóa thành công các sản phẩm đã đặt khỏi giỏ hàng.");
-        await getCartFromAPI(); // Refresh cart after successful clearing
-      }
-
-      navigate("/oder", {
-        state: { cartItems: selectedCartItems, userInfo: userInfo },
-      });
-    } catch (error) {
-      console.error("Lỗi trong quá trình thanh toán:", error);
-      setError(error.message || "Đã có lỗi xảy ra khi xử lý thanh toán.");
-    }
+    // 👉 Chỉ chuyển sang trang đặt hàng (OrderPage), truyền selectedCartItems
+    navigate("/oder", {
+      state: {
+        cartItems: selectedCartItems,
+        userInfo: userInfo,
+      },
+    });
   };
+
 
   const renderCartItems = () => {
     if (cart.length === 0) {

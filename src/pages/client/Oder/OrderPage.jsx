@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {Alert, Button, Form, Spinner, Container} from 'react-bootstrap'; // Thêm Spinner và Container
+import {Alert, Button, Container, Form, Spinner} from 'react-bootstrap'; // Thêm Spinner và Container
 import Constanst from '../../../Constanst';
 
 const OrderPage = () => {
@@ -134,10 +134,17 @@ const OrderPage = () => {
 
                 if (res.ok) {
                     // Xóa giỏ hàng sau khi đặt thành công (trên server và client)
-                    await fetch(`${Constanst.DOMAIN_API}/api/cart/clear`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` }
+                    await fetch(`${Constanst.DOMAIN_API}/api/cart/clear-selected-items`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            selectedCartItemIds: validItems.map((item) => item.id),
+                        }),
                     });
+
                     localStorage.removeItem('cart'); // Xóa giỏ hàng trong localStorage
 
                     // Thông báo và chuyển hướng
@@ -172,7 +179,9 @@ const OrderPage = () => {
 
                 const result = await res.json();
                 if (res.ok && result) {
-                    // Chuyển hướng đến URL thanh toán VNPay
+                    // Lưu lại cartItemIds để xử lý sau khi thanh toán thành công
+                    sessionStorage.setItem("vnp_cart_item_ids", JSON.stringify(validItems.map(item => item.id)));
+                    sessionStorage.setItem("vnp_pending", "true");
                     window.location.href = result;
                 } else {
                     setError(result.message || "Không thể tạo thanh toán VNPay.");
@@ -316,7 +325,7 @@ const OrderPage = () => {
                         "Hoàn tất đặt hàng"
                     )}
                 </Button>
-                <Button variant="secondary" className="ms-2" onClick={() => navigate('/cart')}>
+                <Button variant="secondary" className="ms-2" onClick={() => navigate('/cartpage')}>
                     Quay lại giỏ hàng
                 </Button>
             </Form>
