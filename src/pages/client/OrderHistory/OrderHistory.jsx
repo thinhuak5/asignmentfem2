@@ -1,7 +1,9 @@
+
 import React, {useCallback, useEffect, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
 import {Accordion, Alert, Badge, Button, Container, Form, Modal, Spinner, Table,} from "react-bootstrap";
-import Constanst from "../../../Constanst"; // Đảm bảo đường dẫn đúng
+import Constanst from "../../../Constanst";
+
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,10 +12,10 @@ const OrderHistory = () => {
 
   // State cho Modal hủy đơn hàng
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [orderToCancel, setOrderToCancel] = useState(null); // Lưu trữ ID đơn hàng sẽ hủy
-  const [cancelReason, setCancelReason] = useState(""); // Lý do hủy được chọn/nhập
-  const [otherReason, setOtherReason] = useState(""); // Lý do khác nếu người dùng chọn "Khác"
-  const [isCancelling, setIsCancelling] = useState(false); // Trạng thái đang hủy
+  const [orderToCancel, setOrderToCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [otherReason, setOtherReason] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Các lý do hủy cố định
   const cancellationReasons = [
@@ -25,13 +27,9 @@ const OrderHistory = () => {
     "Khác (ghi rõ lý do)",
   ];
 
-  // Đổi tên biến location từ useLocation:
   const routerLocation = useLocation();
-
-  // Đặt setPaymentMessage trước useEffect:
   const [paymentMessage, setPaymentMessage] = useState(null);
 
-  // Sửa lại useEffect dùng routerLocation:
   useEffect(() => {
     const params = new URLSearchParams(routerLocation.search);
     const message = params.get("message");
@@ -59,7 +57,6 @@ const OrderHistory = () => {
               console.log("Xóa cart sau VNPAY:", data);
               sessionStorage.removeItem("vnp_cart_item_ids");
               localStorage.removeItem("cart");
-              // Tùy: reload lại cart context nếu có
             })
             .catch((err) => console.error("Lỗi khi xóa cart:", err));
       }
@@ -72,15 +69,12 @@ const OrderHistory = () => {
       });
     }
 
-    // Xoá query `message` sau vài giây cho đẹp
     setTimeout(() => {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, "", newUrl);
     }, 3000);
   }, [routerLocation.search]);
 
-
-  // Hàm định dạng ngày tháng
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const options = {
@@ -93,7 +87,6 @@ const OrderHistory = () => {
     return new Date(dateString).toLocaleDateString("vi-VN", options);
   };
 
-  // Hàm lấy text trạng thái đơn hàng
   const getOrderStatus = (status) => {
     switch (status) {
       case 1:
@@ -115,7 +108,6 @@ const OrderHistory = () => {
     }
   };
 
-  // Hàm lấy text trạng thái thanh toán
   const getPaymentStatus = (status) => {
     switch (status) {
       case 0:
@@ -131,21 +123,19 @@ const OrderHistory = () => {
     }
   };
 
-  // Hàm lấy phương thức thanh toán
   const getPaymentMethod = (method) => {
     switch (method) {
       case 1:
         return "Thanh toán khi nhận hàng (COD)";
       case 2:
-        return "Chuyển khoản ngân hàng"; // Ví dụ
+        return "Chuyển khoản ngân hàng";
       case 3:
-        return "Ví điện tử"; // Ví dụ
+        return "Ví điện tử";
       default:
         return "Không xác định";
     }
   };
 
-  // Hàm fetch lịch sử đơn hàng
   const fetchOrderHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -154,7 +144,7 @@ const OrderHistory = () => {
     if (!token) {
       setError("Vui lòng đăng nhập để xem lịch sử đơn hàng.");
       setLoading(false);
-      navigate("/login", { state: { from: "/order-history" } }); // Chuyển hướng nếu không có token
+      navigate("/login", { state: { from: "/order-history" } });
       return;
     }
 
@@ -177,7 +167,6 @@ const OrderHistory = () => {
           const errorData = await res.json();
           errorMsg = errorData.message || errorMsg;
         } catch (e) {
-          /* Bỏ qua nếu không parse được json lỗi */
         }
 
         if (res.status === 401 || res.status === 403) {
@@ -202,74 +191,13 @@ const OrderHistory = () => {
     fetchOrderHistory();
   }, [fetchOrderHistory]);
 
-  // Thêm useEffect này để tự động bổ sung hình ảnh nếu thiếu (giống CartPage)
-  useEffect(() => {
-    const fetchMissingProductImages = async () => {
-      const updatedOrders = await Promise.all(
-        orders.map(async (order) => {
-          if (!order.items || order.items.length === 0) return order;
-          const updatedItems = await Promise.all(
-            order.items.map(async (item) => {
-              // Nếu thiếu productImages và images, fetch lại chi tiết sản phẩm
-              if (
-                item.product &&
-                !item.product.productImages &&
-                !item.product.images
-              ) {
-                try {
-                  const res = await fetch(
-                    `${Constanst.DOMAIN_API}/api/products/${item.product_id}`
-                  );
-                  if (res.ok) {
-                    const data = await res.json();
-                    return {
-                      ...item,
-                      product: {
-                        ...item.product,
-                        productImages: data.productImages,
-                        images: data.images,
-                      },
-                    };
-                  }
-                } catch (e) {
-                  // Bỏ qua lỗi, giữ nguyên item
-                }
-              }
-              return item;
-            })
-          );
-          return { ...order, items: updatedItems };
-        })
-      );
-      setOrders(updatedOrders);
-    };
-
-    if (
-      orders.length > 0 &&
-      orders.some(
-        (order) =>
-          order.items &&
-          order.items.some(
-            (item) =>
-              item.product &&
-              !item.product.productImages &&
-              !item.product.images
-          )
-      )
-    ) {
-      fetchMissingProductImages();
-    }
-  }, [orders]);
-
-  // Hàm mở modal hủy đơn hàng
   const handleShowCancelModal = (orderId) => {
     setOrderToCancel(orderId);
-    setCancelReason(""); // Reset lý do khi mở modal
+    setCancelReason("");
     setOtherReason("");
     setShowCancelModal(true);
   };
 
-  // Hàm đóng modal hủy đơn hàng
   const handleCloseCancelModal = () => {
     setShowCancelModal(false);
     setOrderToCancel(null);
@@ -277,7 +205,6 @@ const OrderHistory = () => {
     setOtherReason("");
   };
 
-  // Hàm gửi yêu cầu hủy đơn hàng đến API
   const confirmCancelOrder = async () => {
     if (!orderToCancel || (!cancelReason && !otherReason)) {
       alert("Vui lòng chọn hoặc nhập lý do hủy đơn hàng.");
@@ -306,12 +233,12 @@ const OrderHistory = () => {
       const res = await fetch(
         `${Constanst.DOMAIN_API}/api/orders/${orderToCancel}/cancel`,
         {
-          method: "PUT", // Hoặc PATCH tùy theo API của bạn
+          method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ reason: finalReason }), // Gửi lý do hủy
+          body: JSON.stringify({ reason: finalReason }),
         }
       );
 
@@ -319,8 +246,8 @@ const OrderHistory = () => {
         alert(
           `Đơn hàng #${orderToCancel} đã được hủy thành công với lý do: ${finalReason}`
         );
-        handleCloseCancelModal(); // Đóng modal
-        fetchOrderHistory(); // Tải lại danh sách đơn hàng để cập nhật trạng thái
+        handleCloseCancelModal();
+        fetchOrderHistory();
       } else {
         const errorData = await res.json();
         alert(
@@ -339,7 +266,6 @@ const OrderHistory = () => {
     }
   };
 
-  // Hàm tính tổng tiền nếu backend không trả về sẵn
   const calculateOrderTotal = (items) => {
     if (!items || items.length === 0) return 0;
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -439,23 +365,9 @@ const OrderHistory = () => {
                         <tr key={item.id}>
                           <td>
                             <div className="product-thumbnail">
-                              {Array.isArray(item.product?.productImages) &&
-                              item.product.productImages.length > 0 ? (
+                              {item.product?.image_url ? (
                                 <img
-                                  src={`${Constanst.DOMAIN_API}/uploads/${item.product.productImages[0].image_url}`}
-                                  className="product-thumbnail"
-                                  alt={item.product?.name}
-                                  style={{
-                                    width: "50px",
-                                    height: "50px",
-                                    objectFit: "contain",
-                                  }}
-                                />
-                              ) : item.product?.images ? (
-                                <img
-                                  src={`${Constanst.DOMAIN_API}/uploads/${
-                                    item.product.images.split(",")[0]
-                                  }`}
+                                  src={item.product.image_url}
                                   className="product-thumbnail"
                                   alt={item.product?.name}
                                   style={{
@@ -470,17 +382,14 @@ const OrderHistory = () => {
                             </div>
                           </td>
                           <td>
-                            {/* Nếu có biến thể, hiển thị tên sản phẩm kèm giá trị biến thể (ví dụ: "Áo Thun - Đỏ") */}
                             {item.selectedVariation ? (
                               <>
                                 {item.product?.name}
-                                {/* (Tùy chọn) hiển thị loại biến thể trong văn bản nhỏ hơn */}
                                 <div className="text-muted small">
                                   ({item.selectedVariation.name})
                                 </div>
                               </>
                             ) : (
-                              // Nếu không có biến thể, chỉ hiển thị tên sản phẩm gốc
                               item.product?.name ||
                               `Sản phẩm ID: ${item.product_id}`
                             )}
@@ -504,8 +413,6 @@ const OrderHistory = () => {
                   <p>Không có thông tin chi tiết sản phẩm cho đơn hàng này.</p>
                 )}
 
-                {/* Nút hủy đơn hàng */}
-                {/* Hiển thị nút hủy nếu trạng thái là "Chờ xác nhận" (status: 1) */}
                 {order.status === 1 && (
                   <Button
                     variant="danger"
@@ -522,7 +429,6 @@ const OrderHistory = () => {
         </Accordion>
       )}
 
-      {/* Modal Hủy Đơn Hàng */}
       <Modal show={showCancelModal} onHide={handleCloseCancelModal} centered>
         <Modal.Header closeButton>
           <Modal.Title>Hủy Đơn Hàng #{orderToCancel}</Modal.Title>

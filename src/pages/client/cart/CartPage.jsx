@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useState} from "react";
 import {Alert, Button, Form, Table} from "react-bootstrap";
-import Constanst from "../../../Constanst";
+import Constants from "../../../Constanst";
 import {useNavigate} from "react-router-dom";
 import {FaMinus, FaPlus, FaTrashAlt} from "react-icons/fa";
 import {jwtDecode} from "jwt-decode";
@@ -9,104 +9,110 @@ const CartPage = () => {
   const [cart, setCart] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const navigate = useNavigate();
 
   const getCartFromAPI = useCallback(async () => {
     const token = localStorage.getItem("authToken");
-    if (token) {
-      try {
-        const response = await fetch(`${Constanst.DOMAIN_API}/api/cart`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const cartData = await response.json();
-          setCart(cartData);
-          if (cartData.length > 0) {
-            setSelectedItems(cartData.map((item) => item.id));
-          }
-        } else {
-          throw new Error("Không thể tải giỏ hàng");
-        }
-      } catch (error) {
-        console.error("Lỗi khi lấy giỏ hàng từ API:", error);
-        setError("Không thể tải giỏ hàng.");
-      }
-    } else {
+    if (!token) {
       setCart([]);
-      setSelectedItems([]); // Clear selection if not logged in
+      setSelectedItems([]);
+      setError("Vui lòng đăng nhập để xem giỏ hàng.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${Constants.DOMAIN_API}/api/cart`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({message: "Lỗi không xác định"}));
+        throw new Error(errorData.message || "Không thể tải giỏ hàng.");
+      }
+
+      const cartData = await response.json();
+      setCart(cartData);
+      if (cartData.length > 0) {
+        setSelectedItems(cartData.map((item) => item.id));
+      }
+      setError("");
+    } catch (error) {
+      console.error("Lỗi khi lấy giỏ hàng từ API:", error);
+      setError(error.message || "Không thể tải giỏ hàng.");
     }
   }, []);
 
   const saveCartToAPI = async (cartItemId, newQuantity) => {
     const token = localStorage.getItem("authToken");
     if (!token) {
-      console.error("Không có token xác thực.");
-      return;
+      setError("Vui lòng đăng nhập để cập nhật giỏ hàng.");
+      return false;
     }
 
     try {
-      const response = await fetch(
-        `${Constanst.DOMAIN_API}/api/cart/update/${cartItemId}`, // <-- Use cartItemId
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ quantity: newQuantity }), // <-- Only send quantity
-        }
-      );
+      const response = await fetch(`${Constants.DOMAIN_API}/api/cart/update/${cartItemId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({quantity: newQuantity}),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Error saving cart:", errorData);
-        throw new Error("Cập nhật giỏ hàng thất bại");
+        throw new Error(errorData.message || "Cập nhật giỏ hàng thất bại.");
       }
-      console.log("Giỏ hàng đã được cập nhật thành công");
+
+      setSuccess("Cập nhật số lượng thành công!");
+      setTimeout(() => setSuccess(""), 3000);
+      return true;
     } catch (error) {
       console.error("Lỗi khi lưu giỏ hàng:", error);
-      setError("Không thể lưu giỏ hàng.");
+      setError(error.message || "Không thể cập nhật giỏ hàng.");
+      return false;
     }
   };
 
   const deleteCartToAPI = async (cartItemId) => {
-    // <-- Accept cartItemId
     const token = localStorage.getItem("authToken");
     if (!token) {
-      console.error("Không có token xác thực.");
-      return;
+      setError("Vui lòng đăng nhập để xóa sản phẩm.");
+      return false;
     }
+
     try {
-      const response = await fetch(
-        `${Constanst.DOMAIN_API}/api/cart/${cartItemId}`, // <-- Use cartItemId
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${Constants.DOMAIN_API}/api/cart/${cartItemId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.message || "Xóa sản phẩm khỏi giỏ hàng thất bại."
-        );
+        throw new Error(errorData.message || "Xóa sản phẩm khỏi giỏ hàng thất bại.");
       }
-      console.log("Sản phẩm đã được xóa khỏi giỏ hàng thành công.");
+
+      setSuccess("Xóa sản phẩm khỏi giỏ hàng thành công!");
+      setTimeout(() => setSuccess(""), 3000);
+      return true;
     } catch (error) {
       console.error("Lỗi khi xóa sản phẩm khỏi giỏ hàng:", error);
-      setError("Không thể xóa sản phẩm khỏi giỏ hàng.");
+      setError(error.message || "Không thể xóa sản phẩm khỏi giỏ hàng.");
+      return false;
     }
   };
+
   const checkLoginStatus = useCallback(() => {
     const token = localStorage.getItem("authToken");
-
     if (token) {
       try {
         const decodedToken = jwtDecode(token);
@@ -123,136 +129,78 @@ const CartPage = () => {
           setIsLoggedIn(false);
           setUserInfo(null);
           localStorage.removeItem("authToken");
+          setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
         }
       } catch (error) {
         setIsLoggedIn(false);
         setUserInfo(null);
         localStorage.removeItem("authToken");
+        setError("Token không hợp lệ. Vui lòng đăng nhập lại.");
       }
     } else {
+      setIsLoggedIn(false);
+      setUserInfo(null);
       setCart([]);
-      setSelectedItems([]); // Clear selection if not logged in
+      setSelectedItems([]);
     }
   }, []);
 
   useEffect(() => {
-    // Function to fetch cart and check login status
     const fetchCartAndLogin = async () => {
-      await getCartFromAPI();
       checkLoginStatus();
+      await getCartFromAPI();
     };
     fetchCartAndLogin();
   }, [getCartFromAPI, checkLoginStatus]);
 
-  useEffect(() => {
-    // Function to fetch additional images if missing
-    const fetchMissingProductImages = async () => {
-      const updatedCart = await Promise.all(
-        cart.map(async (item) => {
-          // Check both variation and product to ensure correct image fetching
-          if (
-            !item.product?.productImages &&
-            !item.product?.images &&
-            (!item.variation || !item.product)
-          ) {
-            const res = await fetch(
-              `${Constanst.DOMAIN_API}/api/products/${item.product_id}`
-            );
-            if (res.ok) {
-              const data = await res.json();
-              return {
-                ...item,
-                product: {
-                  ...item.product,
-                  productImages: data.productImages,
-                  images: data.images,
-                },
-              };
-            }
-          }
-          return item;
-        })
-      );
-      setCart(updatedCart);
-    };
-
-    if (
-      cart.length > 0 &&
-      cart.some(
-        (item) =>
-          !item.product?.productImages &&
-          !item.product?.images &&
-          (!item.variation || !item.product)
-      )
-    ) {
-      fetchMissingProductImages();
-    }
-    // eslint-disable-next-line
-  }, [cart]);
-
-  // getMaxQuantity: Restrict maximum quantity based on stock of selected product or variation
   const getMaxQuantity = (item) => {
-    // If there's a variation, prioritize variation quantity
     if (item.variation && typeof item.variation.quantity === "number") {
       return item.variation.quantity;
     }
-    // If no variation, use main product quantity
     if (item.product && typeof item.product.quantity === "number") {
       return item.product.quantity;
     }
-    // Default value if no stock information
-    return 10; // Or another appropriate default value
+    return 10; // Default value
   };
 
-  const handleQuantityChange = (cartItemId, action) => {
-    // Parameter is cartItemId (ID of the cart item)
-    let newQuantity = 0; // Initialize variable to store the new quantity of the item being updated
-
+  const handleQuantityChange = async (cartItemId, action) => {
+    let newQuantity = 0;
     const updatedCart = cart.map((item) => {
       if (item.id === cartItemId) {
-        // FIX LOGIC: Compare with the UNIQUE ID of the cart item
-        newQuantity = item.quantity; // Get current quantity of that item
+        newQuantity = item.quantity;
         const maxQuantity = getMaxQuantity(item);
-
         if (action === "increase" && newQuantity < maxQuantity) {
           newQuantity += 1;
         } else if (action === "decrease" && newQuantity > 1) {
           newQuantity -= 1;
         }
-        return { ...item, quantity: newQuantity }; // Return the item with updated quantity
+        return {...item, quantity: newQuantity};
       }
-      return item; // Return other unchanged items
+      return item;
     });
 
-    // Call API to save changes only for the CHANGED ITEM
-    // Find the new quantity of the item that was just updated from `updatedCart`
     const itemToUpdate = updatedCart.find((item) => item.id === cartItemId);
     if (itemToUpdate) {
-      // Ensure the item is found
-      saveCartToAPI(cartItemId, itemToUpdate.quantity);
+      const success = await saveCartToAPI(cartItemId, itemToUpdate.quantity);
+      if (success) {
+        setCart(updatedCart);
+      }
     }
-
-    setCart(updatedCart); // Update local state for immediate UI response
   };
 
   const removeFromCart = async (cartItemId) => {
-    // Parameter is cartItemId
-    const confirmDelete = window.confirm(
-      "Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?"
-    );
+    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?");
     if (!confirmDelete) return;
 
-    // Delete from API first, using cartItemId
-    await deleteCartToAPI(cartItemId);
-
-    // Then update UI, filter by cartItemId
-    const updatedCart = cart.filter((item) => item.id !== cartItemId);
-    setCart(updatedCart);
-    setSelectedItems((prev) => prev.filter((id) => id !== cartItemId)); // Update tick
+    const success = await deleteCartToAPI(cartItemId);
+    if (success) {
+      const updatedCart = cart.filter((item) => item.id !== cartItemId);
+      setCart(updatedCart);
+      setSelectedItems((prev) => prev.filter((id) => id !== cartItemId));
+    }
   };
 
   const toggleSelectItem = (cartItemId) => {
-    // Parameter is cartItemId
     setSelectedItems((prev) =>
       prev.includes(cartItemId)
         ? prev.filter((id) => id !== cartItemId)
@@ -262,22 +210,17 @@ const CartPage = () => {
 
   const toggleSelectAll = () => {
     if (selectedItems.length === cart.length && cart.length > 0) {
-      // Ensure deselect only if there are products and all are selected
       setSelectedItems([]);
     } else {
-      setSelectedItems(cart.map((item) => item.id)); // FIX LOGIC: Use item.id to select all
+      setSelectedItems(cart.map((item) => item.id));
     }
   };
 
   const calculateTotal = () => {
     return cart.reduce((total, item) => {
       if (selectedItems.includes(item.id)) {
-        // FIX LOGIC: Compare with cart item ID
-        // Prioritize variation price, if not available, use main product price
-        const itemPrice = Number(
-          item.variation?.price || item.product?.price || 0
-        ); // FIX LOGIC: Ensure itemPrice is always a number
-        return total + itemPrice * Number(item.quantity); // FIX LOGIC: Ensure quantity is also a number
+        const itemPrice = Number(item.variation?.price || item.product?.price || 0);
+        return total + itemPrice * Number(item.quantity);
       }
       return total;
     }, 0);
@@ -289,16 +232,12 @@ const CartPage = () => {
       return;
     }
 
-    const selectedCartItems = cart.filter((item) =>
-        selectedItems.includes(item.id)
-    );
-
+    const selectedCartItems = cart.filter((item) => selectedItems.includes(item.id));
     if (selectedCartItems.length === 0) {
       setError("Vui lòng chọn ít nhất một sản phẩm để thanh toán.");
       return;
     }
 
-    // 👉 Chỉ chuyển sang trang đặt hàng (OrderPage), truyền selectedCartItems
     navigate("/oder", {
       state: {
         cartItems: selectedCartItems,
@@ -306,7 +245,6 @@ const CartPage = () => {
       },
     });
   };
-
 
   const renderCartItems = () => {
     if (cart.length === 0) {
@@ -316,17 +254,11 @@ const CartPage = () => {
     return (
       <>
         <Button
-          variant={
-            selectedItems.length === cart.length && cart.length > 0
-              ? "secondary"
-              : "info"
-          }
+            variant={selectedItems.length === cart.length && cart.length > 0 ? "secondary" : "info"}
           className="mb-2"
           onClick={toggleSelectAll}
         >
-          {selectedItems.length === cart.length && cart.length > 0
-            ? "Bỏ chọn tất cả"
-            : "Chọn tất cả"}
+          {selectedItems.length === cart.length && cart.length > 0 ? "Bỏ chọn tất cả" : "Chọn tất cả"}
         </Button>
 
         <Table responsive hover className="align-middle">
@@ -351,32 +283,16 @@ const CartPage = () => {
                     onChange={() => toggleSelectItem(item.id)}
                   />
                 </td>
-
                 <td>
                   <div className="product">
-                    {console.log("item.product", item.product)}
-                    {Array.isArray(item.product?.productImages) &&
-                    item.product.productImages.length > 0 ? (
+                    {item.product?.image_url ? (
                       <img
-                        src={`${Constanst.DOMAIN_API}/uploads/${item.product.productImages[0].image_url}`}
+                          src={item.product.image_url}
                         className="product-thumbnail"
                         alt={item.product?.name}
                         style={{
                           width: "60px",
                           height: "60px",
-                          objectFit: "contain",
-                        }}
-                      />
-                    ) : item.product?.images ? (
-                      <img
-                        src={`${Constanst.DOMAIN_API}/uploads/${
-                          item.product.images.split(",")[0]
-                        }`}
-                        className="product-thumbnail"
-                        alt={item.product?.name}
-                        style={{
-                          width: "100px",
-                          height: "auto",
                           objectFit: "contain",
                         }}
                       />
@@ -387,40 +303,24 @@ const CartPage = () => {
                 </td>
                 <td>
                   {item.product?.name}
-                  {item.variation &&
-                    item.variation.value && ( // Only display variation value if it exists
-                      <div style={{ fontSize: "0.9em", color: "#666" }}>
-                        {item.variation.name && ` (${item.variation.name})`}{" "}
-                        {/* Display variation name if exists */}
+                  {item.variation && item.variation.value && (
+                      <div style={{fontSize: "0.9em", color: "#666"}}>
+                        {item.variation.name && ` (${item.variation.name})`}
                       </div>
-                    )}
+                  )}
                 </td>
-                <td>
-                  {(item.variation?.price || item.product?.price) // Prioritize variation price
-                    ?.toLocaleString()}{" "}
-                  VNĐ
-                </td>
+                <td>{(item.variation?.price || item.product?.price)?.toLocaleString()} VNĐ</td>
                 <td className="text-center">
                   <Button
                     variant="outline-danger"
                     size="sm"
                     onClick={() => handleQuantityChange(item.id, "decrease")}
                     disabled={item.quantity <= 1}
-                    style={{
-                      marginRight: "5px",
-                      borderRadius: "15px",
-                      padding: "10px 15px",
-                    }}
+                    style={{marginRight: "5px", borderRadius: "15px", padding: "10px 15px"}}
                   >
                     <FaMinus />
                   </Button>
-                  <span
-                    style={{
-                      margin: "0 10px",
-                      minWidth: "20px",
-                      display: "inline-block",
-                    }}
-                  >
+                  <span style={{margin: "0 10px", minWidth: "20px", display: "inline-block"}}>
                     {item.quantity}
                   </span>
                   <Button
@@ -428,22 +328,13 @@ const CartPage = () => {
                     size="sm"
                     onClick={() => handleQuantityChange(item.id, "increase")}
                     disabled={item.quantity >= getMaxQuantity(item)}
-                    style={{
-                      marginLeft: "5px",
-                      borderRadius: "15px",
-                      padding: "10px 15px",
-                    }}
+                    style={{marginLeft: "5px", borderRadius: "15px", padding: "10px 15px"}}
                   >
                     <FaPlus />
                   </Button>
                 </td>
                 <td>
-                  {/* Cột Thành tiền: Ưu tiên giá của biến thể, sau đó là giá của sản phẩm chính */}
-                  {(
-                    (item.variation?.price || item.product?.price) *
-                    item.quantity
-                  )?.toLocaleString() || "N/A"}{" "}
-                  VNĐ
+                  {((item.variation?.price || item.product?.price) * item.quantity)?.toLocaleString() || "N/A"} VNĐ
                 </td>
                 <td>
                   <Button
@@ -478,6 +369,11 @@ const CartPage = () => {
     <div className="container mt-4 pb-5 min-vh-100 d-flex flex-column">
       <h2 className="mb-4 text-center">Giỏ Hàng Của Bạn</h2>
 
+      {success && (
+          <Alert variant="success" onClose={() => setSuccess("")} dismissible>
+            {success}
+          </Alert>
+      )}
       {error && (
         <Alert variant="danger" onClose={() => setError("")} dismissible>
           {error}
