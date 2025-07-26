@@ -2,6 +2,8 @@ import React, {useEffect, useState} from "react";
 import {useFieldArray, useForm} from "react-hook-form";
 import {Link, useNavigate} from "react-router-dom";
 import Constanst from "../../../Constanst";
+import {CKEditor} from "@ckeditor/ckeditor5-react";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 const AddProduct = () => {
   const navigate = useNavigate();
@@ -15,9 +17,13 @@ const AddProduct = () => {
   } = useForm();
 
   // Quản lý biến thể động
-  const { fields: variationFields, append: appendVariation, remove: removeVariation } = useFieldArray({
+  const {
+    fields: variationFields,
+    append: appendVariation,
+    remove: removeVariation,
+  } = useFieldArray({
     control,
-    name: "variations"
+    name: "variations",
   });
 
   const [categoryParents, setCategoryParents] = useState([]);
@@ -129,18 +135,6 @@ const AddProduct = () => {
           )}
         </div>
 
-        {/* Mô tả */}
-        <div className="mb-3">
-          <label className="form-label">Mô tả</label>
-          <textarea
-            className="form-control"
-            {...register("description", { required: "Mô tả là bắt buộc" })}
-          />
-          {errors.description && (
-            <small className="text-danger">{errors.description.message}</small>
-          )}
-        </div>
-
         {/* Giá */}
         <div className="mb-3">
           <label className="form-label">Giá</label>
@@ -174,7 +168,9 @@ const AddProduct = () => {
             })}
           />
           {errors.discount_price && (
-            <small className="text-danger">{errors.discount_price.message}</small>
+              <small className="text-danger">
+                {errors.discount_price.message}
+              </small>
           )}
         </div>
 
@@ -258,7 +254,9 @@ const AddProduct = () => {
 
         {/* Hình ảnh (nhiều ảnh) */}
         <div className="mb-3">
-          <label className="form-label">Chọn hình ảnh (có thể chọn nhiều)</label>
+          <label className="form-label">
+            Chọn hình ảnh (có thể chọn nhiều)
+          </label>
           <input
             type="file"
             className="form-control"
@@ -269,7 +267,28 @@ const AddProduct = () => {
             <small className="text-danger">{errors.images.message}</small>
           )}
         </div>
-
+        {/* Mô tả */}
+        <div className="mb-3">
+          <label className="form-label">Mô tả</label>
+          <div className="border rounded" style={{minHeight: "200px"}}>
+            <CKEditor
+                editor={ClassicEditor}
+                data={watch("description") || ""}
+                onChange={(event, editor) => {
+                  const data = editor.getData();
+                  setValue("description", data, {shouldValidate: true});
+                }}
+                onBlur={() => {
+                  if (!watch("description")) {
+                    setValue("description", "", {shouldValidate: true});
+                  }
+                }}
+            />
+          </div>
+          {errors.description && (
+              <small className="text-danger">{errors.description.message}</small>
+          )}
+        </div>
         {/* Biến thể sản phẩm */}
         <div className="mb-3">
           <label className="form-label">Biến thể sản phẩm</label>
@@ -277,32 +296,62 @@ const AddProduct = () => {
             <div key={field.id} className="border rounded p-2 mb-2">
               <div className="row">
                 <div className="col">
-                  <input className="form-control mb-1" placeholder="Tên biến thể"
-                    {...register(`variations.${idx}.name`)} />
+                  <input
+                      className="form-control mb-1"
+                      placeholder="Tên biến thể"
+                      {...register(`variations.${idx}.name`)}
+                  />
                 </div>
                 <div className="col">
-                  <input className="form-control mb-1" placeholder="Nội dung"
-                    {...register(`variations.${idx}.value`)} />
+                  <input
+                      className="form-control mb-1"
+                      placeholder="Nội dung"
+                      {...register(`variations.${idx}.value`)}
+                  />
                 </div>
                 <div className="col">
-                  <input className="form-control mb-1" placeholder="Giá"
-                    type="number" {...register(`variations.${idx}.price`)} />
+                  <input
+                      className="form-control mb-1"
+                      placeholder="Giá"
+                      type="number"
+                      {...register(`variations.${idx}.price`)}
+                  />
                 </div>
                 <div className="col">
-                  <input className="form-control mb-1" placeholder="Số lượng"
-                    type="number" {...register(`variations.${idx}.quantity`)} />
+                  <input
+                      className="form-control mb-1"
+                      placeholder="Số lượng"
+                      type="number"
+                      {...register(`variations.${idx}.quantity`)}
+                  />
                 </div>
                 <div className="col">
-                  <input className="form-control mb-1" placeholder="Tồn kho tối thiểu"
-                    type="number" {...register(`variations.${idx}.minStock`)} />
+                  <input
+                      className="form-control mb-1"
+                      placeholder="Tồn kho tối thiểu"
+                      type="number"
+                      {...register(`variations.${idx}.minStock`)}
+                  />
                 </div>
                 <div className="col-auto">
-                  <button type="button" className="btn btn-danger btn-sm" onClick={() => removeVariation(idx)}>Xóa</button>
+                  <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={() => removeVariation(idx)}
+                  >
+                    Xóa
+                  </button>
                 </div>
               </div>
             </div>
           ))}
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => appendVariation({})}>Thêm biến thể</button>
+          <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => appendVariation({})}
+          >
+            Thêm biến thể
+          </button>
         </div>
 
         <button type="submit" className="btn btn-success me-2">

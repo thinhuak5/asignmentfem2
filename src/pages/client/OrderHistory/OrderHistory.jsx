@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from "react";
-import {useLocation, useNavigate} from "react-router-dom";
+import {Link, useLocation, useNavigate} from "react-router-dom";
 import {Accordion, Alert, Badge, Button, Container, Form, Modal, Spinner, Table,} from "react-bootstrap";
 import Constanst from "../../../Constanst"; // Đảm bảo đường dẫn đúng
 const OrderHistory = () => {
@@ -43,14 +43,16 @@ const OrderHistory = () => {
       });
 
       const token = localStorage.getItem("authToken");
-      const cartItemIds = JSON.parse(sessionStorage.getItem("vnp_cart_item_ids") || "[]");
+      const cartItemIds = JSON.parse(
+          sessionStorage.getItem("vnp_cart_item_ids") || "[]"
+      );
 
       if (cartItemIds.length > 0) {
         fetch(`${Constanst.DOMAIN_API}/api/vnpay-success`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({cartItemIds}),
         })
@@ -78,7 +80,6 @@ const OrderHistory = () => {
       window.history.replaceState({}, "", newUrl);
     }, 3000);
   }, [routerLocation.search]);
-
 
   // Hàm định dạng ngày tháng
   const formatDate = (dateString) => {
@@ -442,8 +443,7 @@ const OrderHistory = () => {
                               {Array.isArray(item.product?.productImages) &&
                               item.product.productImages.length > 0 ? (
                                   <img
-                                      src={`${Constanst.DOMAIN_API}/uploads/${item.product.productImages[0].image_url}`}
-                                      className="product-thumbnail"
+                                      src={item.product.productImages[0].image_url}
                                       alt={item.product?.name}
                                       style={{
                                         width: "50px",
@@ -453,10 +453,7 @@ const OrderHistory = () => {
                                   />
                               ) : item.product?.images ? (
                                 <img
-                                    src={`${Constanst.DOMAIN_API}/uploads/${
-                                        item.product.images.split(",")[0]
-                                    }`}
-                                  className="product-thumbnail"
+                                    src={item.product.images.split(",")[0]}
                                   alt={item.product?.name}
                                   style={{
                                     width: "50px",
@@ -469,22 +466,23 @@ const OrderHistory = () => {
                               )}
                             </div>
                           </td>
+
                           <td>
-                            {/* Nếu có biến thể, hiển thị tên sản phẩm kèm giá trị biến thể (ví dụ: "Áo Thun - Đỏ") */}
-                            {item.selectedVariation ? (
-                              <>
-                                {item.product?.name}
-                                {/* (Tùy chọn) hiển thị loại biến thể trong văn bản nhỏ hơn */}
+                            <Link
+                                to={`/product/${item.product_id}`}
+                                className="text-decoration-none  fw-semibold"
+                            >
+                              {item.product?.name ||
+                                  `Sản phẩm ID: ${item.product_id}`}
+                            </Link>
+
+                            {item.selectedVariation && (
                                 <div className="text-muted small">
                                   ({item.selectedVariation.name})
                                 </div>
-                              </>
-                            ) : (
-                                // Nếu không có biến thể, chỉ hiển thị tên sản phẩm gốc
-                              item.product?.name ||
-                              `Sản phẩm ID: ${item.product_id}`
                             )}
                           </td>
+
                           <td>{item.quantity}</td>
                           <td>
                             {item.price ? item.price.toLocaleString() : "N/A"}{" "}

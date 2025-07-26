@@ -2,6 +2,8 @@ import React, {useEffect, useState} from "react";
 import {useFieldArray, useForm} from "react-hook-form";
 import {Link, useNavigate, useParams} from "react-router-dom";
 import Constanst from "../../../Constanst";
+import {CKEditor} from "@ckeditor/ckeditor5-react";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 const EditProduct = () => {
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ const EditProduct = () => {
   const [categories, setCategories] = useState([]);
   const [categoryParents, setCategoryParents] = useState([]);
   const [product, setProduct] = useState(null);
+  const [description, setDescription] = useState("");
 
   // Ảnh hiện tại (nhiều ảnh)
   const [currentImages, setCurrentImages] = useState([]);
@@ -72,6 +75,7 @@ const EditProduct = () => {
 
       setValue("name", data.name);
       setValue("description", data.description);
+      setDescription(data.description || "");
       setValue("price", data.price);
       setValue("discount_price", data.discount_price || "");
       setValue("status", data.status === 1 ? "Còn hàng" : "Hết hàng");
@@ -185,17 +189,7 @@ const EditProduct = () => {
           )}
         </div>
 
-        {/* Mô tả */}
-        <div className="mb-3">
-          <label className="form-label">Mô tả</label>
-          <textarea
-            className="form-control"
-            {...register("description", { required: "Mô tả là bắt buộc" })}
-          />
-          {errors.description && (
-            <small className="text-danger">{errors.description.message}</small>
-          )}
-        </div>
+
 
         {/* Giá */}
         <div className="mb-3">
@@ -378,7 +372,24 @@ const EditProduct = () => {
             <small className="text-danger">{errors.category_id.message}</small>
           )}
         </div>
-
+        {/* Mô tả */}
+        <div className="mb-3">
+          <label className="form-label">Mô tả</label>
+          <div className="border rounded" style={{minHeight: "200px"}}>
+            <CKEditor
+                editor={ClassicEditor}
+                data={description}
+                onChange={(event, editor) => {
+                  const data = editor.getData();
+                  setDescription(data);
+                  setValue("description", data); // cập nhật vào react-hook-form
+                }}
+            />
+          </div>
+          {errors.description && (
+              <small className="text-danger">{errors.description.message}</small>
+          )}
+        </div>
         {/* Biến thể sản phẩm */}
         <div className="mb-3">
           <label className="form-label">Biến thể sản phẩm</label>

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {useEffect, useState} from "react";
+import {Link, useNavigate} from "react-router-dom";
 import Constanst from "../../../Constanst";
 
 const DiscountAdmin = () => {
@@ -12,11 +12,21 @@ const DiscountAdmin = () => {
   }, []);
 
   const fetchDiscounts = async () => {
-    const res = await fetch(`${Constanst.DOMAIN_API}/api/discounts`);
-    const data = await res.json();
-    setDiscounts(data);
-  };
+    try {
+      const res = await fetch(`${Constanst.DOMAIN_API}/api/discounts`);
 
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Lỗi HTTP: ${res.status} - ${text}`);
+      }
+
+      const data = await res.json();
+      setDiscounts(data);
+    } catch (err) {
+      console.error("Lỗi khi fetch mã giảm giá:", err.message);
+      alert("Lỗi khi tải danh sách mã giảm giá");
+    }
+  };
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn chắc chắn muốn xóa mã này?")) return;
     const res = await fetch(`${Constanst.DOMAIN_API}/api/discounts/${id}`, {
@@ -34,7 +44,9 @@ const DiscountAdmin = () => {
     <div className="container">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Quản lý mã giảm giá</h2>
-        <Link className="btn btn-success" to="/admin/discount/add">Thêm mã giảm giá</Link>
+        <Link className="btn btn-success" to="/admin/discount/add">
+          Thêm mã giảm giá
+        </Link>
       </div>
       <div className="mb-3">
         <input
@@ -106,4 +118,4 @@ const DiscountAdmin = () => {
   );
 };
 
-export default DiscountAdmin; 
+export default DiscountAdmin;

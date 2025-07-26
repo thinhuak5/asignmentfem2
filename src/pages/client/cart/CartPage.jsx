@@ -1,7 +1,7 @@
 import React, {useCallback, useEffect, useState} from "react";
 import {Alert, Button, Form, Table} from "react-bootstrap";
 import Constants from "../../../Constanst";
-import {useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {FaMinus, FaPlus, FaTrashAlt} from "react-icons/fa";
 import {jwtDecode} from "jwt-decode";
 
@@ -32,7 +32,9 @@ const CartPage = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({message: "Lỗi không xác định"}));
+        const errorData = await response
+            .json()
+            .catch(() => ({message: "Lỗi không xác định"}));
         throw new Error(errorData.message || "Không thể tải giỏ hàng.");
       }
 
@@ -56,14 +58,17 @@ const CartPage = () => {
     }
 
     try {
-      const response = await fetch(`${Constants.DOMAIN_API}/api/cart/update/${cartItemId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({quantity: newQuantity}),
-      });
+      const response = await fetch(
+          `${Constants.DOMAIN_API}/api/cart/update/${cartItemId}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({quantity: newQuantity}),
+          }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -88,17 +93,22 @@ const CartPage = () => {
     }
 
     try {
-      const response = await fetch(`${Constants.DOMAIN_API}/api/cart/${cartItemId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+          `${Constants.DOMAIN_API}/api/cart/${cartItemId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Xóa sản phẩm khỏi giỏ hàng thất bại.");
+        throw new Error(
+            errorData.message || "Xóa sản phẩm khỏi giỏ hàng thất bại."
+        );
       }
 
       setSuccess("Xóa sản phẩm khỏi giỏ hàng thành công!");
@@ -189,7 +199,9 @@ const CartPage = () => {
   };
 
   const removeFromCart = async (cartItemId) => {
-    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?");
+    const confirmDelete = window.confirm(
+        "Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?"
+    );
     if (!confirmDelete) return;
 
     const success = await deleteCartToAPI(cartItemId);
@@ -219,7 +231,9 @@ const CartPage = () => {
   const calculateTotal = () => {
     return cart.reduce((total, item) => {
       if (selectedItems.includes(item.id)) {
-        const itemPrice = Number(item.variation?.price || item.product?.price || 0);
+        const itemPrice = Number(
+            item.variation?.price || item.product?.price || 0
+        );
         return total + itemPrice * Number(item.quantity);
       }
       return total;
@@ -232,7 +246,9 @@ const CartPage = () => {
       return;
     }
 
-    const selectedCartItems = cart.filter((item) => selectedItems.includes(item.id));
+    const selectedCartItems = cart.filter((item) =>
+        selectedItems.includes(item.id)
+    );
     if (selectedCartItems.length === 0) {
       setError("Vui lòng chọn ít nhất một sản phẩm để thanh toán.");
       return;
@@ -254,11 +270,17 @@ const CartPage = () => {
     return (
       <>
         <Button
-            variant={selectedItems.length === cart.length && cart.length > 0 ? "secondary" : "info"}
+            variant={
+              selectedItems.length === cart.length && cart.length > 0
+                  ? "secondary"
+                  : "info"
+            }
           className="mb-2"
           onClick={toggleSelectAll}
         >
-          {selectedItems.length === cart.length && cart.length > 0 ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+          {selectedItems.length === cart.length && cart.length > 0
+              ? "Bỏ chọn tất cả"
+              : "Chọn tất cả"}
         </Button>
 
         <Table responsive hover className="align-middle">
@@ -302,25 +324,47 @@ const CartPage = () => {
                   </div>
                 </td>
                 <td>
-                  {item.product?.name}
+                  <Link
+                      to={`/product/${item.product?.id || item.product_id}`}
+                      className="text-decoration-none fw-semibold"
+                  >
+                    {item.product?.name || `Sản phẩm ID: ${item.product_id}`}
+                  </Link>
+
                   {item.variation && item.variation.value && (
                       <div style={{fontSize: "0.9em", color: "#666"}}>
                         {item.variation.name && ` (${item.variation.name})`}
                       </div>
                   )}
                 </td>
-                <td>{(item.variation?.price || item.product?.price)?.toLocaleString()} VNĐ</td>
+
+                <td>
+                  {(
+                      item.variation?.price || item.product?.price
+                  )?.toLocaleString()}{" "}
+                  VNĐ
+                </td>
                 <td className="text-center">
                   <Button
                     variant="outline-danger"
                     size="sm"
                     onClick={() => handleQuantityChange(item.id, "decrease")}
                     disabled={item.quantity <= 1}
-                    style={{marginRight: "5px", borderRadius: "15px", padding: "10px 15px"}}
+                    style={{
+                      marginRight: "5px",
+                      borderRadius: "15px",
+                      padding: "10px 15px",
+                    }}
                   >
                     <FaMinus />
                   </Button>
-                  <span style={{margin: "0 10px", minWidth: "20px", display: "inline-block"}}>
+                  <span
+                      style={{
+                        margin: "0 10px",
+                        minWidth: "20px",
+                        display: "inline-block",
+                      }}
+                  >
                     {item.quantity}
                   </span>
                   <Button
@@ -328,13 +372,21 @@ const CartPage = () => {
                     size="sm"
                     onClick={() => handleQuantityChange(item.id, "increase")}
                     disabled={item.quantity >= getMaxQuantity(item)}
-                    style={{marginLeft: "5px", borderRadius: "15px", padding: "10px 15px"}}
+                    style={{
+                      marginLeft: "5px",
+                      borderRadius: "15px",
+                      padding: "10px 15px",
+                    }}
                   >
                     <FaPlus />
                   </Button>
                 </td>
                 <td>
-                  {((item.variation?.price || item.product?.price) * item.quantity)?.toLocaleString() || "N/A"} VNĐ
+                  {(
+                      (item.variation?.price || item.product?.price) *
+                      item.quantity
+                  )?.toLocaleString() || "N/A"}{" "}
+                  VNĐ
                 </td>
                 <td>
                   <Button
