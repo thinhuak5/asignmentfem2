@@ -344,17 +344,14 @@ const CartPage = () => {
                   )?.toLocaleString()}{" "}
                   VNĐ
                 </td>
+                <td>{(item.variation?.price || item.product?.price)?.toLocaleString()} VNĐ</td>
                 <td className="text-center">
                   <Button
                     variant="outline-danger"
                     size="sm"
                     onClick={() => handleQuantityChange(item.id, "decrease")}
                     disabled={item.quantity <= 1}
-                    style={{
-                      marginRight: "5px",
-                      borderRadius: "15px",
-                      padding: "10px 15px",
-                    }}
+                    style={{marginRight: "5px", borderRadius: "15px", padding: "10px 15px"}}
                   >
                     <FaMinus />
                   </Button>
@@ -372,11 +369,7 @@ const CartPage = () => {
                     size="sm"
                     onClick={() => handleQuantityChange(item.id, "increase")}
                     disabled={item.quantity >= getMaxQuantity(item)}
-                    style={{
-                      marginLeft: "5px",
-                      borderRadius: "15px",
-                      padding: "10px 15px",
-                    }}
+                    style={{marginLeft: "5px", borderRadius: "15px", padding: "10px 15px"}}
                   >
                     <FaPlus />
                   </Button>
