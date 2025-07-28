@@ -1,6 +1,6 @@
-import React, {useCallback, useEffect, useState} from "react";
-import {Link, useLocation, useNavigate} from "react-router-dom";
-import {Accordion, Alert, Badge, Button, Container, Form, Modal, Spinner, Table,} from "react-bootstrap";
+import React, { useCallback, useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Accordion, Alert, Badge, Button, Container, Form, Modal, Spinner, Table, } from "react-bootstrap";
 import Constanst from "../../../Constanst"; // Đảm bảo đường dẫn đúng
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -44,7 +44,7 @@ const OrderHistory = () => {
 
       const token = localStorage.getItem("authToken");
       const cartItemIds = JSON.parse(
-          sessionStorage.getItem("vnp_cart_item_ids") || "[]"
+        sessionStorage.getItem("vnp_cart_item_ids") || "[]"
       );
 
       if (cartItemIds.length > 0) {
@@ -54,16 +54,16 @@ const OrderHistory = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({cartItemIds}),
+          body: JSON.stringify({ cartItemIds }),
         })
-            .then((res) => res.json())
-            .then((data) => {
-              console.log("Xóa cart sau VNPAY:", data);
-              sessionStorage.removeItem("vnp_cart_item_ids");
-              localStorage.removeItem("cart");
-              // Tùy: reload lại cart context nếu có
-            })
-            .catch((err) => console.error("Lỗi khi xóa cart:", err));
+          .then((res) => res.json())
+          .then((data) => {
+            console.log("Xóa cart sau VNPAY:", data);
+            sessionStorage.removeItem("vnp_cart_item_ids");
+            localStorage.removeItem("cart");
+            // Tùy: reload lại cart context nếu có
+          })
+          .catch((err) => console.error("Lỗi khi xóa cart:", err));
       }
     }
 
@@ -155,7 +155,7 @@ const OrderHistory = () => {
     if (!token) {
       setError("Vui lòng đăng nhập để xem lịch sử đơn hàng.");
       setLoading(false);
-      navigate("/login", {state: {from: "/order-history"}}); // Chuyển hướng nếu không có token
+      navigate("/login", { state: { from: "/order-history" } }); // Chuyển hướng nếu không có token
       return;
     }
 
@@ -207,56 +207,56 @@ const OrderHistory = () => {
   useEffect(() => {
     const fetchMissingProductImages = async () => {
       const updatedOrders = await Promise.all(
-          orders.map(async (order) => {
-            if (!order.items || order.items.length === 0) return order;
-            const updatedItems = await Promise.all(
-                order.items.map(async (item) => {
-                  // Nếu thiếu productImages và images, fetch lại chi tiết sản phẩm
-                  if (
-                      item.product &&
-                      !item.product.productImages &&
-                      !item.product.images
-                  ) {
-                    try {
-                      const res = await fetch(
-                          `${Constanst.DOMAIN_API}/api/products/${item.product_id}`
-                      );
-                      if (res.ok) {
-                        const data = await res.json();
-                        return {
-                          ...item,
-                          product: {
-                            ...item.product,
-                            productImages: data.productImages,
-                            images: data.images,
-                          },
-                        };
-                      }
-                    } catch (e) {
-                      // Bỏ qua lỗi, giữ nguyên item
-                    }
+        orders.map(async (order) => {
+          if (!order.items || order.items.length === 0) return order;
+          const updatedItems = await Promise.all(
+            order.items.map(async (item) => {
+              // Nếu thiếu productImages và images, fetch lại chi tiết sản phẩm
+              if (
+                item.product &&
+                !item.product.productImages &&
+                !item.product.images
+              ) {
+                try {
+                  const res = await fetch(
+                    `${Constanst.DOMAIN_API}/api/products/${item.product_id}`
+                  );
+                  if (res.ok) {
+                    const data = await res.json();
+                    return {
+                      ...item,
+                      product: {
+                        ...item.product,
+                        productImages: data.productImages,
+                        images: data.images,
+                      },
+                    };
                   }
-                  return item;
-                })
-            );
-            return {...order, items: updatedItems};
-          })
+                } catch (e) {
+                  // Bỏ qua lỗi, giữ nguyên item
+                }
+              }
+              return item;
+            })
+          );
+          return { ...order, items: updatedItems };
+        })
       );
       setOrders(updatedOrders);
     };
 
     if (
-        orders.length > 0 &&
-        orders.some(
-            (order) =>
-                order.items &&
-                order.items.some(
-                    (item) =>
-                        item.product &&
-                        !item.product.productImages &&
-                        !item.product.images
-                )
-        )
+      orders.length > 0 &&
+      orders.some(
+        (order) =>
+          order.items &&
+          order.items.some(
+            (item) =>
+              item.product &&
+              !item.product.productImages &&
+              !item.product.images
+          )
+      )
     ) {
       fetchMissingProductImages();
     }
@@ -312,7 +312,7 @@ const OrderHistory = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({reason: finalReason}), // Gửi lý do hủy
+          body: JSON.stringify({ reason: finalReason }), // Gửi lý do hủy
         }
       );
 
@@ -325,8 +325,7 @@ const OrderHistory = () => {
       } else {
         const errorData = await res.json();
         alert(
-          `Lỗi khi hủy đơn hàng #${orderToCancel}: ${
-            errorData.message || res.statusText
+          `Lỗi khi hủy đơn hàng #${orderToCancel}: ${errorData.message || res.statusText
           }`
         );
       }
@@ -393,10 +392,16 @@ const OrderHistory = () => {
                   </span>
                   <span className="col-12 col-md-3 fw-bold text-md-end">
                     Tổng tiền:{" "}
-                    {order.totalAmount
-                      ? order.totalAmount.toLocaleString()
-                      : calculateOrderTotal(order.items).toLocaleString()}{" "}
+                    {(order.total_amount !== undefined
+                      ? order.total_amount
+                      : calculateOrderTotal(order.items) - (order.discount_amount || 0)
+                    ).toLocaleString()}{" "}
                     VNĐ
+                    {order.discount_amount > 0 && (
+                      <div className="text-success small">
+                        (Đã giảm: {order.discount_amount.toLocaleString()} VNĐ)
+                      </div>
+                    )}
                   </span>
                 </div>
               </Accordion.Header>
@@ -441,19 +446,19 @@ const OrderHistory = () => {
                           <td>
                             <div className="product-thumbnail">
                               {Array.isArray(item.product?.productImages) &&
-                              item.product.productImages.length > 0 ? (
-                                  <img
-                                      src={item.product.productImages[0].image_url}
-                                      alt={item.product?.name}
-                                      style={{
-                                        width: "50px",
-                                        height: "50px",
-                                        objectFit: "contain",
-                                      }}
-                                  />
+                                item.product.productImages.length > 0 ? (
+                                <img
+                                  src={item.product.productImages[0].image_url}
+                                  alt={item.product?.name}
+                                  style={{
+                                    width: "50px",
+                                    height: "50px",
+                                    objectFit: "contain",
+                                  }}
+                                />
                               ) : item.product?.images ? (
                                 <img
-                                    src={item.product.images.split(",")[0]}
+                                  src={item.product.images.split(",")[0]}
                                   alt={item.product?.name}
                                   style={{
                                     width: "50px",
@@ -469,17 +474,17 @@ const OrderHistory = () => {
 
                           <td>
                             <Link
-                                to={`/product/${item.product_id}`}
-                                className="text-decoration-none  fw-semibold"
+                              to={`/product/${item.product_id}`}
+                              className="text-decoration-none  fw-semibold"
                             >
                               {item.product?.name ||
-                                  `Sản phẩm ID: ${item.product_id}`}
+                                `Sản phẩm ID: ${item.product_id}`}
                             </Link>
 
                             {item.selectedVariation && (
-                                <div className="text-muted small">
-                                  ({item.selectedVariation.name})
-                                </div>
+                              <div className="text-muted small">
+                                ({item.selectedVariation.name})
+                              </div>
                             )}
                           </td>
 
