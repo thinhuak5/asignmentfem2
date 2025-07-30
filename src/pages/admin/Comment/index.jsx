@@ -1,218 +1,305 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Link } from 'react-router-dom'; // Sử dụng react-router-dom
-import Constanst from "../../../Constanst"; // Đường dẫn tới file hằng số của bạn
+import React, { useEffect, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
+import Constanst from "../../../Constanst";
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+import { toast } from "react-toastify";
 
-const AdminCommentList = () => {
-    const [reviews, setReviews] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [pagination, setPagination] = useState({
-        currentPage: 1,
-        totalPages: 1,
-        totalItems: 0,
-    });
-    // State cho bộ lọc
-    const [filterStatus, setFilterStatus] = useState(''); // '', '0', '1', '2'
-    const [searchTerm, setSearchTerm] = useState('');
+const AddProduct = () => {
+  const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    control,
+    formState: { errors },
+  } = useForm({ defaultValues: { variations: [], description: "" } });
 
-    const token = localStorage.getItem("authToken");
+  useEffect(() => {
+    register("description", { required: "Bắt buộc" });
+  }, [register]);
 
-    // Hàm để lấy dữ liệu từ API
-    const fetchReviews = useCallback(async (page = 1) => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            // Xây dựng query string
-            const params = new URLSearchParams({
-                page: page,
-                limit: 10,
-            });
-            if (filterStatus) params.append('status', filterStatus);
-            if (searchTerm) params.append('search', searchTerm);
+  const {
+    fields: variationFields,
+    append: appendVariation,
+    remove: removeVariation,
+  } = useFieldArray({ control, name: "variations" });
 
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/admin/reviews?${params.toString()}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+  const [categoryParents, setCategoryParents] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedParentId, setSelectedParentId] = useState("");
 
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.message || 'Không thể tải dữ liệu');
-            }
+  // Load danh mục cha
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
+        setCategoryParents(await res.json());
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
 
-            const data = await res.json();
-            setReviews(data.reviews);
-            setPagination({
-                currentPage: data.currentPage,
-                totalPages: data.totalPages,
-                totalItems: data.totalItems,
-            });
+  // Sync parent → hidden field
+  useEffect(() => {
+    setValue("categoryparent_id", selectedParentId);
+  }, [selectedParentId, setValue]);
 
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [token, filterStatus, searchTerm]);
-
-
-    useEffect(() => {
-        if (token) {
-            fetchReviews(1); // Lấy trang đầu tiên khi component mount hoặc filter thay đổi
-        } else {
-            setError("Vui lòng đăng nhập với tài khoản Admin.");
-            setIsLoading(false);
-        }
-    }, [fetchReviews, token]);
-
-    // Hàm xử lý khi nhấn nút tìm kiếm
-    const handleSearch = (e) => {
-        e.preventDefault();
-        fetchReviews(1); // Quay về trang 1 khi tìm kiếm mới
-    };
-
-    // Hàm render trạng thái với màu sắc
-    const renderStatus = (status) => {
-        switch (status) {
-            case 0: return <span className="badge bg-warning text-dark">Chờ duyệt</span>;
-            case 1: return <span className="badge bg-success">Đã duyệt</span>;
-            case 2: return <span className="badge bg-danger">Đã từ chối</span>;
-            default: return <span className="badge bg-secondary">Không xác định</span>;
-        }
-    };
-    
-    // Hàm xóa review
-    const handleDelete = async (reviewId) => {
-        if (!window.confirm(`Bạn có chắc muốn xóa bình luận #${reviewId}?`)) return;
-
-        try {
-             const res = await fetch(`${Constanst.DOMAIN_API}/api/admin/reviews/${reviewId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-             const data = await res.json();
-             if (!res.ok) throw new Error(data.message);
-             
-             alert("Xóa thành công!");
-             fetchReviews(pagination.currentPage); // Tải lại trang hiện tại
-        } catch (err) {
-            alert(`Lỗi: ${err.message}`);
-        }
-    };
-
-    if (isLoading) {
-        return <div className="container text-center mt-5"><h4>Đang tải dữ liệu...</h4></div>;
+  // Load danh mục con
+  useEffect(() => {
+    if (!selectedParentId) {
+      setCategories([]);
+      setValue("category_id", "");
+      return;
     }
+    (async () => {
+      try {
+        const res = await fetch(
+          `${Constanst.DOMAIN_API}/api/categories/by-parent/${selectedParentId}`
+        );
+        setCategories(await res.json());
+      } catch (err) {
+        console.error(err);
+        setCategories([]);
+      }
+    })();
+  }, [selectedParentId, setValue]);
 
-    if (error) {
-        return <div className="container alert alert-danger mt-5">{error}</div>;
+  const onSubmit = async (data) => {
+    try {
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("description", data.description);
+      formData.append("status", data.status === "Còn hàng" ? 1 : 0);
+      formData.append("categoryparent_id", data.categoryparent_id);
+      formData.append("category_id", data.category_id);
+
+      const rawVars = data.variations || [];
+      const varsMeta = rawVars.map(({ images, ...rest }) => rest);
+      formData.append("variations", JSON.stringify(varsMeta));
+
+      rawVars.forEach((v, idx) => {
+        if (v.images && v.images.length) {
+          Array.from(v.images).forEach((file) => {
+            formData.append("images", file);
+            formData.append("variation_idx", idx);
+          });
+        }
+      });
+
+      const res = await fetch(`${Constanst.DOMAIN_API}/api/products/add`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Error");
+
+      toast.success("Thêm sản phẩm thành công!");
+      navigate("/admin/product");
+    } catch (err) {
+      toast.error(`Lỗi: ${err.message}`);
     }
+  };
 
-    return (
-        <div className="container mt-4">
-            <h2 className="mb-4">Quản lý Bình luận / Đánh giá</h2>
-            
-            {/* Form Lọc và Tìm kiếm */}
-            <div className="card mb-4">
-                <div className="card-body">
-                    <form onSubmit={handleSearch} className="row g-3 align-items-end">
-                        <div className="col-md-5">
-                            <label htmlFor="searchTerm" className="form-label">Tìm kiếm</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                id="searchTerm"
-                                placeholder="Nhập tên người dùng, sản phẩm, nội dung..."
-                                value={searchTerm}
-                                onChange={e => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <div className="col-md-4">
-                             <label htmlFor="filterStatus" className="form-label">Trạng thái</label>
-                            <select
-                                id="filterStatus"
-                                className="form-select"
-                                value={filterStatus}
-                                onChange={e => setFilterStatus(e.target.value)}
-                            >
-                                <option value="">Tất cả</option>
-                                <option value="1">Đã duyệt</option>
-                                <option value="0">Chờ duyệt</option>
-                                <option value="2">Đã từ chối</option>
-                            </select>
-                        </div>
-                        <div className="col-md-3">
-                            <button type="submit" className="btn btn-primary w-100">Lọc / Tìm kiếm</button>
-                        </div>
-                    </form>
-                </div>
+  return (
+    <div className="container">
+      <h2>Thêm sản phẩm</h2>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        encType="multipart/form-data"
+        className="border p-4 rounded bg-light"
+      >
+        {/* Product Info Card */}
+        <div className="card mb-3">
+          <div className="card-body">
+            <h5 className="card-title">Thông tin sản phẩm</h5>
+            <div className="mb-3">
+              <label className="form-label">Tên sản phẩm</label>
+              <input
+                className="form-control"
+                {...register("name", { required: "Bắt buộc" })}
+              />
+              {errors.name && (
+                <small className="text-danger">{errors.name.message}</small>
+              )}
             </div>
 
-            <table className="table table-bordered table-striped table-hover align-middle">
-                <thead className="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Người dùng</th>
-                    <th>Sản phẩm</th>
-                    <th>Nội dung</th>
-                    <th>Trạng thái</th>
-                    <th>Ngày tạo</th>
-                    <th>Hành động</th>
-                </tr>
-                </thead>
-                <tbody>
-                {reviews.length > 0 ? (
-                    reviews.map((review) => (
-                    <tr key={review.id}>
-                        <td>{review.id}</td>
-                        <td>
-                            <img 
-                                src={review.user.avatar ? `${Constanst.DOMAIN_API}/uploads/${review.user.avatar}` : "/images/default-avatar.png"} 
-                                alt={review.user.name} 
-                                className="rounded-circle me-2" width="40" height="40"
-                            />
-                            {review.user.name}
-                        </td>
-                        <td>{review.product.name}</td>
-                        <td style={{maxWidth: '300px'}}>
-                            <div><strong>Sao: {review.rating} ★</strong></div>
-                            <small>{review.comment}</small>
-                        </td>
-                        <td>{renderStatus(review.status)}</td>
-                        <td>{new Date(review.createdAt).toLocaleDateString()}</td>
-                        <td>
-                            <Link to={`/admin/review_edit/${review.id}`} className="btn btn-primary btn-sm me-2" title="Sửa trạng thái">
-                                Sửa
-                            </Link>
-                            <button onClick={() => handleDelete(review.id)} className="btn btn-danger btn-sm" title="Xóa">
-                                Xóa
-                            </button>
-                        </td>
-                    </tr>
-                    ))
-                ) : (
-                    <tr>
-                        <td colSpan="7" className="text-center">Không tìm thấy bình luận nào.</td>
-                    </tr>
-                )}
-                </tbody>
-            </table>
-
-             {/* Phân trang */}
-             {pagination.totalPages > 1 && (
-                 <nav>
-                    <ul className="pagination justify-content-center">
-                        {[...Array(pagination.totalPages).keys()].map(num => (
-                             <li key={num + 1} className={`page-item ${pagination.currentPage === num + 1 ? 'active' : ''}`}>
-                                <button onClick={() => fetchReviews(num + 1)} className="page-link">{num + 1}</button>
-                            </li>
-                        ))}
-                    </ul>
-                 </nav>
-             )}
+            {/* Mô tả */}
+            <div className="mb-3">
+              <label className="form-label">Mô tả</label>
+              <div className="border rounded p-2" style={{ minHeight: 40 }}>
+                <CKEditor
+                  editor={ClassicEditor}
+                  data={watch("description")}
+                  onChange={(_, editor) =>
+                    setValue("description", editor.getData(), {
+                      shouldValidate: true,
+                    })
+                  }
+                />
+              </div>
+              {errors.description && (
+                <small className="text-danger">
+                  {errors.description.message}
+                </small>
+              )}
+            </div>
+          </div>
         </div>
-    );
+
+        {/* Status & Categories Card */}
+        <div className="card mb-3">
+          <div className="card-body">
+            <h5 className="card-title">Trạng thái và Danh mục</h5>
+            <div className="row">
+              <div className="col">
+                <label className="form-label">Trạng thái</label>
+                <select className="form-select" {...register("status")}>
+                  <option value="Còn hàng">Còn hàng</option>
+                  <option value="Hết hàng">Hết hàng</option>
+                </select>
+              </div>
+              <div className="col">
+                <label className="form-label">Danh mục cha</label>
+                <select
+                  className="form-select"
+                  value={selectedParentId}
+                  onChange={(e) => setSelectedParentId(e.target.value)}
+                >
+                  <option value="">-- Chọn --</option>
+                  {categoryParents.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col">
+                <label className="form-label">Danh mục con</label>
+                <select
+                  className="form-select"
+                  {...register("category_id", { required: "Bắt buộc" })}
+                  disabled={!selectedParentId}
+                >
+                  <option value="">-- Chọn --</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.category_id && (
+                  <small className="text-danger">
+                    {errors.category_id.message}
+                  </small>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Variations Section with Multiple Cards */}
+        <div className="row">
+          {variationFields.map((field, idx) => (
+            <div key={field.id} className="col-12 col-md-6 mb-3">
+              {/* Separate Card for each Variation */}
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title">Biến thể #{idx + 1}</h5>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger float-end"
+                    onClick={() => removeVariation(idx)}
+                  >
+                    Xóa
+                  </button>
+                  <div className="row g-2">
+                    <div className="col">
+                      <input
+                        className="form-control"
+                        placeholder="Tên biến thể"
+                        {...register(`variations.${idx}.name`, {
+                          required: "Bắt buộc",
+                        })}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                        className="form-control"
+                        placeholder="Mô Tả"
+                        {...register(`variations.${idx}.value`, {
+                          required: "Bắt buộc",
+                        })}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Giá"
+                        {...register(`variations.${idx}.price`)}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Số lượng"
+                        {...register(`variations.${idx}.quantity`)}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Tồn kho tối thiểu"
+                        {...register(`variations.${idx}.min_stock`)}
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label">
+                        Ảnh biến thể #{idx + 1}
+                      </label>
+                      <input
+                        type="file"
+                        className="form-control"
+                        {...register(`variations.${idx}.images`)}
+                        multiple
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary me-2"
+          onClick={() =>
+            appendVariation({
+              name: "",
+              value: "",
+              price: "",
+              quantity: "",
+              min_stock: "",
+              images: [],
+            })
+          }
+        >
+          Thêm biến thể
+        </button>
+        <button type="submit" className="btn btn-success me-2">
+          Thêm sản phẩm
+        </button>
+        <Link to="/admin/product" className="btn btn-secondary">
+          Quay lại
+        </Link>
+      </form>
+    </div>
+  );
 };
 
-export default AdminCommentList;
+export default AddProduct;

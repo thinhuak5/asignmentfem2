@@ -495,7 +495,6 @@ const Profile = () => {
 
       <div style={styles.formGroup}>
         <label style={styles.label}>Tên:</label>
-        {/* Assuming 'name' field from API contains both first and last name, or adjust as needed */}
         <div style={styles.readOnlyValue}>
           {profile.name || "Chưa cập nhật"}
         </div>

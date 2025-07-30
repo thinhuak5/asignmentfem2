@@ -1,8 +1,8 @@
-import React, {useEffect, useState} from "react";
-import {useFieldArray, useForm} from "react-hook-form";
-import {Link, useNavigate} from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
 import Constanst from "../../../Constanst";
-import {CKEditor} from "@ckeditor/ckeditor5-react";
+import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 const AddProduct = () => {
@@ -14,104 +14,92 @@ const AddProduct = () => {
     watch,
     control,
     formState: { errors },
-  } = useForm();
+  } = useForm({ defaultValues: { variations: [], description: "" } });
 
-  // Quản lý biến thể động
+  useEffect(() => {
+    register("description", { required: "Bắt buộc" });
+  }, [register]);
+
   const {
     fields: variationFields,
     append: appendVariation,
     remove: removeVariation,
-  } = useFieldArray({
-    control,
-    name: "variations",
-  });
+  } = useFieldArray({ control, name: "variations" });
 
   const [categoryParents, setCategoryParents] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedParentId, setSelectedParentId] = useState("");
 
-  const priceValue = watch("price");
 
+  // Load danh mục cha
   useEffect(() => {
-    const fetchCategoryParents = async () => {
+    (async () => {
       try {
         const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
-        if (!res.ok) throw new Error("Lỗi khi lấy danh mục cha");
-        const data = await res.json();
-        setCategoryParents(data);
-      } catch (error) {
-        console.error("Lỗi khi load danh mục cha:", error);
+        setCategoryParents(await res.json());
+      } catch (err) {
+        console.error(err);
       }
-    };
-    fetchCategoryParents();
+    })();
   }, []);
 
+  // Sync parent → hidden field
   useEffect(() => {
     setValue("categoryparent_id", selectedParentId);
   }, [selectedParentId, setValue]);
 
+  // Load danh mục con
   useEffect(() => {
-    if (selectedParentId) {
-      const fetchCategories = async () => {
-        try {
-          const res = await fetch(
-            `${Constanst.DOMAIN_API}/api/categories/by-parent/${selectedParentId}`
-          );
-          if (!res.ok) throw new Error("Lỗi khi lấy danh mục con");
-          const data = await res.json();
-          setCategories(data);
-        } catch (error) {
-          console.error("Lỗi khi load danh mục con:", error);
-          setCategories([]);
-        }
-      };
-      fetchCategories();
-    } else {
+    if (!selectedParentId) {
       setCategories([]);
       setValue("category_id", "");
+      return;
     }
+    (async () => {
+      try {
+        const res = await fetch(
+          `${Constanst.DOMAIN_API}/api/categories/by-parent/${selectedParentId}`
+        );
+        setCategories(await res.json());
+      } catch (err) {
+        console.error(err);
+        setCategories([]);
+      }
+    })();
   }, [selectedParentId, setValue]);
 
-  // Xử lý submit form
   const onSubmit = async (data) => {
     try {
       const formData = new FormData();
-      const status = data.status === "Còn hàng" ? 1 : 0;
-
       formData.append("name", data.name);
       formData.append("description", data.description);
-      formData.append("price", data.price);
-      formData.append("discount_price", data.discount_price || "");
-      formData.append("status", status);
+      formData.append("status", data.status === "Còn hàng" ? 1 : 0);
+      formData.append("categoryparent_id", data.categoryparent_id);
       formData.append("category_id", data.category_id);
-      formData.append("categoryparent_id", selectedParentId || "");
-      formData.append("quantity", data.quantity);
-      formData.append("minStock", data.minStock);
 
-      // Thêm nhiều ảnh
-      if (data.images && data.images.length > 0) {
-        for (let i = 0; i < data.images.length; i++) {
-          formData.append("images", data.images[i]);
+      const rawVars = data.variations || [];
+      const varsMeta = rawVars.map(({ images, ...rest }) => rest);
+      formData.append("variations", JSON.stringify(varsMeta));
+
+      rawVars.forEach((v, idx) => {
+        if (v.images && v.images.length) {
+          Array.from(v.images).forEach((file) => {
+            formData.append("images", file);
+            formData.append("variation_idx", idx);
+          });
         }
-      }
-
-      // Thêm biến thể (dạng JSON)
-      formData.append("variations", JSON.stringify(data.variations || []));
+      });
 
       const res = await fetch(`${Constanst.DOMAIN_API}/api/products/add`, {
         method: "POST",
         body: formData,
       });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Lỗi khi thêm sản phẩm");
-      }
+      if (!res.ok) throw new Error((await res.json()).error || "Error");
 
       alert("Thêm sản phẩm thành công");
       navigate("/admin/product");
     } catch (err) {
-      alert(`Lỗi khi thêm sản phẩm: ${err.message}`);
+      alert(`Lỗi: ${err.message}`);
     }
   };
 
@@ -120,240 +108,189 @@ const AddProduct = () => {
       <h2>Thêm sản phẩm</h2>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="border p-4 rounded bg-light"
         encType="multipart/form-data"
+        className="border p-4 rounded bg-light"
       >
-        {/* Tên sản phẩm */}
-        <div className="mb-3">
-          <label className="form-label">Tên sản phẩm</label>
-          <input
-            className="form-control"
-            {...register("name", { required: "Tên không được để trống" })}
-          />
-          {errors.name && (
-            <small className="text-danger">{errors.name.message}</small>
-          )}
-        </div>
+        {/* Product Info Card */}
+        <div className="card mb-3">
+          <div className="card-body">
+            <h5 className="card-title">Thông tin sản phẩm</h5>
+            <div className="mb-3">
+              <label className="form-label">Tên sản phẩm</label>
+              <input
+                className="form-control"
+                {...register("name", { required: "Bắt buộc" })}
+              />
+              {errors.name && (
+                <small className="text-danger">{errors.name.message}</small>
+              )}
+            </div>
 
-        {/* Giá */}
-        <div className="mb-3">
-          <label className="form-label">Giá</label>
-          <input
-            type="number"
-            className="form-control"
-            {...register("price", {
-              required: "Giá không được để trống",
-              min: { value: 1, message: "Giá phải lớn hơn 0" },
-            })}
-          />
-          {errors.price && (
-            <small className="text-danger">{errors.price.message}</small>
-          )}
-        </div>
-
-        {/* Giá khuyến mãi */}
-        <div className="mb-3">
-          <label className="form-label">Giá khuyến mãi</label>
-          <input
-            type="number"
-            className="form-control"
-            {...register("discount_price", {
-              validate: (value) => {
-                if (value === "" || value === undefined) return true;
-                if (parseFloat(value) >= parseFloat(priceValue)) {
-                  return "Giá khuyến mãi phải nhỏ hơn giá gốc";
-                }
-                return true;
-              },
-            })}
-          />
-          {errors.discount_price && (
-              <small className="text-danger">
-                {errors.discount_price.message}
-              </small>
-          )}
-        </div>
-
-        {/* Số lượng tồn kho */}
-        <div className="mb-3">
-          <label className="form-label">Số lượng tồn kho (quantity)</label>
-          <input
-            type="number"
-            className="form-control"
-            {...register("quantity", {
-              required: "Vui lòng nhập số lượng tồn kho",
-              min: { value: 0, message: "Không được âm" },
-            })}
-          />
-          {errors.quantity && (
-            <small className="text-danger">{errors.quantity.message}</small>
-          )}
-        </div>
-
-        {/* Tồn kho cảnh báo */}
-        <div className="mb-3">
-          <label className="form-label">Tồn kho cảnh báo (minStock)</label>
-          <input
-            type="number"
-            className="form-control"
-            {...register("minStock", {
-              required: "Vui lòng nhập tồn kho cảnh báo",
-              min: { value: 0, message: "Không được âm" },
-            })}
-          />
-          {errors.minStock && (
-            <small className="text-danger">{errors.minStock.message}</small>
-          )}
-        </div>
-
-        {/* Trạng thái */}
-        <div className="mb-3">
-          <label className="form-label">Trạng thái</label>
-          <select className="form-select" {...register("status")}>
-            <option value="Còn hàng">Còn hàng</option>
-            <option value="Hết hàng">Hết hàng</option>
-          </select>
-        </div>
-
-        {/* Danh mục cha */}
-        <div className="mb-3">
-          <label className="form-label">Danh mục cha</label>
-          <select
-            className="form-select"
-            value={selectedParentId}
-            onChange={(e) => setSelectedParentId(e.target.value)}
-          >
-            <option value="">-- Chọn danh mục cha --</option>
-            {categoryParents.map((parent) => (
-              <option key={parent.id} value={parent.id}>
-                {parent.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Danh mục con */}
-        <div className="mb-3">
-          <label className="form-label">Danh mục con</label>
-          <select
-            className="form-select"
-            {...register("category_id", { required: "Phải chọn danh mục con" })}
-            disabled={!selectedParentId}
-          >
-            <option value="">-- Chọn danh mục con --</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-          {errors.category_id && (
-            <small className="text-danger">{errors.category_id.message}</small>
-          )}
-        </div>
-
-        {/* Hình ảnh (nhiều ảnh) */}
-        <div className="mb-3">
-          <label className="form-label">
-            Chọn hình ảnh (có thể chọn nhiều)
-          </label>
-          <input
-            type="file"
-            className="form-control"
-            {...register("images", { required: "Vui lòng chọn ảnh" })}
-            multiple
-          />
-          {errors.images && (
-            <small className="text-danger">{errors.images.message}</small>
-          )}
-        </div>
-        {/* Mô tả */}
-        <div className="mb-3">
-          <label className="form-label">Mô tả</label>
-          <div className="border rounded" style={{minHeight: "200px"}}>
-            <CKEditor
-                editor={ClassicEditor}
-                data={watch("description") || ""}
-                onChange={(event, editor) => {
-                  const data = editor.getData();
-                  setValue("description", data, {shouldValidate: true});
-                }}
-                onBlur={() => {
-                  if (!watch("description")) {
-                    setValue("description", "", {shouldValidate: true});
+            {/* Mô tả */}
+            <div className="mb-3">
+              <label className="form-label">Mô tả</label>
+              <div className="border rounded p-2" style={{ minHeight: 40 }}>
+                <CKEditor
+                  editor={ClassicEditor}
+                  data={watch("description")}
+                  onChange={(_, editor) =>
+                    setValue("description", editor.getData(), {
+                      shouldValidate: true,
+                    })
                   }
-                }}
-            />
+                />
+              </div>
+              {errors.description && (
+                <small className="text-danger">
+                  {errors.description.message}
+                </small>
+              )}
+            </div>
           </div>
-          {errors.description && (
-              <small className="text-danger">{errors.description.message}</small>
-          )}
         </div>
-        {/* Biến thể sản phẩm */}
-        <div className="mb-3">
-          <label className="form-label">Biến thể sản phẩm</label>
+
+        {/* Status & Categories Card */}
+        <div className="card mb-3">
+          <div className="card-body">
+            <h5 className="card-title">Trạng thái và Danh mục</h5>
+            <div className="row">
+              <div className="col">
+                <label className="form-label">Trạng thái</label>
+                <select className="form-select" {...register("status")}>
+                  <option value="Còn hàng">Còn hàng</option>
+                  <option value="Hết hàng">Hết hàng</option>
+                </select>
+              </div>
+              <div className="col">
+                <label className="form-label">Danh mục cha</label>
+                <select
+                  className="form-select"
+                  value={selectedParentId}
+                  onChange={(e) => setSelectedParentId(e.target.value)}
+                >
+                  <option value="">-- Chọn --</option>
+                  {categoryParents.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col">
+                <label className="form-label">Danh mục con</label>
+                <select
+                  className="form-select"
+                  {...register("category_id", { required: "Bắt buộc" })}
+                  disabled={!selectedParentId}
+                >
+                  <option value="">-- Chọn --</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.category_id && (
+                  <small className="text-danger">
+                    {errors.category_id.message}
+                  </small>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Variations Section with Multiple Cards */}
+        <div className="row">
           {variationFields.map((field, idx) => (
-            <div key={field.id} className="border rounded p-2 mb-2">
-              <div className="row">
-                <div className="col">
-                  <input
-                      className="form-control mb-1"
-                      placeholder="Tên biến thể"
-                      {...register(`variations.${idx}.name`)}
-                  />
-                </div>
-                <div className="col">
-                  <input
-                      className="form-control mb-1"
-                      placeholder="Nội dung"
-                      {...register(`variations.${idx}.value`)}
-                  />
-                </div>
-                <div className="col">
-                  <input
-                      className="form-control mb-1"
-                      placeholder="Giá"
-                      type="number"
-                      {...register(`variations.${idx}.price`)}
-                  />
-                </div>
-                <div className="col">
-                  <input
-                      className="form-control mb-1"
-                      placeholder="Số lượng"
-                      type="number"
-                      {...register(`variations.${idx}.quantity`)}
-                  />
-                </div>
-                <div className="col">
-                  <input
-                      className="form-control mb-1"
-                      placeholder="Tồn kho tối thiểu"
-                      type="number"
-                      {...register(`variations.${idx}.minStock`)}
-                  />
-                </div>
-                <div className="col-auto">
+            <div key={field.id} className="col-12 col-md-6 mb-3">
+              {/* Separate Card for each Variation */}
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title">Biến thể #{idx + 1}</h5>
                   <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      onClick={() => removeVariation(idx)}
+                    type="button"
+                    className="btn btn-sm btn-danger float-end"
+                    onClick={() => removeVariation(idx)}
                   >
                     Xóa
                   </button>
+                  <div className="row g-2">
+                    <div className="col">
+                      <input
+                        className="form-control"
+                        placeholder="Tên biến thể"
+                        {...register(`variations.${idx}.name`, {
+                          required: "Bắt buộc",
+                        })}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                        className="form-control"
+                        placeholder="Mô Tả"
+                        {...register(`variations.${idx}.value`, {
+                          required: "Bắt buộc",
+                        })}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Giá"
+                        {...register(`variations.${idx}.price`)}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Số lượng"
+                        {...register(`variations.${idx}.quantity`)}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Tồn kho tối thiểu"
+                        {...register(`variations.${idx}.min_stock`)}
+                      />
+                    </div>
+                    <div className="col-12">
+                      <label className="form-label">
+                        Ảnh biến thể #{idx + 1}
+                      </label>
+                      <input
+                        type="file"
+                        className="form-control"
+                        {...register(`variations.${idx}.images`)}
+                        multiple
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           ))}
-          <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => appendVariation({})}
-          >
-            Thêm biến thể
-          </button>
         </div>
-
+        <button
+          type="button"
+          className="btn btn-primary me-2"
+          onClick={() =>
+            appendVariation({
+              name: "",
+              value: "",
+              price: "",
+              quantity: "",
+              min_stock: "",
+              images: [],
+            })
+          }
+        >
+          Thêm biến thể
+        </button>
         <button type="submit" className="btn btn-success me-2">
           Thêm sản phẩm
         </button>

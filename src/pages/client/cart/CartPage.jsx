@@ -22,65 +22,53 @@ const CartPage = () => {
       setError("Vui lòng đăng nhập để xem giỏ hàng.");
       return;
     }
-
     try {
-      const response = await fetch(`${Constants.DOMAIN_API}/api/cart`, {
+        const res = await fetch(`${Constants.DOMAIN_API}/api/cart`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+            headers: {Authorization: `Bearer ${token}`},
       });
-
-      if (!response.ok) {
-        const errorData = await response
-            .json()
-            .catch(() => ({message: "Lỗi không xác định"}));
-        throw new Error(errorData.message || "Không thể tải giỏ hàng.");
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({message: "Lỗi"}));
+            throw new Error(err.message);
       }
-
-      const cartData = await response.json();
-      setCart(cartData);
-      if (cartData.length > 0) {
-        setSelectedItems(cartData.map((item) => item.id));
-      }
+        const data = await res.json();
+        setCart(data);
+        setSelectedItems(data.map((item) => item.id));
       setError("");
-    } catch (error) {
-      console.error("Lỗi khi lấy giỏ hàng từ API:", error);
-      setError(error.message || "Không thể tải giỏ hàng.");
+    } catch (e) {
+        console.error(e);
+        setError(e.message || "Không thể tải giỏ hàng.");
     }
   }, []);
 
-  const saveCartToAPI = async (cartItemId, newQuantity) => {
+    const saveCartToAPI = async (cartItemId, newQty) => {
     const token = localStorage.getItem("authToken");
     if (!token) {
       setError("Vui lòng đăng nhập để cập nhật giỏ hàng.");
       return false;
     }
-
     try {
-      const response = await fetch(
-          `${Constants.DOMAIN_API}/api/cart/update/${cartItemId}`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({quantity: newQuantity}),
-          }
+        const res = await fetch(
+            `${Constants.DOMAIN_API}/api/cart/update/${cartItemId}`,
+            {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({quantity: newQty}),
+            }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Cập nhật giỏ hàng thất bại.");
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message);
       }
-
       setSuccess("Cập nhật số lượng thành công!");
       setTimeout(() => setSuccess(""), 3000);
       return true;
-    } catch (error) {
-      console.error("Lỗi khi lưu giỏ hàng:", error);
-      setError(error.message || "Không thể cập nhật giỏ hàng.");
+    } catch (e) {
+        console.error(e);
+        setError(e.message || "Cập nhật thất bại.");
       return false;
     }
   };
@@ -91,32 +79,21 @@ const CartPage = () => {
       setError("Vui lòng đăng nhập để xóa sản phẩm.");
       return false;
     }
-
     try {
-      const response = await fetch(
-          `${Constants.DOMAIN_API}/api/cart/${cartItemId}`,
-          {
+        const res = await fetch(`${Constants.DOMAIN_API}/api/cart/${cartItemId}`, {
             method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-            errorData.message || "Xóa sản phẩm khỏi giỏ hàng thất bại."
-        );
-      }
-
-      setSuccess("Xóa sản phẩm khỏi giỏ hàng thành công!");
+            headers: {Authorization: `Bearer ${token}`},
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.message);
+        }
+        setSuccess("Xóa sản phẩm thành công!");
       setTimeout(() => setSuccess(""), 3000);
       return true;
-    } catch (error) {
-      console.error("Lỗi khi xóa sản phẩm khỏi giỏ hàng:", error);
-      setError(error.message || "Không thể xóa sản phẩm khỏi giỏ hàng.");
+    } catch (e) {
+        console.error(e);
+        setError(e.message || "Xóa thất bại.");
       return false;
     }
   };
@@ -125,162 +102,108 @@ const CartPage = () => {
     const token = localStorage.getItem("authToken");
     if (token) {
       try {
-        const decodedToken = jwtDecode(token);
-        if (decodedToken.exp * 1000 > Date.now()) {
+          const decoded = jwtDecode(token);
+          if (decoded.exp * 1000 > Date.now()) {
           setIsLoggedIn(true);
           setUserInfo({
-            id: decodedToken.id,
-            name: decodedToken.name,
-            email: decodedToken.email,
-            role: decodedToken.role,
-            phone: decodedToken.phone || null,
+              id: decoded.id,
+              name: decoded.name,
+              email: decoded.email,
+              role: decoded.role,
           });
-        } else {
-          setIsLoggedIn(false);
-          setUserInfo(null);
-          localStorage.removeItem("authToken");
-          setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
-        }
-      } catch (error) {
-        setIsLoggedIn(false);
-        setUserInfo(null);
-        localStorage.removeItem("authToken");
-        setError("Token không hợp lệ. Vui lòng đăng nhập lại.");
+              return;
+          }
+      } catch {
       }
-    } else {
+        localStorage.removeItem("authToken");
+        setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+    }
       setIsLoggedIn(false);
       setUserInfo(null);
       setCart([]);
       setSelectedItems([]);
-    }
   }, []);
 
   useEffect(() => {
-    const fetchCartAndLogin = async () => {
       checkLoginStatus();
-      await getCartFromAPI();
-    };
-    fetchCartAndLogin();
-  }, [getCartFromAPI, checkLoginStatus]);
+      getCartFromAPI();
+  }, [checkLoginStatus, getCartFromAPI]);
 
   const getMaxQuantity = (item) => {
-    if (item.variation && typeof item.variation.quantity === "number") {
-      return item.variation.quantity;
-    }
-    if (item.product && typeof item.product.quantity === "number") {
-      return item.product.quantity;
-    }
-    return 10; // Default value
+      return item.variation && typeof item.variation.quantity === "number"
+          ? item.variation.quantity
+          : 10;
   };
 
-  const handleQuantityChange = async (cartItemId, action) => {
-    let newQuantity = 0;
-    const updatedCart = cart.map((item) => {
-      if (item.id === cartItemId) {
-        newQuantity = item.quantity;
-        const maxQuantity = getMaxQuantity(item);
-        if (action === "increase" && newQuantity < maxQuantity) {
-          newQuantity += 1;
-        } else if (action === "decrease" && newQuantity > 1) {
-          newQuantity -= 1;
-        }
-        return {...item, quantity: newQuantity};
+    const handleQuantityChange = async (id, action) => {
+        const updated = cart.map((item) => {
+            if (item.id === id) {
+                let qty = item.quantity;
+                const max = getMaxQuantity(item);
+                if (action === "increase" && qty < max) qty++;
+                if (action === "decrease" && qty > 1) qty--;
+                return {...item, quantity: qty};
       }
       return item;
     });
-
-    const itemToUpdate = updatedCart.find((item) => item.id === cartItemId);
-    if (itemToUpdate) {
-      const success = await saveCartToAPI(cartItemId, itemToUpdate.quantity);
-      if (success) {
-        setCart(updatedCart);
-      }
+        const item = updated.find((i) => i.id === id);
+        if (item && (await saveCartToAPI(id, item.quantity))) {
+            setCart(updated);
     }
   };
 
-  const removeFromCart = async (cartItemId) => {
-    const confirmDelete = window.confirm(
-        "Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?"
+    const removeFromCart = async (id) => {
+        if (!window.confirm("Xóa sản phẩm này?")) return;
+        if (await deleteCartToAPI(id)) {
+            setCart(cart.filter((i) => i.id !== id));
+            setSelectedItems((sel) => sel.filter((x) => x !== id));
+    }
+  };
+
+    const toggleSelectItem = (id) =>
+        setSelectedItems((sel) =>
+            sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]
     );
-    if (!confirmDelete) return;
-
-    const success = await deleteCartToAPI(cartItemId);
-    if (success) {
-      const updatedCart = cart.filter((item) => item.id !== cartItemId);
-      setCart(updatedCart);
-      setSelectedItems((prev) => prev.filter((id) => id !== cartItemId));
-    }
-  };
-
-  const toggleSelectItem = (cartItemId) => {
-    setSelectedItems((prev) =>
-      prev.includes(cartItemId)
-        ? prev.filter((id) => id !== cartItemId)
-        : [...prev, cartItemId]
-    );
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedItems.length === cart.length && cart.length > 0) {
-      setSelectedItems([]);
-    } else {
-      setSelectedItems(cart.map((item) => item.id));
-    }
-  };
-
-  const calculateTotal = () => {
-    return cart.reduce((total, item) => {
-      if (selectedItems.includes(item.id)) {
-        const itemPrice = Number(
-            item.variation?.price || item.product?.price || 0
+    const toggleSelectAll = () =>
+        setSelectedItems((sel) =>
+            sel.length === cart.length ? [] : cart.map((i) => i.id)
         );
-        return total + itemPrice * Number(item.quantity);
-      }
-      return total;
+
+    const calculateTotal = () =>
+        cart.reduce((sum, item) => {
+            if (selectedItems.includes(item.id) && item.variation?.price) {
+                return sum + item.variation.price * item.quantity;
+            }
+            return sum;
     }, 0);
-  };
 
   const handleCheckout = () => {
-    if (!isLoggedIn || !userInfo) {
+      if (!isLoggedIn) {
       navigate("/login", { state: { from: "/cart" } });
       return;
     }
-
-    const selectedCartItems = cart.filter((item) =>
-        selectedItems.includes(item.id)
-    );
-    if (selectedCartItems.length === 0) {
-      setError("Vui lòng chọn ít nhất một sản phẩm để thanh toán.");
+      if (selectedItems.length === 0) {
+          setError("Vui lòng chọn ít nhất một sản phẩm.");
       return;
     }
-
-    navigate("/oder", {
-      state: {
-        cartItems: selectedCartItems,
-        userInfo: userInfo,
-      },
-    });
+      const selected = cart.filter((i) => selectedItems.includes(i.id));
+      navigate("/oder", {state: {cartItems: selected, userInfo}});
   };
 
   const renderCartItems = () => {
     if (cart.length === 0) {
-      return <Alert variant="info">Giỏ hàng của bạn đang trống.</Alert>;
+        return <Alert variant="info">Giỏ hàng trống.</Alert>;
     }
-
     return (
       <>
         <Button
-            variant={
-              selectedItems.length === cart.length && cart.length > 0
-                  ? "secondary"
-                  : "info"
-            }
           className="mb-2"
+          variant={selectedItems.length === cart.length ? "secondary" : "info"}
           onClick={toggleSelectAll}
         >
-          {selectedItems.length === cart.length && cart.length > 0
-              ? "Bỏ chọn tất cả"
-              : "Chọn tất cả"}
+            {selectedItems.length === cart.length
+                ? "Bỏ chọn tất cả"
+                : "Chọn tất cả"}
         </Button>
 
         <Table responsive hover className="align-middle">
@@ -300,100 +223,62 @@ const CartPage = () => {
               <tr key={item.id}>
                 <td>
                   <Form.Check
-                    type="checkbox"
                     checked={selectedItems.includes(item.id)}
                     onChange={() => toggleSelectItem(item.id)}
                   />
                 </td>
                 <td>
-                  <div className="product">
-                    {item.product?.image_url ? (
-                      <img
-                          src={item.product.image_url}
-                        className="product-thumbnail"
-                        alt={item.product?.name}
-                        style={{
-                          width: "60px",
-                          height: "60px",
-                          objectFit: "contain",
-                        }}
-                      />
+                    {item.variation?.image_url ? (
+                        <img
+                            src={item.variation.image_url}
+                            alt={item.variation.name}
+                            style={{
+                                width: 60,
+                                height: 60,
+                                objectFit: "contain",
+                            }}
+                        />
                     ) : (
-                      <span>Không có ảnh</span>
+                        <span>Không có ảnh</span>
                     )}
-                  </div>
                 </td>
                 <td>
-                  <Link
-                      to={`/product/${item.product?.id || item.product_id}`}
-                      className="text-decoration-none fw-semibold"
-                  >
-                    {item.product?.name || `Sản phẩm ID: ${item.product_id}`}
+                    <Link to={`/product/${item.variation?.product_id}`} className="fw-semibold">
+                        {item.variation?.name || item.variation?.value || "Không có tên"}
                   </Link>
-
-                  {item.variation && item.variation.value && (
-                      <div style={{fontSize: "0.9em", color: "#666"}}>
-                        {item.variation.name && ` (${item.variation.name})`}
-                      </div>
-                  )}
                 </td>
-
                 <td>
-                  {(
-                      item.variation?.price || item.product?.price
-                  )?.toLocaleString()}{" "}
-                  VNĐ
+                    {item.variation?.price
+                        ? item.variation.price.toLocaleString()
+                        : item.price?.toLocaleString()} VNĐ
                 </td>
                 <td className="text-center">
                   <Button
+                      size="sm"
                     variant="outline-danger"
-                    size="sm"
                     onClick={() => handleQuantityChange(item.id, "decrease")}
                     disabled={item.quantity <= 1}
-                    style={{
-                      marginRight: "5px",
-                      borderRadius: "15px",
-                      padding: "10px 15px",
-                    }}
                   >
                     <FaMinus />
                   </Button>
-                  <span
-                      style={{
-                        margin: "0 10px",
-                        minWidth: "20px",
-                        display: "inline-block",
-                      }}
-                  >
-                    {item.quantity}
-                  </span>
+                    <span style={{margin: "0 10px"}}>{item.quantity}</span>
                   <Button
-                    variant="outline-primary"
                     size="sm"
+                    variant="outline-primary"
                     onClick={() => handleQuantityChange(item.id, "increase")}
                     disabled={item.quantity >= getMaxQuantity(item)}
-                    style={{
-                      marginLeft: "5px",
-                      borderRadius: "15px",
-                      padding: "10px 15px",
-                    }}
                   >
                     <FaPlus />
                   </Button>
                 </td>
                 <td>
-                  {(
-                      (item.variation?.price || item.product?.price) *
-                      item.quantity
-                  )?.toLocaleString() || "N/A"}{" "}
-                  VNĐ
+                    {(item.variation?.price * item.quantity).toLocaleString()} VNĐ
                 </td>
                 <td>
                   <Button
-                    variant="danger"
                     size="sm"
+                    variant="danger"
                     onClick={() => removeFromCart(item.id)}
-                    style={{ borderRadius: "15px", padding: "10px 15px" }}
                   >
                     <FaTrashAlt />
                   </Button>
@@ -409,7 +294,7 @@ const CartPage = () => {
               <td>
                 <strong>{calculateTotal().toLocaleString()} VNĐ</strong>
               </td>
-              <td></td>
+                <td/>
             </tr>
           </tfoot>
         </Table>
@@ -420,10 +305,9 @@ const CartPage = () => {
   return (
     <div className="container mt-4 pb-5 min-vh-100 d-flex flex-column">
       <h2 className="mb-4 text-center">Giỏ Hàng Của Bạn</h2>
-
       {success && (
           <Alert variant="success" onClose={() => setSuccess("")} dismissible>
-            {success}
+              {success}
           </Alert>
       )}
       {error && (
@@ -431,12 +315,10 @@ const CartPage = () => {
           {error}
         </Alert>
       )}
-
       <div className="flex-grow-1">{renderCartItems()}</div>
-
       {cart.length > 0 && (
-        <div className="text-center mt-4 mb-4">
-          <Button variant="success" size="lg" onClick={handleCheckout}>
+          <div className="text-center mt-4">
+              <Button size="lg" variant="success" onClick={handleCheckout}>
             {isLoggedIn ? "Tiến hành thanh toán" : "Đăng nhập để thanh toán"}
           </Button>
         </div>

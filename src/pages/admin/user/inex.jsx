@@ -126,7 +126,7 @@ const UserList = () => {
                             <td>
                                 {user.avatar ? (
                                     <img
-                                        src={`${Constanst.DOMAIN_API}/uploads/${user.avatar}`} // phải có /uploads/
+                                        src={user.avatar}
                                         alt="Avatar"
                                         width="60"
                                         height="60"

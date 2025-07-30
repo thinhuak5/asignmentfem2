@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Accordion, Alert, Badge, Button, Container, Form, Modal, Spinner, Table, } from "react-bootstrap";
+import React, {useCallback, useEffect, useState} from "react";
+import {Link, useLocation, useNavigate} from "react-router-dom";
+import {Accordion, Alert, Badge, Button, Container, Form, Modal, Spinner, Table,} from "react-bootstrap";
 import Constanst from "../../../Constanst"; // Đảm bảo đường dẫn đúng
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -325,7 +325,8 @@ const OrderHistory = () => {
       } else {
         const errorData = await res.json();
         alert(
-          `Lỗi khi hủy đơn hàng #${orderToCancel}: ${errorData.message || res.statusText
+            `Lỗi khi hủy đơn hàng #${orderToCancel}: ${
+                errorData.message || res.statusText
           }`
         );
       }
@@ -394,7 +395,8 @@ const OrderHistory = () => {
                     Tổng tiền:{" "}
                     {(order.total_amount !== undefined
                       ? order.total_amount
-                      : calculateOrderTotal(order.items) - (order.discount_amount || 0)
+                            : calculateOrderTotal(order.items) -
+                            (order.discount_amount || 0)
                     ).toLocaleString()}{" "}
                     VNĐ
                     {order.discount_amount > 0 && (
@@ -445,21 +447,10 @@ const OrderHistory = () => {
                         <tr key={item.id}>
                           <td>
                             <div className="product-thumbnail">
-                              {Array.isArray(item.product?.productImages) &&
-                                item.product.productImages.length > 0 ? (
+                                {item.variation?.image_url ? (
                                 <img
-                                  src={item.product.productImages[0].image_url}
-                                  alt={item.product?.name}
-                                  style={{
-                                    width: "50px",
-                                    height: "50px",
-                                    objectFit: "contain",
-                                  }}
-                                />
-                              ) : item.product?.images ? (
-                                <img
-                                  src={item.product.images.split(",")[0]}
-                                  alt={item.product?.name}
+                                    src={item.variation.image_url} // Dùng image_url từ variation
+                                    alt={item.variation?.name || "Product Image"}
                                   style={{
                                     width: "50px",
                                     height: "50px",
@@ -467,7 +458,7 @@ const OrderHistory = () => {
                                   }}
                                 />
                               ) : (
-                                <span>Không có ảnh</span>
+                                    <span>Không có ảnh</span> // Nếu không có ảnh, hiển thị thông báo này
                               )}
                             </div>
                           </td>
@@ -475,9 +466,9 @@ const OrderHistory = () => {
                           <td>
                             <Link
                               to={`/product/${item.product_id}`}
-                              className="text-decoration-none  fw-semibold"
+                              className="text-decoration-none fw-semibold"
                             >
-                              {item.product?.name ||
+                                {item.variation?.name ||
                                 `Sản phẩm ID: ${item.product_id}`}
                             </Link>
 

@@ -3,14 +3,7 @@ import {Link, useLocation} from "react-router-dom";
 import queryString from "query-string";
 import Constants from "../../../Constanst";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {
-    faCheckSquare,
-    faChevronDown,
-    faChevronUp,
-    faEye,
-    faShoppingCart,
-    faSquare,
-} from "@fortawesome/free-solid-svg-icons";
+import {faCheckSquare, faChevronDown, faChevronUp, faEye, faSquare,} from "@fortawesome/free-solid-svg-icons";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "../../../assets/css/productclient.css";
 
@@ -29,42 +22,48 @@ const fetchData = async (url, errorMessage = "Lỗi khi tải dữ liệu:") => 
 };
 
 // Component con cho hiển thị sản phẩm
-const ProductCard = ({ product, onAddToCart }) => (
-  <div className="product-column">
-    <div className="product-item">
-      <div className="product-thumbnail-wrapper">
-          {Array.isArray(product.productImages) &&
-          product.productImages.length > 0 ? (
+const ProductCard = ({product}) => {
+    // Nếu sản phẩm không có giá chính, lấy giá từ biến thể (nếu có)
+    const productPrice = product.price
+        ? product.price
+        : product.variations && product.variations.length > 0
+            ? product.variations[0].price
+            : 0; // Nếu không có giá sản phẩm chính và không có biến thể, đặt giá là 0
+
+    // Lấy hình ảnh đầu tiên của biến thể đầu tiên
+    const productImage =
+        product.variations &&
+        product.variations.length > 0 &&
+        product.variations[0].productImages &&
+        product.variations[0].productImages.length > 0
+            ? product.variations[0].productImages[0].image_url
+            : product.productImages && product.productImages.length > 0
+                ? product.productImages[0].image_url
+                : "path/to/default-image.jpg"; // Fallback nếu không có hình ảnh
+
+    return (
+        <div className="product-column">
+            <div className="product-item">
+                <div className="product-thumbnail-wrapper">
           <img
-              src={product.productImages[0].image_url}
+              src={productImage}
             className="product-thumbnail"
             alt={product.name}
           />
-          ) : product.images ? ( // Fallback for old 'images' field
-          <img
-              src={product.images.split(",")[0]}
-            className="product-thumbnail"
-            alt={product.name}
-          />
-        ) : (
-          <span>Không có ảnh</span>
-        )}
-      </div>
-      <h3 className="product-title">{product.name}</h3>
-      <strong className="product-price">
-        {product.price.toLocaleString()} VNĐ
-      </strong>
-      <div className="product-actions">
-        <button className="btn-custom-sm" onClick={() => onAddToCart(product)}>
-          <FontAwesomeIcon icon={faShoppingCart} />
-        </button>
-        <Link to={`/product/${product.id}`} className="btn-custom-outline">
-          <FontAwesomeIcon icon={faEye} />
-        </Link>
-      </div>
-    </div>
-  </div>
-);
+                </div>
+                <h3 className="product-title">{product.name}</h3>
+                <strong className="product-price">
+                    {productPrice.toLocaleString()} VNĐ
+                </strong>
+                <div className="product-actions">
+                    <Link to={`/product/${product.id}`} className="btn-custom-outline">
+                        <FontAwesomeIcon icon={faEye}/>
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ProductClient = () => {
   const [products, setProducts] = useState([]);
@@ -77,7 +76,6 @@ const ProductClient = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPriceRange, setSelectedPriceRange] = useState("all");
     const [sortOrder, setSortOrder] = useState("default");
-    // openParentCategories sẽ lưu trữ ID của các danh mục cha đang mở
   const [openParentCategories, setOpenParentCategories] = useState([]);
     const [minPrice, setMinPrice] = useState("");
     const [maxPrice, setMaxPrice] = useState("");
@@ -86,22 +84,13 @@ const ProductClient = () => {
 
   const initializeData = useCallback(async () => {
       setProducts(
-          await fetchData(
-              `${Constants.DOMAIN_API}/api/products/list`,
-              "Lỗi fetch product:"
-          )
+          await fetchData(`${Constants.DOMAIN_API}/api/products/list`, "Lỗi fetch product:")
       );
       setCategories(
-          await fetchData(
-              `${Constants.DOMAIN_API}/api/categories/list`,
-              "Lỗi fetch category:"
-          )
+          await fetchData(`${Constants.DOMAIN_API}/api/categories/list`, "Lỗi fetch category:")
       );
       setCategoryParents(
-          await fetchData(
-              `${Constants.DOMAIN_API}/api/categoryparents`,
-              "Lỗi fetch category parent:"
-          )
+          await fetchData(`${Constants.DOMAIN_API}/api/categoryparents`, "Lỗi fetch category parent:")
       );
   }, []);
 
@@ -109,28 +98,23 @@ const ProductClient = () => {
     initializeData();
   }, [initializeData]);
 
-    // Xử lý params từ URL để thiết lập danh mục đang chọn và mở danh mục cha
   useEffect(() => {
     const params = queryString.parse(location.search);
     if (params.categoryparentId) {
         const parentId = parseInt(params.categoryparentId);
         setSelectedCategory({type: "parent", id: parentId});
-        // Đảm bảo danh mục cha này được mở
         setOpenParentCategories((prev) => Array.from(new Set([...prev, parentId])));
     } else if (params.categoryId) {
         const categoryId = parseInt(params.categoryId);
         setSelectedCategory({type: "category", id: categoryId});
-        // Tìm danh mục cha của danh mục con đang chọn và mở nó ra
         const parentCat = categories.find((cat) => cat.id === categoryId);
         if (parentCat && parentCat.parent_id) {
             setOpenParentCategories((prev) => Array.from(new Set([...prev, parentCat.parent_id])));
       }
     } else {
       setSelectedCategory({ type: "all", id: null });
-        // Khi không có danh mục nào được chọn, có thể reset trạng thái mở danh mục cha nếu muốn
-        // setOpenParentCategories([]);
     }
-  }, [location.search, categories]); // Thêm 'categories' vào dependency array
+  }, [location.search, categories]);
 
   const handlePriceRangeChange = (range) => {
     setSelectedPriceRange(range);
@@ -155,33 +139,24 @@ const ProductClient = () => {
 
   const toggleParentCategory = (parentId) => {
     setOpenParentCategories((prev) =>
-      prev.includes(parentId)
-        ? prev.filter((id) => id !== parentId)
-        : [...prev, parentId]
+        prev.includes(parentId) ? prev.filter((id) => id !== parentId) : [...prev, parentId]
     );
   };
 
   const processedProducts = useMemo(() => {
     let currentFilteredProducts = products.filter((product) => {
       if (product.status !== 1) return false;
-      const matchesSearchQuery = product.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+        const matchesSearchQuery = product.name.toLowerCase().includes(searchQuery.toLowerCase());
 
       let matchesCategory = true;
       if (selectedCategory.type === "parent" && selectedCategory.id) {
-          // Lọc sản phẩm theo danh mục cha đã chọn
           const childCategoriesOfSelectedParent = categories
           .filter((c) => c.parent_id === selectedCategory.id)
           .map((c) => c.id);
-          matchesCategory = childCategoriesOfSelectedParent.includes(
-              product.category_id
-          );
+          matchesCategory = childCategoriesOfSelectedParent.includes(product.category_id);
       } else if (selectedCategory.type === "category" && selectedCategory.id) {
-          // Lọc sản phẩm theo danh mục con đã chọn
         matchesCategory = product.category_id === selectedCategory.id;
       }
-        // Nếu selectedCategory.type === "all", matchesCategory mặc định là true
 
         let matchesPriceRange = true;
         if (selectedPriceRange !== "all") {
@@ -209,12 +184,7 @@ const ProductClient = () => {
             }
         }
 
-        // Đã loại bỏ phần lọc theo thương hiệu, nên matchesBrand luôn true
-        const matchesBrand = true;
-
-        return (
-            matchesSearchQuery && matchesCategory && matchesPriceRange && matchesBrand
-        );
+        return matchesSearchQuery && matchesCategory && matchesPriceRange;
     });
 
     if (sortOrder === "asc") {
@@ -222,56 +192,11 @@ const ProductClient = () => {
     } else if (sortOrder === "desc") {
       currentFilteredProducts.sort((a, b) => b.price - a.price);
     } else if (sortOrder === "newest") {
-        currentFilteredProducts.sort(
-            (a, b) => new Date(b.created_at) - new Date(a.created_at)
-        );
-    } else if (sortOrder === "popularity") {
-        // Logic sắp xếp theo phổ biến (ví dụ: theo tên)
-        currentFilteredProducts.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortOrder === "bestselling") {
-        // Logic sắp xếp theo bán chạy (ví dụ: theo tên)
-        currentFilteredProducts.sort((a, b) => a.name.localeCompare(b.name));
+        currentFilteredProducts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
 
     return currentFilteredProducts;
-  }, [
-      products,
-      categories,
-      selectedCategory,
-      searchQuery,
-      selectedPriceRange,
-      sortOrder,
-      minPrice,
-      maxPrice,
-  ]);
-
-  const handleAddToCart = useCallback(async (product, quantity = 1) => {
-    if (!product) return;
-    try {
-      const token = localStorage.getItem("authToken");
-        if (!token) {
-            alert("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.");
-            return;
-        }
-      const res = await fetch(`${Constants.DOMAIN_API}/api/cart/add`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ product_id: product.id, quantity }),
-      });
-      const data = await res.json();
-        if (res.ok) {
-            alert(data.message);
-        } else {
-            alert(`Lỗi: ${data.message || "Không thể thêm vào giỏ hàng."}`);
-        }
-    } catch (error) {
-      console.error("Lỗi khi thêm vào giỏ hàng:", error);
-      alert("Có lỗi xảy ra. Vui lòng thử lại.");
-    }
-  }, []);
+  }, [products, categories, selectedCategory, searchQuery, selectedPriceRange, sortOrder, minPrice, maxPrice]);
 
     const priceRanges = useMemo(() => [
     { label: "Tất cả giá", value: "all" },
@@ -283,9 +208,6 @@ const ProductClient = () => {
 
   return (
     <div>
-        {/* Banner Danh Mục (nếu có, thêm lại vào đây) */}
-        {/* <div className="category-banners-section">...</div> */}
-
       <div className="untree_co-section product-section before-footer-section">
         <div className="container">
           <div className="row">
@@ -295,21 +217,11 @@ const ProductClient = () => {
                   <h5>Khám phá theo danh mục</h5>
                 <ul className="list-group">
                   <li
-                    className={`list-group-item ${
-                      selectedCategory.type === "all" ? "active-filter" : ""
-                    }`}
-                    onClick={() => {
-                        setSelectedCategory({type: "all", id: null});
-                        // Khi chọn "Tất cả sản phẩm", có thể đóng tất cả danh mục cha
-                        // setOpenParentCategories([]);
-                    }}
+                      className={`list-group-item ${selectedCategory.type === "all" ? "active-filter" : ""}`}
+                      onClick={() => setSelectedCategory({type: "all", id: null})}
                   >
                     <FontAwesomeIcon
-                        icon={
-                            selectedCategory.type === "all"
-                                ? faCheckSquare
-                                : faSquare
-                        }
+                        icon={selectedCategory.type === "all" ? faCheckSquare : faSquare}
                       className="filter-icon"
                     />{" "}
                     Tất cả sản phẩm
@@ -319,31 +231,22 @@ const ProductClient = () => {
                       <React.Fragment key={parent.id}>
                           <li
                               className={`list-group-item category-parent-item ${
-                          selectedCategory.type === "parent" &&
-                          selectedCategory.id === parent.id
+                                  selectedCategory.type === "parent" && selectedCategory.id === parent.id
                             ? "active-filter"
                             : ""
                         }`}
-                              // Thay đổi logic click để chỉ chuyển filter khi click vào text hoặc icon,
-                              // còn click vào mũi tên thì chỉ toggle mở/đóng
-                        onClick={() =>
-                          setSelectedCategory({ type: "parent", id: parent.id })
-                        }
+                              onClick={() => setSelectedCategory({type: "parent", id: parent.id})}
                       >
                               <div className="category-parent-content">
                                   <div>
                                       <FontAwesomeIcon
-                                          icon={
-                                              selectedCategory.type === "parent" &&
-                                              selectedCategory.id === parent.id
-                                                  ? faCheckSquare
-                                                  : faSquare
-                                          }
+                                          icon={selectedCategory.type === "parent" && selectedCategory.id === parent.id
+                                              ? faCheckSquare
+                                              : faSquare}
                                           className="filter-icon"
                                           style={{
                                               color:
-                                                  selectedCategory.type === "parent" &&
-                                                  selectedCategory.id === parent.id
+                                                  selectedCategory.type === "parent" && selectedCategory.id === parent.id
                                                       ? "#28a745"
                                                       : "#666",
                                           }}
@@ -351,8 +254,7 @@ const ProductClient = () => {
                                       <span
                                           style={{
                                               color:
-                                                  selectedCategory.type === "parent" &&
-                                                  selectedCategory.id === parent.id
+                                                  selectedCategory.type === "parent" && selectedCategory.id === parent.id
                                                       ? "#28a745"
                                                       : "",
                                           }}
@@ -361,11 +263,7 @@ const ProductClient = () => {
                             </span>
                                   </div>
                                   <FontAwesomeIcon
-                                      icon={
-                                          openParentCategories.includes(parent.id)
-                                              ? faChevronUp
-                                              : faChevronDown
-                                      }
+                                      icon={openParentCategories.includes(parent.id) ? faChevronUp : faChevronDown}
                                       className={`toggle-icon ${openParentCategories.includes(parent.id) ? 'rotated' : ''}`}
                                       onClick={(e) => {
                                           e.stopPropagation(); // Ngăn sự kiện click lan ra li cha
@@ -375,7 +273,6 @@ const ProductClient = () => {
                         </div>
                           </li>
 
-                          {/* Hiển thị danh mục con nếu danh mục cha đang mở */}
                       {openParentCategories.includes(parent.id) && (
                           <ul className="list-group category-child-list">
                           {categories
@@ -384,25 +281,16 @@ const ProductClient = () => {
                               <li
                                 key={sub.id}
                                 className={`list-group-item ${
-                                  selectedCategory.type === "category" &&
-                                  selectedCategory.id === sub.id
+                                    selectedCategory.type === "category" && selectedCategory.id === sub.id
                                     ? "active-filter"
                                     : ""
                                 }`}
-                                onClick={() =>
-                                  setSelectedCategory({
-                                    type: "category",
-                                    id: sub.id,
-                                  })
-                                }
+                                onClick={() => setSelectedCategory({type: "category", id: sub.id})}
                               >
                                 <FontAwesomeIcon
-                                  icon={
-                                    selectedCategory.type === "category" &&
-                                    selectedCategory.id === sub.id
-                                      ? faCheckSquare
-                                      : faSquare
-                                  }
+                                    icon={selectedCategory.type === "category" && selectedCategory.id === sub.id
+                                        ? faCheckSquare
+                                        : faSquare}
                                   className="filter-icon"
                                 />{" "}
                                 {sub.name}
@@ -415,7 +303,6 @@ const ProductClient = () => {
                 </ul>
               </div>
 
-                {/* Khoảng giá (Price Range) Filter */}
                 <div className="mt-4 filter-group">
                     <h5>Khoảng giá</h5>
                 <ul className="list-group">
@@ -423,18 +310,14 @@ const ProductClient = () => {
                     <li
                       key={range.value}
                       className={`list-group-item filter-group-item ${
-                        selectedPriceRange === range.value
-                          ? "active-filter"
-                          : ""
+                          selectedPriceRange === range.value ? "active-filter" : ""
                       }`}
                       onClick={() => handlePriceRangeChange(range.value)}
                       style={{ cursor: "pointer" }}
                     >
                       <FontAwesomeIcon
                         icon={
-                          selectedPriceRange === range.value
-                            ? faCheckSquare
-                            : faSquare
+                            selectedPriceRange === range.value ? faCheckSquare : faSquare
                         }
                         className="filter-icon"
                       />{" "}
@@ -457,10 +340,7 @@ const ProductClient = () => {
                             onChange={(e) => setMaxPrice(e.target.value)}
                         />
                     </div>
-                    <button
-                        className="apply-price-btn"
-                        onClick={handleApplyCustomPrice}
-                    >
+                    <button className="apply-price-btn" onClick={handleApplyCustomPrice}>
                         Áp dụng
                     </button>
               </div>
@@ -471,48 +351,37 @@ const ProductClient = () => {
                 <div className="sort-options-bar">
                     <span>Sắp xếp theo:</span>
                     <button
-                        className={`sort-option-btn ${
-                            sortOrder === "newest" ? "active-sort" : ""
-                        }`}
+                        className={`sort-option-btn ${sortOrder === "newest" ? "active-sort" : ""}`}
                         onClick={() => setSortOrder("newest")}
                     >
                         Mới nhất
                     </button>
                     <button
-                        className={`sort-option-btn ${
-                            sortOrder === "popularity" ? "active-sort" : ""
-                        }`}
+                        className={`sort-option-btn ${sortOrder === "popularity" ? "active-sort" : ""}`}
                         onClick={() => setSortOrder("popularity")}
                     >
                         Phổ biến
                     </button>
                     <button
-                        className={`sort-option-btn ${
-                            sortOrder === "bestselling" ? "active-sort" : ""
-                        }`}
+                        className={`sort-option-btn ${sortOrder === "bestselling" ? "active-sort" : ""}`}
                         onClick={() => setSortOrder("bestselling")}
                     >
                         Bán chạy
                     </button>
                     <button
-                        className={`sort-option-btn ${
-                            sortOrder === "asc" ? "active-sort" : ""
-                        }`}
+                        className={`sort-option-btn ${sortOrder === "asc" ? "active-sort" : ""}`}
                         onClick={() => setSortOrder("asc")}
                 >
                         Giá thấp
                     </button>
                     <button
-                        className={`sort-option-btn ${
-                            sortOrder === "desc" ? "active-sort" : ""
-                        }`}
+                        className={`sort-option-btn ${sortOrder === "desc" ? "active-sort" : ""}`}
                         onClick={() => setSortOrder("desc")}
                     >
                         Giá cao
                     </button>
               </div>
 
-                {/* Product Grid */}
               <div className="row product-grid-row">
                 {processedProducts.length === 0 ? (
                   <div className="col-12">
@@ -523,7 +392,6 @@ const ProductClient = () => {
                     <ProductCard
                       key={product.id}
                       product={product}
-                      onAddToCart={handleAddToCart}
                     />
                   ))
                 )}
