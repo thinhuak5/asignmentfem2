@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, {useCallback, useEffect, useState} from "react";
+import {useNavigate, useParams} from "react-router-dom";
 import Constanst from "../../../../Constanst";
 
 const AdminCommentEdit = () => {
@@ -72,7 +72,7 @@ const AdminCommentEdit = () => {
             <strong>Người dùng:</strong> {review.user.name}
           </p>
           <p>
-            <strong>Biến thể:</strong> {review.variation?.value || '—'}
+              <strong>Biến thể:</strong> {review.variation?.name || 'khong xac dinh'}
           </p>
           <p>
             <strong>Sao:</strong> {review.rating} ★
