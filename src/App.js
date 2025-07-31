@@ -26,9 +26,7 @@ import Profile from './pages/client/profile';
 import OrderPage from './pages/client/Oder/OrderPage';
 import OrderHistory from './pages/client/OrderHistory/OrderHistory';
 import EditUser from './pages/admin/edituser';
-import CategoryParentList from './pages/admin/categoryparent/';
-import AddCategoryParent from './pages/admin/addcategoryparent';
-import EditCategoryParent from './pages/admin/editcategoryparent';
+
 import PaymentResult from './pages/client/PaymentResult';
 import AddProduct from './pages/admin/addproduct';
 import AddCategory from './pages/admin/addcategory';
@@ -91,11 +89,8 @@ function App() {
         <Route path="category/editcategory/:id" element={<EditCategory/>}/>
           <Route path="contact" element={<ContactMessages/>}/>
           <Route path="contact/reply/:id" element={<ContactMessageID/>}/>
-        {/* Route danh mục cha */}
-        <Route path="categoryparent" element={<CategoryParentList/>}/>
-        <Route path="categoryparent/add" element={<AddCategoryParent/>}/>
-        <Route path="categoryparent/edit/:id" element={<EditCategoryParent/>}/>
-        {/* Route mã giảm giá */}
+
+          {/* Route mã giảm giá */}
         <Route path="discount" element={<DiscountAdmin/>}/>
         <Route path="discount/add" element={<AddDiscount/>}/>
         <Route path="discount/edit/:id" element={<EditDiscount/>}/>

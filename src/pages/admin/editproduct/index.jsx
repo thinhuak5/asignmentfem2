@@ -34,36 +34,39 @@ const EditProduct = () => {
     name: "variations",
   });
 
+  // Danh mục cha đang chọn
+  const selectedParentId = watch("parent_id");
+
+  // Hàm lấy tất cả danh mục cha và con, rồi mới lấy sản phẩm
   useEffect(() => {
-    fetchCategoryParents();
-    fetchCategories();
-    fetchProduct();
+    const fetchAll = async () => {
+      try {
+        // Lấy danh mục cha
+        const resParents = await fetch(`${Constanst.DOMAIN_API}/api/categories/parents`);
+        if (!resParents.ok) throw new Error("Lỗi khi lấy danh mục cha");
+        const parentData = await resParents.json();
+        setCategoryParents(parentData);
+
+        // Lấy tất cả danh mục
+        const resCats = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
+        if (!resCats.ok) throw new Error("Lỗi khi lấy danh mục");
+        const catData = await resCats.json();
+        setCategories(catData);
+
+        // Lấy sản phẩm khi đã có đầy đủ categories
+        fetchProduct(catData);
+      } catch (err) {
+        alert("Lỗi tải dữ liệu danh mục");
+        navigate("/admin/product");
+      }
+    };
+
+    fetchAll();
     // eslint-disable-next-line
   }, [id]);
 
-  const fetchCategories = async () => {
-    try {
-      const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
-      if (!res.ok) throw new Error("Lỗi khi lấy danh mục con");
-      const data = await res.json();
-      setCategories(data);
-    } catch (err) {
-      console.error("Lỗi fetch categories:", err);
-    }
-  };
-
-  const fetchCategoryParents = async () => {
-    try {
-      const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
-      if (!res.ok) throw new Error("Lỗi khi lấy danh mục cha");
-      const data = await res.json();
-      setCategoryParents(data);
-    } catch (err) {
-      console.error("Lỗi fetch category parents:", err);
-    }
-  };
-
-  const fetchProduct = async () => {
+  // Fetch sản phẩm, truyền categories vào để lookup parent_id
+  const fetchProduct = async (catData) => {
     try {
       const res = await fetch(`${Constanst.DOMAIN_API}/api/products/${id}`);
       if (!res.ok) throw new Error("Lỗi khi lấy sản phẩm");
@@ -75,10 +78,20 @@ const EditProduct = () => {
       setValue("price", data.price);
       setValue("discount_price", data.discount_price || "");
       setValue("status", data.status === 1 ? "Còn hàng" : "Hết hàng");
-      setValue("category_id", data.category_id);
-      setValue("categoryparent_id", data.categoryparent_id || "");
       setValue("quantity", data.quantity || 0);
       setValue("minStock", data.minStock || 0);
+
+      // Tìm parent_id từ category_id
+      let parentId = "";
+      if (data.category_id) {
+        const cat = catData.find(c => c.id === data.category_id);
+        parentId = cat && cat.parent_id ? cat.parent_id : "";
+        setValue("parent_id", parentId);
+      } else {
+        setValue("parent_id", "");
+      }
+
+      setValue("category_id", data.category_id || "");
 
       // Ảnh hiện tại
       if (Array.isArray(data.productImages)) {
@@ -90,24 +103,38 @@ const EditProduct = () => {
       // Biến thể
       if (Array.isArray(data.variations)) {
         setValue(
-          "variations",
-          data.variations.map((v) => ({
-            id: v.id,
-            name: v.name,
-            value: v.value,
-            price: v.price,
-            quantity: v.quantity,
-            minStock: v.minStock,
-            type: v.type || "regular",
-          }))
+            "variations",
+            data.variations.map((v) => ({
+              id: v.id,
+              name: v.name,
+              value: v.value,
+              price: v.price,
+              quantity: v.quantity,
+              minStock: v.minStock,
+              type: v.type || "regular",
+            }))
         );
       } else {
         setValue("variations", []);
       }
     } catch (err) {
-      console.error("Lỗi khi lấy dữ liệu sản phẩm:", err);
+      alert("Lỗi khi lấy dữ liệu sản phẩm");
+      navigate("/admin/product");
     }
   };
+
+  // Khi chọn danh mục cha thì reset category_id nếu không còn phù hợp
+  useEffect(() => {
+    if (selectedParentId) {
+      const validCategoryIds = categories
+          .filter((c) => String(c.parent_id) === String(selectedParentId))
+          .map((c) => String(c.id));
+      if (!validCategoryIds.includes(String(watch("category_id")))) {
+        setValue("category_id", "");
+      }
+    }
+    // eslint-disable-next-line
+  }, [selectedParentId, categories]);
 
   // Xóa ảnh hiện tại (chỉ trên FE, khi submit mới gửi danh sách xóa lên BE)
   const handleRemoveImage = (img) => {
@@ -125,7 +152,6 @@ const EditProduct = () => {
     formData.append("discount_price", data.discount_price || "");
     formData.append("status", status);
     formData.append("category_id", data.category_id);
-    formData.append("categoryparent_id", data.categoryparent_id);
     formData.append("quantity", data.quantity);
     formData.append("minStock", data.minStock);
 
@@ -164,308 +190,309 @@ const EditProduct = () => {
 
   if (!product) return <div>Đang tải dữ liệu sản phẩm...</div>;
 
+  // Lọc danh mục con theo danh mục cha đã chọn
+  let filteredCategories = [];
+  if (selectedParentId) {
+    filteredCategories = categories.filter(
+        (cat) => String(cat.parent_id) === String(selectedParentId)
+    );
+  } else {
+    filteredCategories = [];
+  }
+
   return (
-    <div className="container">
-      <h2>Sửa sản phẩm</h2>
+      <div className="container">
+        <h2>Sửa sản phẩm</h2>
+        <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="border p-4 rounded bg-light"
+            encType="multipart/form-data"
+        >
+          {/* Tên sản phẩm */}
+          <div className="mb-3">
+            <label className="form-label">Tên sản phẩm</label>
+            <input
+                className="form-control"
+                {...register("name", {required: "Tên không được để trống"})}
+            />
+            {errors.name && (
+                <small className="text-danger">{errors.name.message}</small>
+            )}
+          </div>
 
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="border p-4 rounded bg-light"
-        encType="multipart/form-data"
-      >
-        {/* Tên sản phẩm */}
-        <div className="mb-3">
-          <label className="form-label">Tên sản phẩm</label>
-          <input
-            className="form-control"
-            {...register("name", { required: "Tên không được để trống" })}
-          />
-          {errors.name && (
-            <small className="text-danger">{errors.name.message}</small>
+          {/* Mô tả */}
+          <div className="mb-3">
+            <label className="form-label">Mô tả</label>
+            <textarea
+                className="form-control"
+                {...register("description", {required: "Mô tả là bắt buộc"})}
+            />
+            {errors.description && (
+                <small className="text-danger">{errors.description.message}</small>
+            )}
+          </div>
+
+          {/* Giá */}
+          <div className="mb-3">
+            <label className="form-label">Giá</label>
+            <input
+                type="number"
+                className="form-control"
+                {...register("price", {
+                  required: "Giá không được để trống",
+                  min: {value: 1, message: "Giá phải lớn hơn 0"},
+                })}
+            />
+            {errors.price && (
+                <small className="text-danger">{errors.price.message}</small>
+            )}
+          </div>
+
+          {/* Giá khuyến mãi */}
+          <div className="mb-3">
+            <label className="form-label">Giá khuyến mãi</label>
+            <input
+                type="number"
+                className="form-control"
+                {...register("discount_price", {
+                  validate: (value) => {
+                    if (value === "" || value === undefined) return true;
+                    if (parseFloat(value) >= parseFloat(watch("price"))) {
+                      return "Giá khuyến mãi phải nhỏ hơn giá gốc";
+                    }
+                    return true;
+                  },
+                })}
+            />
+            {errors.discount_price && (
+                <small className="text-danger">
+                  {errors.discount_price.message}
+                </small>
+            )}
+          </div>
+
+          {/* Số lượng */}
+          <div className="mb-3">
+            <label className="form-label">Số lượng</label>
+            <input
+                type="number"
+                className="form-control"
+                {...register("quantity", {
+                  required: "Số lượng là bắt buộc",
+                  min: {value: 0, message: "Số lượng không được âm"},
+                })}
+            />
+            {errors.quantity && (
+                <small className="text-danger">{errors.quantity.message}</small>
+            )}
+          </div>
+
+          {/* Tồn kho tối thiểu */}
+          <div className="mb-3">
+            <label className="form-label">Tồn kho tối thiểu</label>
+            <input
+                type="number"
+                className="form-control"
+                {...register("minStock", {
+                  required: "Tồn kho tối thiểu là bắt buộc",
+                  min: {value: 0, message: "Giá trị không được âm"},
+                })}
+            />
+            {errors.minStock && (
+                <small className="text-danger">{errors.minStock.message}</small>
+            )}
+          </div>
+
+          {/* Trạng thái */}
+          <div className="mb-3">
+            <label className="form-label">Trạng thái</label>
+            <select className="form-select" {...register("status")}>
+              <option value="Còn hàng">Còn hàng</option>
+              <option value="Hết hàng">Hết hàng</option>
+            </select>
+          </div>
+
+          {/* Ảnh hiện tại (nhiều ảnh) */}
+          {currentImages.length > 0 && (
+              <div className="mb-3">
+                <label className="form-label">Ảnh hiện tại</label>
+                <div style={{display: "flex", gap: 10, flexWrap: "wrap"}}>
+                  {currentImages.map((img, idx) => (
+                      <div key={img} style={{position: "relative"}}>
+                        <img
+                            src={img}
+                            alt="Ảnh hiện tại"
+                            width="100"
+                            height="100"
+                            style={{objectFit: "cover", border: "1px solid #ccc"}}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => handleRemoveImage(img)}
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              right: 0,
+                              background: "red",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "50%",
+                              width: 24,
+                              height: 24,
+                              cursor: "pointer",
+                            }}
+                            title="Xóa ảnh này"
+                        >
+                          ×
+                        </button>
+                      </div>
+                  ))}
+                </div>
+              </div>
           )}
-        </div>
 
-        {/* Mô tả */}
-        <div className="mb-3">
-          <label className="form-label">Mô tả</label>
-          <textarea
-            className="form-control"
-            {...register("description", { required: "Mô tả là bắt buộc" })}
-          />
-          {errors.description && (
-            <small className="text-danger">{errors.description.message}</small>
-          )}
-        </div>
+          {/* Chọn hình ảnh mới (nhiều ảnh) */}
+          <div className="mb-3">
+            <label className="form-label">
+              Chọn hình ảnh mới (có thể chọn nhiều)
+            </label>
+            <input
+                type="file"
+                className="form-control"
+                multiple
+                {...register("images")}
+            />
+          </div>
 
-        {/* Giá */}
-        <div className="mb-3">
-          <label className="form-label">Giá</label>
-          <input
-            type="number"
-            className="form-control"
-            {...register("price", {
-              required: "Giá không được để trống",
-              min: { value: 1, message: "Giá phải lớn hơn 0" },
-            })}
-          />
-          {errors.price && (
-            <small className="text-danger">{errors.price.message}</small>
-          )}
-        </div>
+          {/* Danh mục cha */}
+          <div className="mb-3">
+            <label className="form-label">Danh mục cha</label>
+            <select
+                className="form-select"
+                {...register("parent_id", {required: "Phải chọn danh mục cha"})}
+            >
+              <option value="">Chọn danh mục cha</option>
+              {categoryParents.map((parent) => (
+                  <option key={parent.id} value={parent.id}>
+                    {parent.name}
+                  </option>
+              ))}
+            </select>
+            {errors.parent_id && (
+                <small className="text-danger">
+                  {errors.parent_id.message}
+                </small>
+            )}
+          </div>
 
-        {/* Giá khuyến mãi */}
-        <div className="mb-3">
-          <label className="form-label">Giá khuyến mãi</label>
-          <input
-            type="number"
-            className="form-control"
-            {...register("discount_price", {
-              validate: (value) => {
-                if (value === "" || value === undefined) return true;
-                if (parseFloat(value) >= parseFloat(watch("price"))) {
-                  return "Giá khuyến mãi phải nhỏ hơn giá gốc";
-                }
-                return true;
-              },
-            })}
-          />
-          {errors.discount_price && (
-            <small className="text-danger">
-              {errors.discount_price.message}
-            </small>
-          )}
-        </div>
+          {/* Danh mục con */}
+          <div className="mb-3">
+            <label className="form-label">Danh mục con</label>
+            <select
+                className="form-select"
+                {...register("category_id", {
+                  required: "Phải chọn danh mục con",
+                })}
+                disabled={!selectedParentId}
+            >
+              <option value="">Chọn danh mục con</option>
+              {filteredCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+              ))}
+            </select>
+            {errors.category_id && (
+                <small className="text-danger">{errors.category_id.message}</small>
+            )}
+          </div>
 
-        {/* Số lượng */}
-        <div className="mb-3">
-          <label className="form-label">Số lượng</label>
-          <input
-            type="number"
-            className="form-control"
-            {...register("quantity", {
-              required: "Số lượng là bắt buộc",
-              min: { value: 0, message: "Số lượng không được âm" },
-            })}
-          />
-          {errors.quantity && (
-            <small className="text-danger">{errors.quantity.message}</small>
-          )}
-        </div>
-
-        {/* Tồn kho tối thiểu */}
-        <div className="mb-3">
-          <label className="form-label">Tồn kho tối thiểu</label>
-          <input
-            type="number"
-            className="form-control"
-            {...register("minStock", {
-              required: "Tồn kho tối thiểu là bắt buộc",
-              min: { value: 0, message: "Giá trị không được âm" },
-            })}
-          />
-          {errors.minStock && (
-            <small className="text-danger">{errors.minStock.message}</small>
-          )}
-        </div>
-
-        {/* Trạng thái */}
-        <div className="mb-3">
-          <label className="form-label">Trạng thái</label>
-          <select className="form-select" {...register("status")}>
-            <option value="Còn hàng">Còn hàng</option>
-            <option value="Hết hàng">Hết hàng</option>
-          </select>
-        </div>
-
-        {/* Ảnh hiện tại (nhiều ảnh) */}
-        {currentImages.length > 0 && (
-            <div className="mb-3">
-              <label className="form-label">Ảnh hiện tại</label>
-              <div style={{display: "flex", gap: 10, flexWrap: "wrap"}}>
-                {currentImages.map((img, idx) => (
-                    <div key={img} style={{position: "relative"}}>
-                      <img
-                          src={img}
-                          alt="Ảnh hiện tại"
-                          width="100"
-                          height="100"
-                          style={{objectFit: "cover", border: "1px solid #ccc"}}
+          {/* Biến thể sản phẩm */}
+          <div className="mb-3">
+            <label className="form-label">Biến thể sản phẩm</label>
+            {variations.map((field, idx) => (
+                <div key={field.id || idx} className="border p-2 mb-2 rounded">
+                  <div className="row">
+                    <div className="col">
+                      <input
+                          type="hidden"
+                          {...register(`variations.${idx}.id`)}
                       />
+                      <input
+                          className="form-control mb-1"
+                          placeholder="Tên biến thể"
+                          {...register(`variations.${idx}.name`, {required: true})}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                          className="form-control mb-1"
+                          placeholder="Nội dung"
+                          {...register(`variations.${idx}.value`, {required: true})}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                          type="number"
+                          className="form-control mb-1"
+                          placeholder="Giá"
+                          {...register(`variations.${idx}.price`)}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                          type="number"
+                          className="form-control mb-1"
+                          placeholder="Số lượng"
+                          {...register(`variations.${idx}.quantity`)}
+                      />
+                    </div>
+                    <div className="col">
+                      <input
+                          type="number"
+                          className="form-control mb-1"
+                          placeholder="Tồn kho tối thiểu"
+                          {...register(`variations.${idx}.minStock`)}
+                      />
+                    </div>
+                    <div className="col-auto">
                       <button
                           type="button"
-                          onClick={() => handleRemoveImage(img)}
-                          style={{
-                            position: "absolute",
-                            top: 0,
-                            right: 0,
-                            background: "red",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "50%",
-                            width: 24,
-                            height: 24,
-                            cursor: "pointer",
-                          }}
-                          title="Xóa ảnh này"
+                          className="btn btn-danger"
+                          onClick={() => remove(idx)}
                       >
-                        ×
+                        Xóa
                       </button>
                     </div>
-                ))}
-              </div>
-            </div>
-        )}
-
-        {/* Chọn hình ảnh mới (nhiều ảnh) */}
-        <div className="mb-3">
-          <label className="form-label">
-            Chọn hình ảnh mới (có thể chọn nhiều)
-          </label>
-          <input
-            type="file"
-            className="form-control"
-            multiple
-            {...register("images")}
-          />
-        </div>
-
-        {/* Danh mục cha */}
-        <div className="mb-3">
-          <label className="form-label">Danh mục cha</label>
-          <select
-            className="form-select"
-            {...register("categoryparent_id", {
-              required: "Phải chọn danh mục cha",
-            })}
-          >
-            <option value="">Chọn danh mục cha</option>
-            {categoryParents.map((parent) => (
-              <option key={parent.id} value={parent.id}>
-                {parent.name}
-              </option>
+                  </div>
+                </div>
             ))}
-          </select>
-          {errors.categoryparent_id && (
-            <small className="text-danger">
-              {errors.categoryparent_id.message}
-            </small>
-          )}
-        </div>
-
-        {/* Danh mục con */}
-        <div className="mb-3">
-          <label className="form-label">Danh mục con</label>
-          <select
-            className="form-select"
-            {...register("category_id", {
-              required: "Phải chọn danh mục con",
-            })}
-          >
-            <option value="">Chọn danh mục con</option>
-            {categories
-              .filter((cat) => {
-                const selectedParentId = watch("categoryparent_id");
-                if (!selectedParentId) return true;
-                return String(cat.parent_id) === String(selectedParentId);
-              })
-              .map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-          </select>
-          {errors.category_id && (
-            <small className="text-danger">{errors.category_id.message}</small>
-          )}
-        </div>
-
-        {/* Biến thể sản phẩm */}
-        <div className="mb-3">
-          <label className="form-label">Biến thể sản phẩm</label>
-          {variations.map((field, idx) => (
-            <div key={field.id} className="border p-2 mb-2 rounded">
-              <div className="row">
-                <div className="col">
-                  <input
-                    type="hidden"
-                    {...register(`variations.${idx}.id`)}
-                    value={field.id} // Lấy ID từ field của useFieldArray
-                  />
-                  <input
-                    className="form-control mb-1"
-                    placeholder="Tên biến thể"
-                    {...register(`variations.${idx}.name`, { required: true })}
-                  />
-                </div>
-                <div className="col">
-                  <input
-                    className="form-control mb-1"
-                    placeholder="Nội dung"
-                    {...register(`variations.${idx}.value`, { required: true })}
-                  />
-                </div>
-                <div className="col">
-                  <input
-                    type="number"
-                    className="form-control mb-1"
-                    placeholder="Giá"
-                    {...register(`variations.${idx}.price`)}
-                  />
-                </div>
-                <div className="col">
-                  <input
-                    type="number"
-                    className="form-control mb-1"
-                    placeholder="Số lượng"
-                    {...register(`variations.${idx}.quantity`)}
-                  />
-                </div>
-                <div className="col">
-                  <input
-                    type="number"
-                    className="form-control mb-1"
-                    placeholder="Tồn kho tối thiểu"
-                    {...register(`variations.${idx}.minStock`)}
-                  />
-                </div>
-                <div className="col-auto">
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    onClick={() => remove(idx)}
-                  >
-                    Xóa
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={() =>
-              append({
-                id: null,
-                name: "",
-                value: "",
-                price: "",
-                quantity: "",
-                minStock: "",
-                type: "regular",
-              })
-            }
-          >
-            Thêm biến thể
+            <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() =>
+                    append({
+                      id: null,
+                      name: "",
+                      value: "",
+                      price: "",
+                      quantity: "",
+                      minStock: "",
+                      type: "regular",
+                    })
+                }
+            >
+              Thêm biến thể
+            </button>
+          </div>
+          <button type="submit" className="btn btn-success me-2">
+            Cập nhật sản phẩm
           </button>
-        </div>
-        <button type="submit" className="btn btn-success me-2">
-          Cập nhật sản phẩm
-        </button>
-        <Link to="/admin/product" className="btn btn-secondary">
-          Quay lại
-        </Link>
-      </form>
-    </div>
+          <Link to="/admin/product" className="btn btn-secondary">
+            Quay lại
+          </Link>
+        </form>
+      </div>
   );
 };
 

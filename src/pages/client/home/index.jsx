@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom'; // Thêm để điều hướng
+import {useNavigate} from 'react-router-dom';
 import Constanst from "../../../Constanst";
 
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
@@ -15,29 +15,29 @@ import {
     faShoppingCart,
     faStar,
     faStore,
-    faTags,
+    faTags
 } from '@fortawesome/free-solid-svg-icons';
-import '../../../assets/css/home.css'; // Import the new CSS file
+import '../../../assets/css/home.css';
 
 const Home = () => {
-    // Đổi tên state thành categoryParents
-    const [categoryParents, setCategoryParents] = useState([]);
-    const navigate = useNavigate(); // Khai báo navigate
+    // Đổi tên state thành categoriesParent
+    const [categoriesParent, setCategoriesParent] = useState([]);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchCategoryParents = async () => {
+        const fetchCategoriesParent = async () => {
             try {
-                // Lấy danh sách danh mục cha
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
+                // Lấy danh sách danh mục cha (parent_id null)
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/parents`);
                 if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu danh mục cha");
                 const data = await res.json();
-                setCategoryParents(data);
+                setCategoriesParent(data);
             } catch (err) {
-                console.error("Lỗi fetch category parent:", err);
+                console.error("Lỗi fetch categories parent:", err);
             }
         };
 
-        fetchCategoryParents();
+        fetchCategoriesParent();
     }, []);
 
     return (
@@ -162,7 +162,7 @@ const Home = () => {
                 </div>
             </div>
 
-            {/* Product Categories - Sửa thành categoryParents */}
+            {/* Product Categories - Sửa thành categoriesParent */}
             <div className="product-categories-section">
                 <div className="container">
                     <h2 className="mb-4">
@@ -170,18 +170,18 @@ const Home = () => {
                         Danh mục sản phẩm
                     </h2>
                     <div className="d-flex flex-wrap justify-content-center gap-3">
-                        {categoryParents.length > 0 ? (
-                            categoryParents.map((item, index) => (
+                        {categoriesParent.length > 0 ? (
+                            categoriesParent.map((item, index) => (
                                 <div
-                                    key={index}
+                                    key={item.id}
                                     className="category-item"
                                     style={{cursor: 'pointer'}}
-                                    onClick={() => navigate(`/product?categoryparentId=${item.id}`)}
+                                    onClick={() => navigate(`/product?parent_id=${item.id}`)}
                                 >
                                     <div className="category-icon-wrapper">
-                                        {item.image ? (
+                                        {item.images ? (
                                             <img
-                                                src={`${Constanst.DOMAIN_API}/uploads/${item.image}`}
+                                                src={item.images}
                                                 alt={item.name}
                                             />
                                         ) : (
@@ -195,7 +195,7 @@ const Home = () => {
                                 </div>
                             ))
                         ) : (
-                            // Phần fallback nếu chưa có categoryParents
+                            // Fallback nếu chưa có categoriesParent
                             [...Array(10)].map((_, index) => (
                                 <a href="#" key={index} className="category-item">
                                     <div className="category-icon-wrapper">

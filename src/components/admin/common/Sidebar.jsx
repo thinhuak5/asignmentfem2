@@ -162,19 +162,10 @@ const Sidebar = () => {
                 aria-expanded="false"
               >
                 <i className="ti ti-category fs-6"></i>
-                <span className="hide-menu">Danh Mục Con</span>
+                <span className="hide-menu">Danh Mục</span>
               </Link>
             </li>
-            <li className="sidebar-item">
-              <Link
-                  className="sidebar-link"
-                  to="/admin/categoryparent"
-                  aria-expanded="false"
-              >
-                <i className="ti ti-category fs-6"></i>
-                <span className="hide-menu">Danh Mục Cha</span>
-              </Link>
-            </li>
+
 
             {/* Orders */}
             <li className="sidebar-item">

@@ -9,10 +9,10 @@ const EditCategory = () => {
         name: "",
         status: "Hiển thị",
         images: null,
-        parent_id: "", // ✅ Thêm parent_id
+        parent_id: "",
     });
     const [newImage, setNewImage] = useState(null);
-    const [categoryParents, setCategoryParents] = useState([]); // ✅ Danh sách danh mục cha
+    const [categoryParents, setCategoryParents] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -22,17 +22,18 @@ const EditCategory = () => {
                 const data = await res.json();
 
                 if (!res.ok) throw new Error("Không tìm thấy danh mục");
+                if (!data) throw new Error("Không có dữ liệu danh mục");
 
                 setCategory({
                     name: data.name,
                     status: data.status === 1 ? "Hiển thị" : "Ẩn",
                     images: data.images || null,
-                    parent_id: data.parent_id || "", // ✅ Gán parent_id nếu có
+                    parent_id: data.parent_id || "",
                 });
 
-                // Lấy danh sách danh mục cha
+                // ĐÚNG: Lấy danh sách danh mục cha
                 const resParents = await fetch(
-                    `${Constanst.DOMAIN_API}/api/categoryparents`
+                    `${Constanst.DOMAIN_API}/api/categories/parents`
                 );
                 const parentData = await resParents.json();
                 if (Array.isArray(parentData)) {
@@ -63,12 +64,18 @@ const EditCategory = () => {
         e.preventDefault();
         const status = category.status === "Hiển thị" ? 1 : 0;
 
+        // Không cho phép parent_id = chính id của nó!
+        if (category.parent_id && String(category.parent_id) === String(id)) {
+            alert("Không thể chọn chính nó làm danh mục cha!");
+            return;
+        }
+
         const formData = new FormData();
         formData.append("name", category.name);
         formData.append("status", status);
         formData.append("old_image", category.images || "");
         if (newImage) formData.append("images", newImage);
-        if (category.parent_id) formData.append("parent_id", category.parent_id); // ✅ Thêm parent_id
+        if (category.parent_id) formData.append("parent_id", category.parent_id);
 
         try {
             const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${id}`, {
@@ -131,11 +138,13 @@ const EditCategory = () => {
                         onChange={handleChange}
                     >
                         <option value="">-- Chọn danh mục cha --</option>
-                        {categoryParents.map((parent) => (
-                            <option key={parent.id} value={parent.id}>
-                                {parent.name}
-                            </option>
-                        ))}
+                        {categoryParents
+                            .filter((parent) => String(parent.id) !== String(id)) // Không hiện chính nó!
+                            .map((parent) => (
+                                <option key={parent.id} value={parent.id}>
+                                    {parent.name}
+                                </option>
+                            ))}
                     </select>
                 </div>
 
