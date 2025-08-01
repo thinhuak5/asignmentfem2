@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {useFieldArray, useForm} from "react-hook-form";
+import {Link, useNavigate, useParams} from "react-router-dom";
 import Constanst from "../../../Constanst";
-import { CKEditor } from "@ckeditor/ckeditor5-react";
+import {CKEditor} from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 const EditProduct = () => {
@@ -13,9 +13,10 @@ const EditProduct = () => {
     register,
     handleSubmit,
     setValue,
-    watch,
     control,
     formState: { errors },
+      reset,
+      watch,
   } = useForm({
     defaultValues: {
       name: "",
@@ -31,11 +32,14 @@ const EditProduct = () => {
     },
   });
 
-  const [categoryParents, setCategoryParents] = useState([]);
+    // State
   const [categories, setCategories] = useState([]);
+    const [parentCategories, setParentCategories] = useState([]);
+    const [childCategories, setChildCategories] = useState([]);
+    const [selectedParentId, setSelectedParentId] = useState("");
   const [description, setDescription] = useState("");
   const [variationImageUrls, setVariationImageUrls] = useState({});
-  const [removedImages, setRemovedImages] = useState([]); // Khai báo state cho removedImages
+    const [removedImages, setRemovedImages] = useState([]);
 
   const {
     fields: variationFields,
@@ -43,92 +47,113 @@ const EditProduct = () => {
     remove: removeVariation,
   } = useFieldArray({ control, name: "variations" });
 
-  const parentId = watch("categoryparent_id");
+    const categoryIdValue = watch("category_id");
 
+    // 1. Fetch categories
   useEffect(() => {
-    // fetch danh mục cha & con
-    fetch(`${Constanst.DOMAIN_API}/api/categoryparents`)
-      .then((r) => r.json())
-      .then(setCategoryParents);
     fetch(`${Constanst.DOMAIN_API}/api/categories/list`)
       .then((r) => r.json())
-      .then(setCategories);
+        .then((allCats) => {
+            setCategories(allCats);
+            setParentCategories(allCats.filter((c) => c.parent_id === null));
+        });
+  }, []);
 
-    // fetch product
+    // 2. Khi đã có categories, fetch product
+    useEffect(() => {
+        if (!categories.length) return;
     fetch(`${Constanst.DOMAIN_API}/api/products/${id}`)
       .then((r) => r.json())
       .then((data) => {
-        // chung
-        setValue("name", data.name);
-        setValue("description", data.description);
-        setDescription(data.description || "");
-        setValue("status", data.status === 1 ? "Còn hàng" : "Hết hàng");
-        setValue("categoryparent_id", data.categoryparent_id ?? "");
-        setValue("category_id", data.category_id ?? "");
-        setValue("price", data.price ?? "");
-        setValue("discount_price", data.discount_price ?? "");
-        setValue("quantity", data.quantity ?? "");
-        setValue("min_stock", data.min_stock ?? "");
-
-        // biến thể
-        if (Array.isArray(data.variations)) {
-          const vars = data.variations.map((v) => ({
-            id: v.id,
-            name: v.name,
-            value: v.value,
-            price: v.price ?? "",
-            quantity: v.quantity ?? "",
-            min_stock: v.min_stock ?? "",
-            images: [], // input file mới để upload
-          }));
-          setValue("variations", vars);
-
-          const urlsMap = {};
-          data.variations.forEach((v, idx) => {
-            urlsMap[idx] =
-              Array.isArray(v.productImages) && v.productImages.length
-                ? v.productImages.map((img) => img.image_url)
-                : [];
+          const vars = Array.isArray(data.variations)
+              ? data.variations.map((v) => ({
+                  id: v.id,
+                  name: v.name,
+                  value: v.value,
+                  price: v.price ?? "",
+                  quantity: v.quantity ?? "",
+                  min_stock: v.min_stock ?? "",
+                  images: [],
+              }))
+              : [];
+          // Tìm cha từ danh mục sản phẩm
+          const prodCat = categories.find((c) => String(c.id) === String(data.category_id));
+          const parentId = prodCat?.parent_id ? String(prodCat.parent_id) : "";
+          // Reset form
+          reset({
+              name: data.name,
+              description: data.description || "",
+              status: data.status === 1 ? "Còn hàng" : "Hết hàng",
+              price: data.price ?? "",
+              discount_price: data.discount_price ?? "",
+              quantity: data.quantity ?? "",
+              min_stock: data.min_stock ?? "",
+              category_id: data.category_id ?? "",
+              categoryparent_id: parentId,
+              variations: vars,
           });
+          setDescription(data.description || "");
+          setSelectedParentId(parentId);
+          // Ảnh từng biến thể
+          const urlsMap = {};
+          if (Array.isArray(data.variations)) {
+          data.variations.forEach((v, idx) => {
+              urlsMap[idx] = Array.isArray(v.productImages) && v.productImages.length
+                  ? v.productImages.map((img) => img.image_url)
+                  : [];
+          });
+          }
           setVariationImageUrls(urlsMap);
-        }
       });
     // eslint-disable-next-line
-  }, [id]);
+    }, [categories, id, reset]);
 
-  // Xử lý xóa ảnh
+    // 3. Đồng bộ danh mục con với parent hiện tại
+    useEffect(() => {
+        if (selectedParentId) {
+            setChildCategories(
+                categories.filter((c) => String(c.parent_id) === String(selectedParentId))
+            );
+        } else {
+            setChildCategories([]);
+        }
+    }, [selectedParentId, categories]);
+
+    // Khi đổi danh mục cha bằng select, reset category con
+    const handleParentChange = (e) => {
+        setSelectedParentId(e.target.value);
+        setValue("category_id", "");
+        setValue("categoryparent_id", e.target.value);
+    };
+
+    // Xóa ảnh biến thể
   const handleRemoveImage = (variationIdx, imageIdx) => {
     const updatedUrls = { ...variationImageUrls };
-    updatedUrls[variationIdx] = updatedUrls[variationIdx].filter(
-      (_, idx) => idx !== imageIdx
-    );
+      updatedUrls[variationIdx] = updatedUrls[variationIdx].filter((_, idx) => idx !== imageIdx);
     setVariationImageUrls(updatedUrls);
-
-    // Thêm URL ảnh cần xóa vào mảng removedImages
     const removedImage = variationImageUrls[variationIdx][imageIdx];
     setRemovedImages((prevImages) => [...prevImages, removedImage]);
   };
 
+    // Submit
   const onSubmit = async (data) => {
     const formData = new FormData();
     formData.append("name", data.name);
     formData.append("description", data.description);
     formData.append("status", data.status === "Còn hàng" ? 1 : 0);
-    formData.append("categoryparent_id", data.categoryparent_id);
+      formData.append("categoryparent_id", selectedParentId);
     formData.append("category_id", data.category_id);
     formData.append("price", data.price);
     formData.append("discount_price", data.discount_price);
     formData.append("quantity", data.quantity);
     formData.append("minStock", data.min_stock);
 
-    // Thêm mảng removedImages vào formData
     formData.append("removedImages", JSON.stringify(removedImages));
 
+      // Gửi biến thể: id sẽ null nếu là biến thể mới!
     const rawVars = data.variations || [];
     const varsMeta = rawVars.map(({ images, ...rest }) => rest);
     formData.append("variations", JSON.stringify(varsMeta));
-
-    // Upload file biến thể
     rawVars.forEach((v, idx) => {
       if (v.images && v.images.length) {
         Array.from(v.images).forEach((file) => {
@@ -158,7 +183,7 @@ const EditProduct = () => {
         encType="multipart/form-data"
         className="border p-4 rounded bg-light"
       >
-        {/* Thẻ thông tin sản phẩm */}
+          {/* Thông tin sản phẩm */}
         <div className="card mb-3">
           <div className="card-body">
             <h5 className="card-title">Thông tin sản phẩm</h5>
@@ -172,8 +197,6 @@ const EditProduct = () => {
                 <small className="text-danger">{errors.name.message}</small>
               )}
             </div>
-
-            {/* Mô tả */}
             <div className="mb-3">
               <label className="form-label">Mô tả</label>
               <div className="border rounded p-2" style={{ minHeight: 40 }}>
@@ -195,8 +218,7 @@ const EditProduct = () => {
             </div>
           </div>
         </div>
-
-        {/* Thẻ trạng thái và danh mục */}
+          {/* Trạng thái & Danh mục */}
         <div className="card mb-3">
           <div className="card-body">
             <h5 className="card-title">Trạng thái và Danh mục</h5>
@@ -212,38 +234,31 @@ const EditProduct = () => {
                 <label className="form-label">Danh mục cha</label>
                 <select
                   className="form-select"
-                  value={parentId}
-                  onChange={(e) =>
-                    setValue("categoryparent_id", e.target.value)
-                  }
+                  value={selectedParentId}
+                  onChange={handleParentChange}
                 >
                   <option value="">-- Chọn --</option>
-                  {categoryParents.map((p) => (
+                    {parentCategories.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
                   ))}
                 </select>
-                {errors.categoryparent_id && (
-                  <small className="text-danger">
-                    {errors.categoryparent_id.message}
-                  </small>
-                )}
               </div>
               <div className="col">
                 <label className="form-label">Danh mục con</label>
                 <select
                   className="form-select"
                   {...register("category_id", { required: "Bắt buộc" })}
-                  disabled={!parentId}
+                  value={categoryIdValue || ""}
+                  onChange={e => setValue("category_id", e.target.value)}
+                  disabled={!selectedParentId}
                 >
                   <option value="">-- Chọn --</option>
-                  {categories
-                    .filter((c) => String(c.parent_id) === String(parentId))
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
+                    {childCategories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                            {c.name}
+                        </option>
                     ))}
                 </select>
                 {errors.category_id && (
@@ -255,7 +270,6 @@ const EditProduct = () => {
             </div>
           </div>
         </div>
-
         {/* Biến thể sản phẩm */}
         <div className="row">
           {variationFields.map((field, idx) => (
@@ -275,18 +289,14 @@ const EditProduct = () => {
                       <input
                         className="form-control"
                         placeholder="Tên biến thể"
-                        {...register(`variations.${idx}.name`, {
-                          required: "Bắt buộc",
-                        })}
+                        {...register(`variations.${idx}.name`, {required: "Bắt buộc"})}
                       />
                     </div>
                     <div className="col">
                       <input
                         className="form-control"
                         placeholder="Nội dung"
-                        {...register(`variations.${idx}.value`, {
-                          required: "Bắt buộc",
-                        })}
+                        {...register(`variations.${idx}.value`, {required: "Bắt buộc"})}
                       />
                     </div>
                     <div className="col">
@@ -317,14 +327,18 @@ const EditProduct = () => {
                       <label className="form-label">
                         Ảnh biến thể #{idx + 1}
                       </label>
-                      {/* Hiển thị ảnh cũ nếu có */}
                       {variationImageUrls[idx] &&
                         variationImageUrls[idx].length > 0 && (
-                          <div className="mb-2 d-flex">
+                              <div className="mb-2 d-flex flex-wrap">
                             {variationImageUrls[idx].map((url, i) => (
                               <div
                                 key={i}
-                                className="d-flex align-items-center"
+                                style={{
+                                    position: "relative",
+                                    display: "inline-block",
+                                    marginRight: 10,
+                                    marginBottom: 10,
+                                }}
                               >
                                 <img
                                   src={url}
@@ -333,15 +347,35 @@ const EditProduct = () => {
                                   height="60"
                                   style={{
                                     objectFit: "cover",
-                                    marginRight: 8,
+                                      borderRadius: 6,
+                                      boxShadow: "0 1px 5px rgba(0,0,0,0.10)",
                                   }}
                                 />
                                 <button
                                   type="button"
-                                  className="btn btn-danger btn-sm"
                                   onClick={() => handleRemoveImage(idx, i)}
+                                  style={{
+                                      position: "absolute",
+                                      top: 2,
+                                      right: 2,
+                                      width: 22,
+                                      height: 22,
+                                      border: "none",
+                                      borderRadius: "50%",
+                                      background: "rgba(255,255,255,0.82)",
+                                      color: "#e74c3c",
+                                      fontWeight: "bold",
+                                      fontSize: "18px",
+                                      cursor: "pointer",
+                                      lineHeight: "18px",
+                                      padding: 0,
+                                      boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
+                                      zIndex: 2,
+                                      transition: "background 0.2s",
+                                  }}
+                                  title="Xóa ảnh"
                                 >
-                                  Xóa
+                                    ×
                                 </button>
                               </div>
                             ))}

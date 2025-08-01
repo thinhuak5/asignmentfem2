@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {useFieldArray, useForm} from "react-hook-form";
+import {Link, useNavigate} from "react-router-dom";
 import Constanst from "../../../Constanst";
-import { CKEditor } from "@ckeditor/ckeditor5-react";
+import {CKEditor} from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
+// Đảm bảo Bootstrap CSS đã import ở project!
 const AddProduct = () => {
   const navigate = useNavigate();
   const {
@@ -14,11 +15,34 @@ const AddProduct = () => {
     watch,
     control,
     formState: { errors },
+      trigger,
+      setError,
+      clearErrors
   } = useForm({ defaultValues: { variations: [], description: "" } });
+
+    const [categories, setCategories] = useState([]);
+    const [parentCategories, setParentCategories] = useState([]);
+    const [childCategories, setChildCategories] = useState([]);
+    const [selectedParentId, setSelectedParentId] = useState("");
+    const [variationError, setVariationError] = useState("");
 
   useEffect(() => {
     register("description", { required: "Bắt buộc" });
+      fetch(`${Constanst.DOMAIN_API}/api/categories/list`)
+          .then(r => r.json())
+          .then(data => {
+              setCategories(data);
+              setParentCategories(data.filter(c => c.parent_id === null));
+          });
   }, [register]);
+
+    useEffect(() => {
+        setValue("categoryparent_id", selectedParentId);
+        setChildCategories(
+            categories.filter(c => String(c.parent_id) === String(selectedParentId))
+        );
+        setValue("category_id", "");
+    }, [selectedParentId, categories, setValue]);
 
   const {
     fields: variationFields,
@@ -26,49 +50,17 @@ const AddProduct = () => {
     remove: removeVariation,
   } = useFieldArray({ control, name: "variations" });
 
-  const [categoryParents, setCategoryParents] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [selectedParentId, setSelectedParentId] = useState("");
-
-
-  // Load danh mục cha
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
-        setCategoryParents(await res.json());
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, []);
-
-  // Sync parent → hidden field
-  useEffect(() => {
-    setValue("categoryparent_id", selectedParentId);
-  }, [selectedParentId, setValue]);
-
-  // Load danh mục con
-  useEffect(() => {
-    if (!selectedParentId) {
-      setCategories([]);
-      setValue("category_id", "");
-      return;
-    }
-    (async () => {
-      try {
-        const res = await fetch(
-          `${Constanst.DOMAIN_API}/api/categories/by-parent/${selectedParentId}`
-        );
-        setCategories(await res.json());
-      } catch (err) {
-        console.error(err);
-        setCategories([]);
-      }
-    })();
-  }, [selectedParentId, setValue]);
-
   const onSubmit = async (data) => {
+      // Validate phải có ít nhất 1 biến thể
+      if (!data.variations || data.variations.length === 0) {
+          setVariationError("Phải có ít nhất 1 biến thể!");
+          setError("variations", {type: "manual", message: "Phải có ít nhất 1 biến thể!"});
+          return;
+      } else {
+          setVariationError("");
+          clearErrors("variations");
+      }
+
     try {
       const formData = new FormData();
       formData.append("name", data.name);
@@ -103,15 +95,42 @@ const AddProduct = () => {
     }
   };
 
+    // Khi có biến thể, clear lỗi
+    useEffect(() => {
+        if (variationFields.length > 0 && variationError) {
+            setVariationError("");
+            clearErrors("variations");
+        }
+    }, [variationFields.length, variationError, clearErrors]);
+
   return (
-    <div className="container">
+
+      <div className="container">
       <h2>Thêm sản phẩm</h2>
+
+          {/* Error nếu không có biến thể: dùng Bootstrap Alert */}
+          {variationError && (
+              <div
+                  className="alert alert-info"
+                  style={{
+                      background: "#eaf6ff",
+                      border: "1px solid #b6e0fe",
+                      color: "#222",
+                      borderRadius: "8px",
+                      fontSize: "1.05rem",
+                      padding: "16px 24px",
+                      margin: "16px 0 8px 0",
+                  }}
+              >
+                  {variationError}
+              </div>
+          )}
       <form
         onSubmit={handleSubmit(onSubmit)}
         encType="multipart/form-data"
         className="border p-4 rounded bg-light"
       >
-        {/* Product Info Card */}
+          {/* Thông tin sản phẩm */}
         <div className="card mb-3">
           <div className="card-body">
             <h5 className="card-title">Thông tin sản phẩm</h5>
@@ -125,8 +144,6 @@ const AddProduct = () => {
                 <small className="text-danger">{errors.name.message}</small>
               )}
             </div>
-
-            {/* Mô tả */}
             <div className="mb-3">
               <label className="form-label">Mô tả</label>
               <div className="border rounded p-2" style={{ minHeight: 40 }}>
@@ -149,7 +166,7 @@ const AddProduct = () => {
           </div>
         </div>
 
-        {/* Status & Categories Card */}
+          {/* Status & Categories */}
         <div className="card mb-3">
           <div className="card-body">
             <h5 className="card-title">Trạng thái và Danh mục</h5>
@@ -166,10 +183,10 @@ const AddProduct = () => {
                 <select
                   className="form-select"
                   value={selectedParentId}
-                  onChange={(e) => setSelectedParentId(e.target.value)}
+                  onChange={e => setSelectedParentId(e.target.value)}
                 >
                   <option value="">-- Chọn --</option>
-                  {categoryParents.map((p) => (
+                    {parentCategories.map(p => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -184,7 +201,7 @@ const AddProduct = () => {
                   disabled={!selectedParentId}
                 >
                   <option value="">-- Chọn --</option>
-                  {categories.map((c) => (
+                    {childCategories.map(c => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -200,11 +217,10 @@ const AddProduct = () => {
           </div>
         </div>
 
-        {/* Variations Section with Multiple Cards */}
+          {/* Variations Section */}
         <div className="row">
           {variationFields.map((field, idx) => (
             <div key={field.id} className="col-12 col-md-6 mb-3">
-              {/* Separate Card for each Variation */}
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title">Biến thể #{idx + 1}</h5>
@@ -220,18 +236,14 @@ const AddProduct = () => {
                       <input
                         className="form-control"
                         placeholder="Tên biến thể"
-                        {...register(`variations.${idx}.name`, {
-                          required: "Bắt buộc",
-                        })}
+                        {...register(`variations.${idx}.name`, {required: "Bắt buộc"})}
                       />
                     </div>
                     <div className="col">
                       <input
                         className="form-control"
                         placeholder="Mô Tả"
-                        {...register(`variations.${idx}.value`, {
-                          required: "Bắt buộc",
-                        })}
+                        {...register(`variations.${idx}.value`, {required: "Bắt buộc"})}
                       />
                     </div>
                     <div className="col">
@@ -275,7 +287,9 @@ const AddProduct = () => {
             </div>
           ))}
         </div>
-        <button
+
+
+          <button
           type="button"
           className="btn btn-primary me-2"
           onClick={() =>

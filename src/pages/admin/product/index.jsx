@@ -1,53 +1,37 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { FaList, FaRegFileAlt, FaTags, FaImage, FaCogs, FaTrashAlt } from "react-icons/fa";  // Import các icon từ React Icons
+import {useEffect, useState} from "react";
+import {Link} from "react-router-dom";
+import {FaCogs, FaImage, FaList, FaRegFileAlt, FaTags, FaTrashAlt} from "react-icons/fa";
 import Constanst from "../../../Constanst";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [categoryParents, setCategoryParents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategoryParent, setSelectedCategoryParent] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+    const [selectedParentId, setSelectedParentId] = useState("");
+    const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(10);
 
   useEffect(() => {
-    (async () => {
-      await fetchCategoryParents();
-      await fetchCategories();
-      await fetchProducts();
-    })();
+      fetchCategories();
+      fetchProducts();
   }, []);
 
   const fetchProducts = async () => {
     try {
       const res = await fetch(`${Constanst.DOMAIN_API}/api/products/list`);
-      if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu sản phẩm");
       setProducts(await res.json());
     } catch (err) {
-      console.error(err);
+        console.error(err);
     }
   };
 
   const fetchCategories = async () => {
     try {
       const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
-      if (!res.ok) throw new Error("Lỗi khi lấy danh mục con");
       setCategories(await res.json());
     } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchCategoryParents = async () => {
-    try {
-      const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
-      if (!res.ok) throw new Error("Lỗi khi lấy danh mục cha");
-      setCategoryParents(await res.json());
-    } catch (err) {
-      console.error(err);
+        console.error(err);
     }
   };
 
@@ -59,45 +43,47 @@ const ProductList = () => {
         alert("Đã xóa!");
         fetchProducts();
       } else {
-        throw new Error((await res.json()).error);
+          alert("Lỗi khi xóa");
       }
     } catch (err) {
-      console.error(err);
-      alert("Lỗi khi xóa");
+        console.error(err);
+        alert("Lỗi khi xóa");
     }
   };
 
-  const getCategoryName = (id) =>
-    !id ? "Không có danh mục con" :
-    categories.find(c => String(c.id) === String(id))?.name || "Không có danh mục con";
+    // Danh mục cha và con
+    const parentCategories = categories.filter(c => c.parent_id === null);
+    const childCategories = selectedParentId
+        ? categories.filter(c => String(c.parent_id) === String(selectedParentId))
+        : [];
 
-  const getCategoryParentName = (id) =>
-    !id ? "Không có danh mục cha" :
-    categoryParents.find(p => String(p.id) === String(id))?.name || "Không có danh mục cha";
+  const getCategoryName = (id) =>
+      categories.find(c => String(c.id) === String(id))?.name || "Không có";
+
+    const getParentName = (child_id) => {
+        const cat = categories.find(c => String(c.id) === String(child_id));
+        if (!cat || !cat.parent_id) return "Không có";
+        return getCategoryName(cat.parent_id);
+    };
 
   const filteredProducts = products.filter(p => {
-    const bySearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const byParent = !selectedCategoryParent || String(p.categoryparent_id) === selectedCategoryParent;
-    const byCat    = !selectedCategory      || String(p.category_id)       === selectedCategory;
-    return bySearch && byParent && byCat;
+      const bySearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      let byParent = true, byChild = true;
+      if (selectedParentId) {
+          const cat = categories.find(c => String(c.id) === String(p.category_id));
+          byParent = cat && String(cat.parent_id) === String(selectedParentId);
+      }
+      if (selectedCategoryId) {
+          byChild = String(p.category_id) === String(selectedCategoryId);
+      }
+      return bySearch && byParent && byChild;
   });
 
-  const filteredCategoriesByParent = selectedCategoryParent
-    ? categories.filter(c => String(c.parent_id) === selectedCategoryParent)
-    : categories;
-
-  // Truncate description to 15 characters and add "..."
-  const truncateDescription = (description) => {
-    return description.length > 15 ? description.substring(0, 15) + "..." : description;
-  };
-
-  // Pagination logic
+    // Pagination
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div className="container">
@@ -121,14 +107,14 @@ const ProductList = () => {
         <div className="col-md-4">
           <select
             className="form-select"
-            value={selectedCategoryParent}
+            value={selectedParentId}
             onChange={e => {
-              setSelectedCategoryParent(e.target.value);
-              setSelectedCategory("");
+                setSelectedParentId(e.target.value);
+                setSelectedCategoryId(""); // Reset con khi đổi cha
             }}
           >
             <option value="">-- Lọc danh mục cha --</option>
-            {categoryParents.map(p => (
+              {parentCategories.map(p => (
               <option key={p.id} value={String(p.id)}>{p.name}</option>
             ))}
           </select>
@@ -136,12 +122,12 @@ const ProductList = () => {
         <div className="col-md-4">
           <select
             className="form-select"
-            value={selectedCategory}
-            onChange={e => setSelectedCategory(e.target.value)}
-            disabled={!selectedCategoryParent}
+            value={selectedCategoryId}
+            onChange={e => setSelectedCategoryId(e.target.value)}
+            disabled={!selectedParentId}
           >
             <option value="">-- Lọc danh mục con --</option>
-            {filteredCategoriesByParent.map(c => (
+              {childCategories.map(c => (
               <option key={c.id} value={String(c.id)}>{c.name}</option>
             ))}
           </select>
@@ -155,8 +141,8 @@ const ProductList = () => {
             <th><FaList /> STT</th>
             <th><FaRegFileAlt /> Tên</th>
             <th><FaTags /> Mô tả</th>
+              <th><FaTags/> Danh mục cha</th>
             <th><FaTags /> Danh mục con</th>
-            <th><FaTags /> Danh mục cha</th>
             <th><FaCogs /> Trạng thái</th>
             <th><FaImage /> Ảnh</th>
             <th><FaCogs /> Thao tác</th>
@@ -173,15 +159,14 @@ const ProductList = () => {
               <tr key={p.id}>
                 <td>{indexOfFirstProduct + idx + 1}</td>
                 <td>{p.name}</td>
-                <td>{truncateDescription(p.description)}</td>
+                  <td>{(p.description && p.description.length > 15)
+                      ? p.description.substring(0, 15) + "..." : p.description}
+                  </td>
+                  <td>{getParentName(p.category_id)}</td>
                 <td>{getCategoryName(p.category_id)}</td>
-                <td>{getCategoryParentName(p.categoryparent_id)}</td>
                 <td>{p.status === 1 ? "Hiển thị" : "Ẩn"}</td>
                 <td>
-                  {p.variations &&
-                   p.variations[0] &&
-                   p.variations[0].productImages &&
-                   p.variations[0].productImages[0] ? (
+                    {p.variations && p.variations[0] && p.variations[0].productImages && p.variations[0].productImages[0] ? (
                     <img
                       src={p.variations[0].productImages[0].image_url}
                       alt="thumb"
@@ -219,15 +204,15 @@ const ProductList = () => {
       <nav>
         <ul className="pagination justify-content-center">
           <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
-            <button className="page-link" onClick={() => paginate(currentPage - 1)}>Prev</button>
+              <button className="page-link" onClick={() => setCurrentPage(currentPage - 1)}>Prev</button>
           </li>
           {[...Array(totalPages)].map((_, index) => (
             <li key={index} className={`page-item ${index + 1 === currentPage ? "active" : ""}`}>
-              <button className="page-link" onClick={() => paginate(index + 1)}>{index + 1}</button>
+                <button className="page-link" onClick={() => setCurrentPage(index + 1)}>{index + 1}</button>
             </li>
           ))}
           <li className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}>
-            <button className="page-link" onClick={() => paginate(currentPage + 1)}>Next</button>
+              <button className="page-link" onClick={() => setCurrentPage(currentPage + 1)}>Next</button>
           </li>
         </ul>
       </nav>

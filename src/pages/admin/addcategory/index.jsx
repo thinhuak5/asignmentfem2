@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Link, useNavigate} from "react-router-dom"; // nhớ sửa về react-router-dom
+import {Link, useNavigate} from "react-router-dom";
 import Constanst from "../../../Constanst";
 
 const AddCategory = () => {
@@ -7,17 +7,18 @@ const AddCategory = () => {
     const [category, setCategory] = useState({
         name: "",
         status: "Hiển thị",
-        parent_id: "", // thêm vào state
+        parent_id: "",
     });
     const [categoryParents, setCategoryParents] = useState([]);
     const [errorMessage, setErrorMessage] = useState("");
 
     useEffect(() => {
+        // Lấy danh mục cha (parent_id === null)
         const fetchCategoryParents = async () => {
             try {
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categoryparents`);
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/parents`);
                 const data = await res.json();
-                setCategoryParents(data);
+                if (Array.isArray(data)) setCategoryParents(data);
             } catch (error) {
                 console.error("Lỗi khi load category parents:", error);
             }
@@ -28,6 +29,12 @@ const AddCategory = () => {
     const handleChange = (e) => {
         const {name, value} = e.target;
         setCategory({...category, [name]: value});
+    };
+
+    const handleImageChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setCategory({...category, image: e.target.files[0]});
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -88,9 +95,9 @@ const AddCategory = () => {
                     <input
                         type="file"
                         className="form-control"
-                        name="image"
+                        name="images"
                         accept="image/*"
-                        onChange={(e) => setCategory({...category, image: e.target.files[0]})}
+                        onChange={handleImageChange}
                     />
                 </div>
                 <div className="mb-3">

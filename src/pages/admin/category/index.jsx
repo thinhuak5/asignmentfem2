@@ -4,31 +4,19 @@ import Constanst from "../../../Constanst";
 
 const CategoryList = () => {
     const [categories, setCategories] = useState([]);
-    const [categoryParents, setCategoryParents] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterParentId, setFilterParentId] = useState("");
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [resCat, resParents] = await Promise.all([
-                    fetch(`${Constanst.DOMAIN_API}/api/categories/list`),
-                    fetch(`${Constanst.DOMAIN_API}/api/categoryparents`)
-                ]);
-
-                const data = await resCat.json();
-                const parents = await resParents.json();
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
+                const data = await res.json();
 
                 if (Array.isArray(data)) {
                     setCategories(data);
                 } else {
                     console.error("Dữ liệu danh mục không hợp lệ:", data);
-                }
-
-                if (Array.isArray(parents)) {
-                    setCategoryParents(parents);
-                } else {
-                    console.error("Dữ liệu danh mục cha không hợp lệ:", parents);
                 }
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu:", error);
@@ -58,10 +46,15 @@ const CategoryList = () => {
         }
     };
 
+    // Lấy tên danh mục cha theo parent_id từ mảng categories
     const getParentName = (parent_id) => {
-        const parent = categoryParents.find(p => p.id === parent_id);
+        if (!parent_id) return "Không có";
+        const parent = categories.find(cat => cat.id === parent_id);
         return parent ? parent.name : "Không có";
     };
+
+    // Các danh mục cha (parent_id === null) cho dropdown lọc
+    const parentCategories = categories.filter(cat => cat.parent_id === null);
 
     // Lọc theo tên và theo danh mục cha nếu có
     const filteredCategories = categories.filter(category => {
@@ -88,7 +81,7 @@ const CategoryList = () => {
                     onChange={(e) => setFilterParentId(e.target.value)}
                 >
                     <option value="">-- Lọc theo danh mục cha --</option>
-                    {categoryParents.map(parent => (
+                    {parentCategories.map(parent => (
                         <option key={parent.id} value={parent.id}>{parent.name}</option>
                     ))}
                 </select>
@@ -131,7 +124,8 @@ const CategoryList = () => {
                         <td>
                             <Link to={`/admin/category/editcategory/${category.id}`}
                                   className="btn btn-warning btn-sm me-2">Sửa</Link>
-                            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(category.id)}>Xóa
+                            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(category.id)}>
+                                Xóa
                             </button>
                         </td>
                     </tr>
