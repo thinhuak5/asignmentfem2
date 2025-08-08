@@ -1,48 +1,60 @@
 import React, {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
 import Constanst from "../../../Constanst";
+import {FaCheckCircle, FaTimesCircle} from "react-icons/fa";
 
 const CategoryList = () => {
     const [categories, setCategories] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterParentId, setFilterParentId] = useState("");
+    // Modal state
+    const [showModal, setShowModal] = useState(false);
+    const [deleteId, setDeleteId] = useState(null);
+    // Toast state
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastType, setToastType] = useState("success");
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
-                const data = await res.json();
-
-                if (Array.isArray(data)) {
-                    setCategories(data);
-                } else {
-                    console.error("Dữ liệu danh mục không hợp lệ:", data);
-                }
-            } catch (error) {
-                console.error("Lỗi khi tải dữ liệu:", error);
-            }
-        };
-
         fetchData();
     }, []);
 
-    const handleDelete = async (id) => {
-        if (window.confirm("Bạn có chắc chắn muốn xóa danh mục này?")) {
-            try {
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${id}`, {
-                    method: "DELETE",
-                });
+    const fetchData = async () => {
+        try {
+            const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
+            const data = await res.json();
+            if (Array.isArray(data)) setCategories(data);
+        } catch (error) {
+            showToastMessage("Lỗi khi tải dữ liệu!", "error");
+        }
+    };
 
-                if (!res.ok) {
-                    throw new Error("Không thể xóa danh mục");
-                }
+    // Toast function
+    const showToastMessage = (msg, type = "success") => {
+        setToastType(type);
+        setToastMessage(msg);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2500);
+    };
 
-                setCategories(categories.filter(category => category.id !== id));
-                alert("Danh mục đã được xóa!");
-            } catch (error) {
-                console.error("Lỗi khi xóa danh mục:", error);
-                alert("Có lỗi xảy ra khi xóa danh mục.");
-            }
+    // Hiện modal xác nhận xóa
+    const openDeleteModal = (id) => {
+        setDeleteId(id);
+        setShowModal(true);
+    };
+
+    // Xác nhận xóa
+    const confirmDelete = async () => {
+        setShowModal(false);
+        try {
+            const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${deleteId}`, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("Không thể xóa danh mục");
+            setCategories(categories.filter(category => category.id !== deleteId));
+            showToastMessage("Đã xóa danh mục thành công!", "success");
+        } catch (error) {
+            showToastMessage("Có lỗi xảy ra khi xóa danh mục.", "error");
         }
     };
 
@@ -64,7 +76,46 @@ const CategoryList = () => {
     });
 
     return (
-        <div className="container">
+        <div className="container position-relative">
+            {/* Toast */}
+            <div
+                aria-live="polite"
+                aria-atomic="true"
+                className="position-fixed start-50 translate-middle-x"
+                style={{zIndex: 1070, top: 20, left: "50%", minWidth: 340}}
+            >
+                {showToast && (
+                    <div
+                        className={`d-flex align-items-center shadow rounded-3 px-4 py-2 mb-2 position-relative`}
+                        style={{
+                            background: toastType === "success" ? "#25b864" : "#f44e4e",
+                            color: "#fff",
+                            minHeight: 46,
+                        }}
+                    >
+                        {toastType === "success" ? (
+                            <FaCheckCircle className="me-2 fs-5"/>
+                        ) : (
+                            <FaTimesCircle className="me-2 fs-5"/>
+                        )}
+                        <div style={{flex: 1}}>{toastMessage}</div>
+                        <button
+                            type="button"
+                            style={{
+                                background: "none",
+                                border: "none",
+                                color: "#fff",
+                                fontSize: 18,
+                                cursor: "pointer",
+                            }}
+                            onClick={() => setShowToast(false)}
+                        >
+                            ×
+                        </button>
+                    </div>
+                )}
+            </div>
+
             <h2>Danh sách danh mục</h2>
 
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -124,7 +175,10 @@ const CategoryList = () => {
                         <td>
                             <Link to={`/admin/category/editcategory/${category.id}`}
                                   className="btn btn-warning btn-sm me-2">Sửa</Link>
-                            <button className="btn btn-danger btn-sm" onClick={() => handleDelete(category.id)}>
+                            <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => openDeleteModal(category.id)}
+                            >
                                 Xóa
                             </button>
                         </td>
@@ -136,6 +190,67 @@ const CategoryList = () => {
                 )}
                 </tbody>
             </table>
+
+            {/* Modal xác nhận xóa */}
+            {showModal && (
+                <>
+                    <div
+                        className="modal fade show"
+                        style={{
+                            display: "block",
+                            background: "rgba(0,0,0,0.15)",
+                        }}
+                        tabIndex={-1}
+                        aria-modal="true"
+                        role="dialog"
+                    >
+                        <div className="modal-dialog modal-dialog-centered">
+                            <div className="modal-content">
+                                <div className="modal-header border-0 pb-0">
+                                    <h5 className="modal-title">Xác nhận xóa</h5>
+                                    <button
+                                        type="button"
+                                        className="btn-close"
+                                        onClick={() => setShowModal(false)}
+                                    />
+                                </div>
+                                <div className="modal-body">
+                                    <p>Bạn chắc chắn muốn xóa danh mục này?</p>
+                                </div>
+                                <div className="modal-footer border-0 pt-0">
+                                    <button
+                                        type="button"
+                                        className="btn"
+                                        style={{
+                                            background: "#FFD600",
+                                            color: "#333",
+                                            minWidth: 70,
+                                            fontWeight: 500,
+                                        }}
+                                        onClick={() => setShowModal(false)}
+                                    >
+                                        Hủy
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn"
+                                        style={{
+                                            background: "#f44e4e",
+                                            color: "#fff",
+                                            minWidth: 70,
+                                            fontWeight: 500,
+                                        }}
+                                        onClick={confirmDelete}
+                                    >
+                                        Xóa
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="modal-backdrop fade show"></div>
+                </>
+            )}
         </div>
     );
 };

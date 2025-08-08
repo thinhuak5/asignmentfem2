@@ -44,17 +44,21 @@ const Dashboard = () => {
         delivered: 0,
     });
 
-    // Biểu đồ 7 ngày
-    const [weeklyLabels, setWeeklyLabels] = useState([]);
-    const [weeklyRevenue, setWeeklyRevenue] = useState([]);
-    const [weeklyOrders, setWeeklyOrders] = useState([]);
-    const [weeklyRefunds, setWeeklyRefunds] = useState([]);
-    const [totalWeeklyRevenue, setTotalWeeklyRevenue] = useState(0);
+    // Biểu đồ động: labels, data, đơn hàng, đơn hủy, tổng doanh thu
+    const [statType, setStatType] = useState("week"); // "day" | "week" | "month" | "year"
+    const [labels, setLabels] = useState([]);
+    const [revenues, setRevenues] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [refunds, setRefunds] = useState([]);
+    const [totalRevenue, setTotalRevenue] = useState(0);
 
     useEffect(() => {
         fetchStatistics();
-        fetchWeeklyRevenue();
     }, []);
+
+    useEffect(() => {
+        fetchRevenue(statType);
+    }, [statType]);
 
     // Thống kê tổng quan
     const fetchStatistics = async () => {
@@ -92,44 +96,42 @@ const Dashboard = () => {
         }
     };
 
-    // Biểu đồ 7 ngày
-    const fetchWeeklyRevenue = async () => {
+    // Biểu đồ động: fetch theo loại
+    const fetchRevenue = async (type) => {
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/statistics/weekly-revenue`);
-            if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu doanh thu tuần");
+            const res = await fetch(`${Constanst.DOMAIN_API}/api/statistics/revenue?type=${type}`);
+            if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu thống kê");
             const result = await res.json();
-            const {labels, data, total, orders, refunds} = result;
-            setWeeklyLabels(labels || []);
-            setWeeklyRevenue(data || []);
-            setTotalWeeklyRevenue(total || 0);
-            setWeeklyOrders(orders || []);
-            setWeeklyRefunds(refunds || []);
+            setLabels(result.labels || []);
+            setRevenues(result.data || []);
+            setTotalRevenue(result.total || 0);
+            setOrders(result.orders || []);
+            setRefunds(result.refunds || []);
         } catch (err) {
-            // Nếu lỗi thì để rỗng, không dùng số liệu fake nữa!
-            setWeeklyLabels([]);
-            setWeeklyRevenue([]);
-            setWeeklyOrders([]);
-            setWeeklyRefunds([]);
-            setTotalWeeklyRevenue(0);
+            setLabels([]);
+            setRevenues([]);
+            setOrders([]);
+            setRefunds([]);
+            setTotalRevenue(0);
         }
     };
 
     // Tính maxY cho trục Y tiền tệ
     const maxY = Math.max(
-        ...(weeklyRevenue.length ? weeklyRevenue : [0]),
-        ...(weeklyOrders.length ? weeklyOrders.map(x => x * 1e6 / 7) : [0]),
-        ...(weeklyRefunds.length ? weeklyRefunds.map(x => x * 1e6 / 7) : [0])
+        ...(revenues.length ? revenues : [0]),
+        ...(orders.length ? orders.map(x => x * 1e6 / (orders.length || 1)) : [0]),
+        ...(refunds.length ? refunds.map(x => x * 1e6 / (refunds.length || 1)) : [0])
     );
     const yMax = Math.ceil((maxY + 1e5) / 1e6) * 1e6;
 
     // Biểu đồ kết hợp
-    const weeklyBarData = {
-        labels: weeklyLabels.length === weeklyRevenue.length ? weeklyLabels : ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
+    const revenueBarData = {
+        labels: labels.length === revenues.length ? labels : [],
         datasets: [
             {
                 type: "bar",
                 label: "VNĐ",
-                data: weeklyRevenue,
+                data: revenues,
                 backgroundColor: "#26C6DA",
                 borderRadius: 8,
                 barPercentage: 0.6,
@@ -141,7 +143,7 @@ const Dashboard = () => {
             {
                 type: "line",
                 label: "Đơn hàng",
-                data: weeklyOrders,
+                data: orders,
                 borderColor: "#25396f",
                 backgroundColor: "rgba(37,57,111,0.09)",
                 fill: true,
@@ -154,7 +156,7 @@ const Dashboard = () => {
             {
                 type: "line",
                 label: "Đơn đã hủy",
-                data: weeklyRefunds,
+                data: refunds,
                 borderColor: "#ff715b",
                 borderDash: [6, 6],
                 fill: false,
@@ -395,19 +397,34 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Biểu đồ VNĐ, Đơn hàng, Đơn đã hủy */}
+            {/* Chọn loại thống kê ngày/tuần/tháng/năm */}
             <div className="row mt-4">
                 <div className="col-12">
+                    <div className="mb-3 text-end">
+                        <label style={{fontWeight: 600, marginRight: 8}}>Kiểu thống kê: </label>
+                        <select value={statType} onChange={e => setStatType(e.target.value)}
+                                style={{width: 180, padding: 4, fontSize: 16}}>
+                            <option value="day">Trong ngày (theo giờ)</option>
+                            <option value="week">7 ngày gần nhất</option>
+                            <option value="month">Tháng này (theo ngày)</option>
+                            <option value="year">Năm nay (theo tháng)</option>
+                        </select>
+                    </div>
                     <div className="card mb-3">
                         <div className="card-body">
-                            <h5 className="card-title">Bảng thống kê (7 ngày)</h5>
-                            <Bar data={weeklyBarData} options={barOptions} height={90}/>
+                            <h5 className="card-title">
+                                {statType === "day" && "Biểu đồ doanh thu/ngày (theo giờ hôm nay)"}
+                                {statType === "week" && "Biểu đồ doanh thu/tuần (7 ngày gần nhất)"}
+                                {statType === "month" && "Biểu đồ doanh thu/tháng (theo ngày trong tháng)"}
+                                {statType === "year" && "Biểu đồ doanh thu/năm (theo tháng trong năm)"}
+                            </h5>
+                            <Bar data={revenueBarData} options={barOptions} height={90}/>
                         </div>
                     </div>
                 </div>
             </div>
             <div className="text-end mt-2 fw-bold">
-                Tổng VNĐ: <span style={{color: "#39FF14"}}>{totalWeeklyRevenue.toLocaleString()} VNĐ</span>
+                Tổng VNĐ: <span style={{color: "#39FF14"}}>{totalRevenue.toLocaleString()} VNĐ</span>
             </div>
         </div>
     );
