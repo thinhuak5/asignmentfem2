@@ -578,16 +578,11 @@ const OrderList = () => {
                                             Tổng cộng
                                         </td>
                                         <td className="fw-bold text-danger">
-                                            {detailOrder.items
-                                                .reduce(
-                                                    (sum, item) =>
-                                                        sum +
-                                                        (item.variation?.price ?? item.price) *
-                                                        item.quantity,
-                                                    0
-                                                )
+                                            {detailOrder.total_amount
                                                 .toLocaleString()}
-                                            đ
+                                            đ { detailOrder.discount_amount > 0 && (
+                                                <span className="text-muted"> (-{detailOrder.discount_amount.toLocaleString()} đ)</span>
+                                            )}
                                         </td>
                                     </tr>
                                     </tbody>
