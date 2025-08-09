@@ -83,7 +83,7 @@ const EditDiscount = () => {
             {/* Giá trị giảm */}
             <div className="col-md-4">
               <label className="form-label">Giá trị giảm *</label>
-              <input type="number" className="form-control" name="discount_value" placeholder="Ví dụ: 10 hoặc 10000" value={form.discount_value} onChange={handleChange} min={0} required />
+              <input type="number" className="form-control" name="discount_value" placeholder="Ví dụ: 10 hoặc 10000" max={form.discount_type == 'percent' ? 100 : 100000000000} value={form.discount_value} onChange={handleChange} min={0} required />
             </div>
             {/* Số lượng mã */}
             <div className="col-md-4">
