@@ -24,9 +24,9 @@ const TopSlider = () => {
     };
 
     const sliderImages = [
+        "https://cdn1.fahasa.com/media/magentothem/banner7/Trangtapvo_t8_resize_840x320.png",
         "https://cdn1.fahasa.com/media/magentothem/banner7/TrangUuDaiT8_840x320_1.png",
         "https://cdn1.fahasa.com/media/magentothem/banner7/CardgameT8_resize_Slide_840x320.png",
-        "https://cdn1.fahasa.com/media/magentothem/banner7/Trangtapvo_t8_resize_840x320.png"
     ];
 
     return (

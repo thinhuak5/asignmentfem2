@@ -1,17 +1,18 @@
+// HeaderClient.js - PHIÊN BẢN CẬP NHẬT
+
+import {Link, NavLink, useNavigate} from 'react-router-dom';
 import React, {useEffect, useState} from 'react';
-import "../../../../assets/css/bootstrap.min.css";
-import "../../../../assets/css/tiny-slider.css";
-import "../../../../assets/css/style.css";
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import "@fortawesome/fontawesome-free/css/all.min.css";
-import {Link, useNavigate} from 'react-router-dom';
 import {jwtDecode} from 'jwt-decode';
+
+import "../../../../assets/css/header-client.css";
 
 const HeaderClient = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userName, setUserName] = useState(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const navigate = useNavigate();
 
+    // Logic useEffect và handleLogout của bạn giữ nguyên, nó đã đúng
     useEffect(() => {
         const checkAuthStatus = () => {
             const token = localStorage.getItem('authToken');
@@ -36,86 +37,97 @@ const HeaderClient = () => {
 
         checkAuthStatus();
         window.addEventListener('storage', checkAuthStatus);
+        // Thêm listener cho sự kiện đăng nhập/đăng xuất để cập nhật ngay
+        window.addEventListener('authChange', checkAuthStatus);
 
         return () => {
             window.removeEventListener('storage', checkAuthStatus);
+            window.removeEventListener('authChange', checkAuthStatus);
         };
-
     }, []);
 
     const handleLogout = (shouldNavigate = true) => {
         localStorage.removeItem('authToken');
-        setIsLoggedIn(false);
-        setUserName(null);
+        // Phát sự kiện để header tự cập nhật
+        window.dispatchEvent(new Event('authChange')); 
         if (shouldNavigate) {
             navigate('/login');
         }
     };
 
+
     return (
-        <>
-            <nav className="custom-navbar navbar navbar navbar-expand-md navbar-dark "
-                 arial-label="Furni navigation bar">
+        <header className="header-client">
+            <div className="header-container">
+                <Link to="/" className="header-brand">Book Man<span>.</span></Link>
 
-                <div className="container">
-                    <a className="navbar-brand" href="index.html">Book Man<span>.</span></a>
+                <button
+                    className="header-toggler"
+                    aria-label="Toggle navigation"
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                >
+                    <span className="toggler-icon"></span>
+                </button>
 
-                    <button className="navbar-toggler" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#navbarsFurni" aria-controls="navbarsFurni" aria-expanded="false"
-                            aria-label="Toggle navigation">
-                        <span className="navbar-toggler-icon"></span>
-                    </button>
+                <nav className={`header-nav ${isMenuOpen ? 'is-open' : ''}`}>
+                    {/* Các link nav chính giữ nguyên */}
+                    <ul className="nav-list nav-list-main">
+                        <li><NavLink className="nav-link" to="/">Trang Chủ</NavLink></li>
+                        <li><NavLink className="nav-link" to="/product">Sản Phẩm</NavLink></li>
+                        <li><NavLink className="nav-link" to="/about">Thông tin</NavLink></li>
+                        <li><NavLink className="nav-link" to="/services">Dịch vụ</NavLink></li>
+                        <li><NavLink className="nav-link" to="/blog">Bài viết</NavLink></li>
+                        <li><NavLink className="nav-link" to="/contact">Liên hệ</NavLink></li>
+                    </ul>
 
-                    <div className="collapse navbar-collapse" id="navbarsFurni">
-                        <ul className="custom-navbar-nav navbar-nav ms-auto mb-2 mb-md-0">
-                            <li className="nav-item ">
-                                <Link className="nav-link" to={"/"}>Trang Chủ</Link>
+                    {/* CTA/User Navigation */}
+                    <ul className="nav-list nav-list-cta">
+                        <li>
+                            <NavLink className="nav-link nav-link-icon" to="/cartpage" aria-label="Giỏ hàng">
+                                <i className="fas fa-shopping-cart"></i>
+                            </NavLink>
+                        </li>
+                        {!isLoggedIn ? (
+                            <>
+                                <li><NavLink className="nav-link" to="/login">Đăng nhập</NavLink></li>
+                                <li><NavLink className="nav-link cta-button" to="/register">Đăng ký</NavLink></li>
+                            </>
+                        ) : (
+                            // ========================================================
+                            // === THAY ĐỔI TOÀN BỘ PHẦN DROPDOWN Ở ĐÂY ===
+                            // ========================================================
+                            <li className="bm-user-nav"> {/* Đổi class container */}
+                                <a className="bm-user-nav__trigger" href="#" onClick={(e) => e.preventDefault()}>
+                                    <i className="fas fa-user"></i>
+                                    <span>{userName || 'Tài khoản'}</span>
+                                    <i className="fas fa-chevron-down bm-user-nav__arrow"></i> {/* Đổi class mũi tên */}
+                                </a>
+                                <ul className="bm-user-nav__menu"> {/* Đổi class menu */}
+                                    <li><Link className="bm-user-nav__item" to="/profile">Hồ sơ</Link></li>
+                                    {/* Đổi class item */}
+                                    <li><Link className="bm-user-nav__item" to="/order-history">Lịch sử đơn hàng</Link>
+                                    </li>
+                                    <li>
+                                        <hr className="bm-user-nav__divider"/>
+                                    </li>
+                                    {/* Đổi class divider */}
+                                    <li>
+                                        <button className="bm-user-nav__item bm-user-nav__item--logout"
+                                                onClick={() => handleLogout()}>
+                                            <i className="fas fa-sign-out-alt"></i> Đăng xuất
+                                        </button>
+                                    </li>
+                                </ul>
                             </li>
-                            <li><Link className="nav-link" to={"/product"}>Sản Phẩm</Link></li>
-                            <li><Link className="nav-link" to={"/about"}>Thông tin</Link></li>
-                            <li><Link className="nav-link" to={"/services"}>Dịch vụ</Link></li>
-                            <li><Link className="nav-link" to={"/blog"}>Bài viết</Link></li>
-                            <li><Link className="nav-link" to={"/contact"}>Liên hệ</Link></li>
-                            <li><Link className="nav-link" to={"/cartpage"}><img src="images/cart.svg"/></Link></li>
-                        </ul>
+                            // ========================================================
+                            // === KẾT THÚC THAY ĐỔI ===
+                            // ========================================================
+                        )}
+                    </ul>
+                </nav>
+            </div>
+        </header>
+    );
+};
 
-                        <ul className="custom-navbar-cta navbar-nav mb-2 mb-md-0 ms-5">
-                            {!isLoggedIn ? (
-                                <>
-                                    <li><Link className="nav-link" to={"/login"}>Đăng nhập</Link></li>
-                                    <li><Link className="nav-link" to={"/register"}>Đăng ký</Link></li>
-                                </>
-                            ) : (
-                                <li className="nav-item dropdown">
-                                    <a className="nav-link dropdown-toggle d-flex align-items-center" href="#"
-                                       id="navbarDropdownUserLink" role="button" data-bs-toggle="dropdown"
-                                       aria-expanded="false">
-                                        <i className="fas fa-user me-2"></i>
-                                        {userName || 'Tài khoản'}
-                                    </a>
-                                    <ul className="dropdown-menu dropdown-menu-end"
-                                        aria-labelledby="navbarDropdownUserLink">
-                                        <li><Link className="dropdown-item" to="/profile">Hồ sơ</Link></li>
-                                        <li><Link className="nav-link-dropdown-item" to="/order-history">Đơn hàng của
-                                            tôi</Link></li>
-                                        <li>
-                                            <hr className="dropdown-divider"/>
-                                        </li>
-                                        <li>
-                                            <button className="dropdown-item" onClick={() => handleLogout()}>
-                                                <i className="fas fa-sign-out-alt me-1"></i> Đăng xuất
-                                            </button>
-                                        </li>
-                                    </ul>
-                                </li>
-                            )}
-
-                        </ul>
-                    </div>
-                </div>
-
-            </nav>
-        </>
-    )
-}
 export default HeaderClient;

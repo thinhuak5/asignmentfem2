@@ -46,9 +46,9 @@ const Sidebar = () => {
     <aside className="left-sidebar">
       <div>
         <div className="brand-logo d-flex align-items-center justify-content-between">
-          <Link to="/admin" className="text-nowrap logo-img">
+          {/* <Link to="/admin" className="text-nowrap logo-img">
             <img src="/images/logo.png" alt="Logo" className="img-fluid" />
-          </Link>
+          </Link> */}
           <div
             className="close-btn d-xl-none d-block sidebartoggler cursor-pointer"
             id="sidebarCollapse"

@@ -1,10 +1,8 @@
 import React, {useEffect, useState} from 'react';
-// Thay useNavigate bằng Link để điều hướng chuẩn hơn
 import {Link, useNavigate} from 'react-router-dom';
 import Constanst from "../../../Constanst";
 
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-// Đã xóa các icon không sử dụng như faBoxOpen, faShop, faShoppingCart
 import {
     faBolt,
     faBook,
@@ -18,8 +16,42 @@ import {
     faTags
 } from '@fortawesome/free-solid-svg-icons';
 
-// Import CSS cho trang Home
 import '../../../assets/css/home.css';
+
+const ProductCard = ({product}) => {
+    const productPrice = product.price ?? (product.variations?.[0]?.price ?? 0);
+    const productImage =
+        product.variations?.[0]?.productImages?.[0]?.image_url ??
+        product.productImages?.[0]?.image_url ??
+        "https://via.placeholder.com/300x300.png?text=No+Image";
+
+    const rating = 5;
+    const soldCount = Math.floor(Math.random() * 200) + 50;
+    const discount = Math.floor(Math.random() * 40) + 10;
+
+    return (
+        <Link to={`/product/${product.id}`} className="product-card">
+            <div className="product-card__image-container">
+                <img src={productImage} className="product-card__image" alt={product.name}/>
+                {discount > 0 && <div className="product-card__discount">-{discount}%</div>}
+            </div>
+            <div className="product-card__info">
+                <h3 className="product-card__name" title={product.name}>{product.name}</h3>
+                <div className="product-card__price-n-rating">
+                    <div className="product-card__price">
+                        {productPrice.toLocaleString()}đ
+                    </div>
+                    <div className="product-card__review">
+                        {[...Array(rating)].map((_, i) => <FontAwesomeIcon key={i} icon={faStar}
+                                                                           className="star-icon"/>)}
+                        <span className="sold-count">Đã bán {soldCount}</span>
+                    </div>
+                </div>
+            </div>
+        </Link>
+    );
+};
+
 
 const Home = () => {
     const [categoryParents, setCategoryParents] = useState([]);
@@ -40,111 +72,91 @@ const Home = () => {
         fetchCategoryParents();
     }, []);
 
-    // Helper function để tạo URL thân thiện từ label
     const slugify = (text) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
-
-    // Dữ liệu giả để giao diện trông đẹp hơn
-    const flashSaleProducts = [
+    // --- DỮ LIỆU MẪU ĐÃ ĐƯỢC CẬP NHẬT ĐỂ PHÙ HỢP VỚI ProductCard ---
+    const homeFlashSaleProducts = [
         {
+            id: "fs-1",
             name: "Tâm Lý Học Về Tiền",
-            price: "55.000 đ",
-            originalPrice: "85.000 đ",
-            discount: "-35%",
-            sold: 88,
-            total: 100,
-            img: "https://cdn0.fahasa.com/media/catalog/product/t/a/tam-ly-hoc-ve-tien_bia_1_2.jpg"
+            price: 55000,
+            productImages: [{image_url: "https://cdn1.fahasa.com/media/catalog/product/i/m/image_220008.jpg"}]
         },
         {
+            id: "fs-2",
             name: "Muôn Kiếp Nhân Sinh",
-            price: "125.000 đ",
-            originalPrice: "189.000 đ",
-            discount: "-34%",
-            sold: 120,
-            total: 150,
-            img: "https://cdn0.fahasa.com/media/catalog/product/i/m/image_195509_1_36793.jpg"
+            price: 125000,
+            productImages: [{image_url: "https://cdn0.fahasa.com/media/catalog/product/i/m/image_195509_1_36793.jpg"}]
         },
         {
-            name: "Nhà Giả Kim",
-            price: "49.000 đ",
-            originalPrice: "79.000 đ",
-            discount: "-38%",
-            sold: 250,
-            total: 300,
-            img: "https://cdn0.fahasa.com/media/catalog/product/n/h/nha-gia-kim--phien-ban-moi-2023.jpg"
+            id: "fs-3",
+            name: "Nhà Giả Kim (Tái bản 2023)",
+            price: 49000,
+            productImages: [{image_url: "https://cdn1.fahasa.com/media/catalog/product/i/m/image_195509_1_36793.jpg"}]
         },
         {
+            id: "fs-4",
             name: "Cây Cam Ngọt Của Tôi",
-            price: "71.000 đ",
-            originalPrice: "108.000 đ",
-            discount: "-34%",
-            sold: 95,
-            total: 120,
-            img: "https://cdn0.fahasa.com/media/catalog/product/i/m/image_235887.jpg"
+            price: 71000,
+            productImages: [{image_url: "https://cdn1.fahasa.com/media/catalog/product/i/m/image_217480.jpg"}]
         },
         {
+            id: "fs-5",
             name: "Lược Sử Loài Người",
-            price: "159.000 đ",
-            originalPrice: "245.000 đ",
-            discount: "-35%",
-            sold: 50,
-            total: 100,
-            img: "https://cdn0.fahasa.com/media/catalog/product/l/u/luoc-su-loai-nguoi---bia-mem-_tai-ban-2023_.jpg"
+            price: 159000,
+            productImages: [{image_url: "https://cdn1.fahasa.com/media/catalog/product/b/_/b_a-sapiens.jpg"}]
         },
         {
+            id: "fs-6",
             name: "Đắc Nhân Tâm",
-            price: "56.000 đ",
-            originalPrice: "78.000 đ",
-            discount: "-28%",
-            sold: 312,
-            total: 400,
-            img: "https://cdn0.fahasa.com/media/catalog/product/d/n/dnt_1.jpg"
+            price: 56000,
+            productImages: [{image_url: "https://cdn1.fahasa.com/media/catalog/product/9/7/9786043949247.jpg"}]
         }
     ];
 
-    const trendingProducts = [
+    const homeTrendingProducts = [
         {
-            name: "Atomic Habits",
-            price: "119.000 đ",
-            sold: "12.5k",
-            img: "https://cdn0.fahasa.com/media/catalog/product/a/t/atomic-habits_1.jpg"
+            id: "tr-1",
+            name: "Atomic Habits - Thay Đổi Tí Hon, Hiệu Quả Bất Ngờ",
+            price: 119000,
+            productImages: [{image_url: "https://cdn0.fahasa.com/media/catalog/product/a/t/atomic-habits_1.jpg"}]
         },
         {
-            name: "Bố Già",
-            price: "135.000 đ",
-            sold: "8.2k",
-            img: "https://cdn0.fahasa.com/media/catalog/product/b/o/bo-gia---mario-puzo---phien-ban-dien-anh-bia-mem_1.jpg"
+            id: "tr-2",
+            name: "Bố Già (Phiên bản điện ảnh)",
+            price: 135000,
+            productImages: [{image_url: "https://cdn0.fahasa.com/media/catalog/product/b/o/bo-gia---mario-puzo---phien-ban-dien-anh-bia-mem_1.jpg"}]
         },
         {
+            id: "tr-3",
             name: "Hoàng Tử Bé",
-            price: "45.000 đ",
-            sold: "25.1k",
-            img: "https://cdn0.fahasa.com/media/catalog/product/8/9/8934974187232.jpg"
+            price: 45000,
+            productImages: [{image_url: "https://cdn0.fahasa.com/media/catalog/product/8/9/8934974187232.jpg"}]
         },
         {
+            id: "tr-4",
             name: "Your Name",
-            price: "89.000 đ",
-            sold: "9.8k",
-            img: "https://cdn0.fahasa.com/media/catalog/product/i/m/image_223916.jpg"
+            price: 89000,
+            productImages: [{image_url: "https://cdn0.fahasa.com/media/catalog/product/i/m/image_223916.jpg"}]
         },
         {
+            id: "tr-5",
             name: "Tôi Thấy Hoa Vàng Trên Cỏ Xanh",
-            price: "79.000 đ",
-            sold: "15.3k",
-            img: "https://cdn0.fahasa.com/media/catalog/product/t/o/toi-thay-hoa-vang-tren-co-xanh---tai-ban-2022.jpg"
+            price: 79000,
+            productImages: [{image_url: "https://cdn0.fahasa.com/media/catalog/product/t/o/toi-thay-hoa-vang-tren-co-xanh---tai-ban-2022.jpg"}]
         },
         {
+            id: "tr-6",
             name: "Mắt Biếc",
-            price: "88.000 đ",
-            sold: "18.9k",
-            img: "https://cdn0.fahasa.com/media/catalog/product/m/a/mat-biec_bia_1_6-1_1.jpg"
+            price: 88000,
+            productImages: [{image_url: "https://cdn0.fahasa.com/media/catalog/product/m/a/mat-biec_bia_1_6-1_1.jpg"}]
         },
     ];
 
 
     return (
         <div className="home-container">
-            {/* Hero Section */}
+            {/* Hero Section (Giữ nguyên) */}
             <section className="hero-section">
                 <div className="container">
                     <div className="row justify-content-between align-items-center">
@@ -163,7 +175,7 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Quick Links Section */}
+            {/* Quick Links Section (Giữ nguyên) */}
             <section className="quick-links-section">
                 <div className="container">
                     <div className="quick-links-wrapper">
@@ -174,7 +186,6 @@ const Home = () => {
                             icon: faDollarSign,
                             label: "Rẻ Vô Đối"
                         }, {icon: faBookmark, label: "Manga - Comic"}].map((item, index) => (
-                            // SỬA: Dùng Link thay cho a href="#"
                             <Link to={`/products?tag=${slugify(item.label)}`} key={index} className="quick-link-item">
                                 <div className="quick-link-icon-wrapper">
                                     <FontAwesomeIcon icon={item.icon} />
@@ -186,47 +197,25 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Flash Sale Section */}
+            {/* --- Flash Sale Section (ĐÃ CẬP NHẬT VỚI CARD MỚI) --- */}
             <section className="product-section">
                 <div className="container">
                     <div className="section-header">
                         <div className="section-title-container">
-                            <img src="https://salt.tikicdn.com/ts/upload/52/ce/a6/226c656f5a33c14a298a03a743e75a33.png"
-                                 alt="Flash Sale" className="section-title-icon"/>
                             <span className="flash-sale-countdown">Kết thúc trong: 01 : 11 : 50</span>
                         </div>
                         <Link to="/flash-sale" className="section-view-all">Xem tất cả <FontAwesomeIcon
                             icon={faChevronRight}/></Link>
                     </div>
-                    <div className="row">
-                        {flashSaleProducts.map((product, index) => (
-                            <div key={index} className="col-6 col-md-4 col-lg-2 mb-4">
-                                <div className="product-card product-card--flash-sale"
-                                     onClick={() => navigate(`/product-detail/${slugify(product.name)}`)}>
-                                    <div className="product-image-wrapper">
-                                        <img src={product.img} alt={product.name} className="product-image"/>
-                                        <div className="product-discount-badge">{product.discount}</div>
-                                    </div>
-                                    <div className="product-info">
-                                        <h3 className="product-name">{product.name}</h3>
-                                        <div className="product-price-container">
-                                            <span className="product-price">{product.price}</span>
-                                            <span className="product-original-price">{product.originalPrice}</span>
-                                        </div>
-                                        <div className="flash-sale-progress-bar">
-                                            <div className="flash-sale-progress"
-                                                 style={{width: `${(product.sold / product.total) * 100}%`}}></div>
-                                            <span className="flash-sale-status">Đã bán {product.sold}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="product-grid-home">
+                        {homeFlashSaleProducts.map((product) => (
+                            <ProductCard key={product.id} product={product}/>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* Product Categories Section */}
+            {/* Product Categories Section (Giữ nguyên) */}
             <section className="product-section">
                 <div className="container">
                     <div className="section-header">
@@ -262,7 +251,7 @@ const Home = () => {
                 </div>
             </section>
 
-            {/* Trending Products Section */}
+            {/* --- Trending Products Section (ĐÃ CẬP NHẬT VỚI CARD MỚI) --- */}
             <section className="product-section">
                 <div className="container">
                     <div className="section-header">
@@ -272,36 +261,15 @@ const Home = () => {
                         <Link to="/trending" className="section-view-all">Xem thêm <FontAwesomeIcon
                             icon={faChevronRight}/></Link>
                     </div>
-                    <div className="row">
-                        {trendingProducts.map((product, index) => (
-                            <div key={index} className="col-6 col-md-4 col-lg-2 mb-4">
-                                <div className="product-card"
-                                     onClick={() => navigate(`/product-detail/${slugify(product.name)}`)}>
-                                    <div className="product-image-wrapper">
-                                        <img src={product.img} alt={product.name} className="product-image"/>
-                                    </div>
-                                    <div className="product-info">
-                                        <h3 className="product-name">{product.name}</h3>
-                                        <div className="product-review">
-                                            <FontAwesomeIcon icon={faStar} className="star-icon"/>
-                                            <FontAwesomeIcon icon={faStar} className="star-icon"/>
-                                            <FontAwesomeIcon icon={faStar} className="star-icon"/>
-                                            <FontAwesomeIcon icon={faStar} className="star-icon"/>
-                                            <FontAwesomeIcon icon={faStar} className="star-icon"/>
-                                            <span className="product-sold-count">Đã bán {product.sold}</span>
-                                        </div>
-                                        <div className="product-price-container">
-                                            <span className="product-price">{product.price}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="product-grid-home">
+                        {homeTrendingProducts.map((product) => (
+                            <ProductCard key={product.id} product={product}/>
                         ))}
                     </div>
                 </div>
             </section>
-            
-            {/* Brands Section */}
+
+            {/* Brands Section (Giữ nguyên) */}
             <section className="brands-section">
                 <div className="container">
                     <div className="section-header">

@@ -1,0 +1,139 @@
+/* --- Tổng thể trang --- */
+.contact-page {
+    background-color: #f0f7ff;
+    /* Nền xanh dương rất nhạt */
+    min-height: 100vh;
+    padding: 40px 20px;
+    display: flex;
+    align-items: center;
+    /* Canh giữa theo chiều dọc */
+    justify-content: center;
+    /* Canh giữa theo chiều ngang */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* --- Khung chứa nội dung chính --- */
+.contact-container {
+    background-color: #ffffff;
+    border-radius: 16px;
+    /* Bo góc mềm mại hơn */
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0, 85, 204, 0.1);
+    /* Đổ bóng nhẹ nhàng */
+    max-width: 900px;
+    width: 100%;
+}
+
+/* --- Tiêu đề & Phụ đề --- */
+.contact-title {
+    font-weight: 700;
+    color: #0056b3;
+    /* Xanh dương đậm hơn cho tiêu đề */
+    margin-bottom: 0.75rem;
+}
+
+.contact-subtitle {
+    color: #6c757d;
+    /* Màu xám cho phụ đề */
+    margin-bottom: 2.5rem;
+}
+
+.contact-subtitle a {
+    color: #007bff;
+    /* Màu link nổi bật */
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.contact-subtitle a:hover {
+    text-decoration: underline;
+}
+
+/* --- Form Liên Hệ --- */
+.form-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+.contact-form {
+    width: 100%;
+    max-width: 500px;
+    /* Giới hạn chiều rộng form cho dễ đọc */
+}
+
+/* --- Các ô input và textarea --- */
+.contact-form .form-control {
+    background-color: #f8f9fa;
+    /* Nền input hơi xám */
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    /* Bo góc input */
+    padding: 12px 15px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.contact-form .form-control::placeholder {
+    color: #999;
+}
+
+.contact-form .form-control:focus {
+    background-color: #fff;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* --- Nút Gửi --- */
+.submit-btn {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    /* Hiệu ứng màu gradient */
+    border: none;
+    font-weight: 600;
+    padding: 12px;
+    border-radius: 8px;
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    width: 100%;
+}
+
+.submit-btn:hover {
+    transform: translateY(-3px);
+    /* Hiệu ứng nhấc lên khi hover */
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+/* --- Phần Quyền Lợi Khách Hàng --- */
+.benefits-section {
+    margin-top: 4rem;
+    text-align: center;
+}
+
+.benefits-title {
+    font-weight: 700;
+    color: #0056b3;
+    margin-bottom: 1.5rem;
+}
+
+.benefits-grid {
+    display: grid;
+    /* Tự động chia cột, mỗi cột tối thiểu 220px, tối đa 1fr */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    /* Khoảng cách giữa các item */
+}
+
+.benefit-item {
+    background-color: #eaf5ff;
+    /* Nền xanh nhạt hơn cho các thẻ quyền lợi */
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #bde0ff;
+    text-align: left;
+    /* Căn lề trái cho dễ đọc */
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.benefit-item:hover {
+    transform: translateY(-5px);
+    /* Hiệu ứng nhấc lên khi hover */
+    box-shadow: 0 6px 20px rgba(0, 85, 204, 0.12);
+}

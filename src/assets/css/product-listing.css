@@ -115,7 +115,7 @@ a:hover {
     width: 100%;
     padding: 10px;
     border: none;
-    background-color: #ee4d2d;
+    background-color: #004E92;
     color: #fff;
     font-weight: 500;
     border-radius: 4px;
@@ -230,11 +230,11 @@ main.col-lg-9 {
 
 .sort-options__btn:hover {
     background-color: #f8f8f8;
-    color: #ee4d2d;
+    color: #004E92;
 }
 
 .sort-options__btn.active {
-    background-color: #ee4d2d;
+    background-color: #004E92;
     color: #fff;
 }
 

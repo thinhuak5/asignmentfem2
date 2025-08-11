@@ -1,124 +1,116 @@
-import "../../../../assets/css/bootstrap.min.css";
-import "../../../../assets/css/tiny-slider.css";
-import "../../../../assets/css/style.css";
-import "@fortawesome/fontawesome-free/css/all.min.css";
+import React from 'react';
 
-const FooterClient = () =>{
-    return(
-        <>
-            <footer className="footer-section">
-                <div className="container relative">
+// IMPORT FILE CSS ĐỘC LẬP CHO FOOTER
+import "../../../../assets/css/footer-client.css";
 
-                    <div className="sofa-img">
-                        <img src="images/anhnen.png" alt="Image" className="img-fluid"/>
+const FooterClient = () => {
+    return (
+        <footer className="footer-client">
+            <div className="footer-container">
+                {/* Phần trang trí, bạn có thể thay đổi ảnh hoặc xóa đi */}
+                <div className="footer-decoration-img">
+                    <img src="/images/anhnen.png" alt="Decorative background"/>
+                </div>
+
+                {/* Phần đăng ký nhận tin */}
+                <div className="footer-row">
+                    <div className="footer-subscribe">
+                        <h3>
+                            <i className="fas fa-envelope-open-text"></i>
+                            <span>Đăng ký nhận bản tin</span>
+                        </h3>
+                        <form action="#" className="subscribe-form">
+                            <input type="text" className="subscribe-input" placeholder="Tên của bạn"/>
+                            <input type="email" className="subscribe-input" placeholder="Nhập email của bạn"/>
+                            <button type="submit" className="subscribe-button" aria-label="Gửi">
+                                <i className="fa fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                {/* Phần nội dung chính của footer */}
+                <div className="footer-main-content">
+                    <div className="footer-column-logo">
+                        <div className="footer-brand-wrap">
+                            <a href="#" className="footer-brand">Book Man<span>.</span></a>
+                        </div>
+                        <p className="footer-description">
+                            Khám phá tri thức, kết nối đam mê. Book Man là ngôi nhà cho tất cả những người yêu sách, nơi
+                            bạn có thể tìm thấy mọi cuốn sách mình cần.
+                        </p>
+                        <ul className="footer-social-list">
+                            <li><a href="#" aria-label="Facebook" className="social-link"><i
+                                className="fab fa-facebook-f"></i></a></li>
+                            <li><a href="#" aria-label="Twitter" className="social-link"><i
+                                className="fab fa-twitter"></i></a></li>
+                            <li><a href="#" aria-label="Instagram" className="social-link"><i
+                                className="fab fa-instagram"></i></a></li>
+                            <li><a href="#" aria-label="LinkedIn" className="social-link"><i
+                                className="fab fa-linkedin-in"></i></a></li>
+                        </ul>
                     </div>
 
-                    <div className="row">
-                        <div className="col-lg-8">
-                            <div className="subscription-form">
-                                <h3 className="d-flex align-items-center"><span className="me-1"><img
-                                    src="images/envelope-outline.svg" alt="Image" className="img-fluid"/></span><span>Đăng ký</span>
-                                </h3>
-
-                                <form action="#" className="row g-3">
-                                    <div className="col-auto">
-                                        <input type="text" className="form-control" placeholder="Tên người dùng"/>
-                                    </div>
-                                    <div className="col-auto">
-                                        <input type="email" className="form-control" placeholder="Email người dùng"/>
-                                    </div>
-                                    <div className="col-auto">
-                                        <button className="btn btn-primary">
-                                            <span className="fa fa-paper-plane"></span>
-                                        </button>
-                                    </div>
-                                </form>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="row g-5 mb-5">
-                        <div className="col-lg-4">
-                            <div className="mb-4 footer-logo-wrap"><a href="#"
-                                                                      className="footer-logo">Book Man<span>.</span></a>
-                            </div>
-                            <p className="mb-4">Đây là trang web dành cho tất cả mọi người yêu sách trên toàn thế giới
-                                chúng tôi có tất cả các loaị sách mà bạn cần đến </p>
-
-                            <ul className="list-unstyled custom-social">
-                                <li><a href="#"><span className="fa fa-brands fa-facebook-f"></span></a></li>
-                                <li><a href="#"><span className="fa fa-brands fa-twitter"></span></a></li>
-                                <li><a href="#"><span className="fa fa-brands fa-instagram"></span></a></li>
-                                <li><a href="#"><span className="fa fa-brands fa-linkedin"></span></a></li>
-                            </ul>
-                        </div>
-
-                        <div className="col-lg-8">
-                            <div className="row links-wrap">
-                                <div className="col-6 col-sm-6 col-md-3">
-                                    <ul className="list-unstyled">
-                                        <li><a href="#">Thông tin</a></li>
-                                        <li><a href="#">Dịch vụ</a></li>
-                                        <li><a href="#">Bài viết</a></li>
-                                        <li><a href="#">Hỗ trợ</a></li>
-                                    </ul>
-                                </div>
-
-                                <div className="col-6 col-sm-6 col-md-3">
-                                    <ul className="list-unstyled">
-                                        <li><a href="#">Hỗ trợ</a></li>
-                                        <li><a href="#">Cơ sở</a></li>
-                                        <li><a href="#">Hỗ trợ online</a></li>
-                                    </ul>
-                                </div>
-
-                                <div className="col-6 col-sm-6 col-md-3">
-                                    <ul className="list-unstyled">
-                                        <li><a href="#">Công việc</a></li>
-                                        <li><a href="#">Đội ngũ</a></li>
-                                        <li><a href="#">Lãnh đạo</a></li>
-                                        <li><a href="#">Chính sách bảo mật </a></li>
-                                    </ul>
-                                </div>
-
-                                <div className="col-6 col-sm-6 col-md-3">
-                                    <ul className="list-unstyled">
-                                        <li><a href="#">Sách Khoa Học</a></li>
-                                        <li><a href="#">Sách Tâm Lý</a></li>
-                                        <li><a href="#">Sách Công Nghệ</a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div className="border-top copyright">
-                        <div className="row pt-4">
-                            <div className="col-lg-6">
-                                <p className="mb-2 text-center text-lg-start">Copyright &copy;
-                                    <script>document.write(new Date().getFullYear());</script>
-                                    . All Rights Reserved. &mdash; Designed with love by <a
-                                        href="https://untree.co">Untree.co</a> Distributed By <a
-                                        hreff="https://themewagon.com">ThemeWagon</a>
-                                </p>
-                            </div>
-
-                            <div className="col-lg-6 text-center text-lg-end">
-                                <ul className="list-unstyled d-inline-flex ms-auto">
-                                    <li className="me-4"><a href="#">Terms &amp; Conditions</a></li>
-                                    <li><a href="#">Privacy Policy</a></li>
+                    <div className="footer-column-links">
+                        <div className="footer-links-grid">
+                            <div className="links-list">
+                                <h4>Về chúng tôi</h4>
+                                <ul>
+                                    <li><a href="#" className="footer-link">Giới thiệu</a></li>
+                                    <li><a href="#" className="footer-link">Dịch vụ</a></li>
+                                    <li><a href="#" className="footer-link">Bài viết</a></li>
+                                    <li><a href="#" className="footer-link">Liên hệ</a></li>
                                 </ul>
                             </div>
-
+                            <div className="links-list">
+                                <h4>Hỗ trợ</h4>
+                                <ul>
+                                    <li><a href="#" className="footer-link">Trung tâm trợ giúp</a></li>
+                                    <li><a href="#" className="footer-link">Cửa hàng</a></li>
+                                    <li><a href="#" className="footer-link">Hỗ trợ trực tuyến</a></li>
+                                </ul>
+                            </div>
+                            <div className="links-list">
+                                <h4>Công ty</h4>
+                                <ul>
+                                    <li><a href="#" className="footer-link">Tuyển dụng</a></li>
+                                    <li><a href="#" className="footer-link">Đội ngũ</a></li>
+                                    <li><a href="#" className="footer-link">Điều khoản</a></li>
+                                    <li><a href="#" className="footer-link">Chính sách bảo mật</a></li>
+                                </ul>
+                            </div>
+                            <div className="links-list">
+                                <h4>Khám phá</h4>
+                                <ul>
+                                    <li><a href="#" className="footer-link">Sách Khoa Học</a></li>
+                                    <li><a href="#" className="footer-link">Sách Tâm Lý</a></li>
+                                    <li><a href="#" className="footer-link">Sách Công Nghệ</a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
-
                 </div>
-            </footer>
-        </>
-    )
-}
+
+                {/* Phần bản quyền */}
+                <div className="footer-copyright">
+                    <div className="copyright-text">
+                        <p>
+                            Copyright &copy; {new Date().getFullYear()}. All Rights Reserved. &mdash; Được thiết kế bởi
+                            <a href="https://untree.co" target="_blank" rel="noopener noreferrer"> Untree.co</a> & Phân
+                            phối bởi
+                            <a href="https://themewagon.com" target="_blank" rel="noopener noreferrer"> ThemeWagon</a>
+                        </p>
+                    </div>
+                    <div className="copyright-links">
+                        <ul>
+                            <li><a href="#">Điều khoản & Điều kiện</a></li>
+                            <li><a href="#">Chính sách bảo mật</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    );
+};
 
 export default FooterClient;
