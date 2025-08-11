@@ -1,0 +1,286 @@
+:root {
+    --footer-bg: #30A1F6;
+    --footer-text-primary: #ffffff;
+    --footer-text-secondary: rgba(255, 255, 255, 0.7);
+    --footer-accent: #ffc107;
+    --footer-border-color: rgba(255, 255, 255, 0.1);
+}
+
+.footer-client {
+    background-color: var(--footer-bg);
+    color: var(--footer-text-secondary);
+    padding: 140px 0 40px 0;
+    position: relative;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.footer-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    /* Cần cho ảnh nền */
+}
+
+/* --- Ảnh nền trang trí --- */
+.footer-decoration-img {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translateY(-55%);
+    z-index: 1;
+    max-width: 380px;
+}
+
+.footer-decoration-img img {
+    max-width: 100%;
+    opacity: 0.15;
+}
+
+/* --- Form đăng ký --- */
+.footer-row {
+    position: relative;
+    z-index: 2;
+}
+
+.footer-subscribe {
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.footer-subscribe h3 {
+    color: var(--footer-text-primary);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 0;
+}
+
+.footer-subscribe h3 i {
+    font-size: 28px;
+    color: var(--footer-accent);
+}
+
+.subscribe-form {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.subscribe-input {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--footer-border-color);
+    color: var(--footer-text-primary);
+    padding: 12px 15px;
+    border-radius: 8px;
+    min-width: 220px;
+    font-weight: 500;
+}
+
+.subscribe-input::placeholder {
+    color: var(--footer-text-secondary);
+}
+
+.subscribe-button {
+    background-color: var(--footer-accent);
+    color: #333;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.subscribe-button:hover {
+    background-color: #ffd040;
+}
+
+/* --- Nội dung chính: Logo/Social và Links --- */
+.footer-main-content {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+.footer-column-logo {
+    flex: 1;
+    min-width: 300px;
+}
+
+.footer-column-links {
+    flex: 2;
+}
+
+.footer-brand {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--footer-text-primary);
+    text-decoration: none;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+.footer-brand span {
+    color: var(--footer-accent);
+}
+
+.footer-description {
+    line-height: 1.7;
+    margin-bottom: 30px;
+}
+
+/* --- Social Icons --- */
+.footer-social-list {
+    display: flex;
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+}
+
+.social-link {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--footer-text-primary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.social-link:hover {
+    background-color: var(--footer-accent);
+    color: #333;
+    transform: translateY(-3px);
+}
+
+/* --- Grid các link --- */
+.footer-links-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.links-list h4 {
+    color: var(--footer-text-primary);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.links-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.links-list ul li {
+    margin-bottom: 12px;
+}
+
+.footer-link {
+    color: var(--footer-text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.footer-link:hover {
+    color: var(--footer-accent);
+    padding-left: 5px;
+}
+
+/* --- Copyright --- */
+.footer-copyright {
+    border-top: 1px solid var(--footer-border-color);
+    padding-top: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    font-size: 14px;
+}
+
+.copyright-text p {
+    margin: 0;
+}
+
+.copyright-text a {
+    color: var(--footer-text-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.copyright-links ul {
+    display: flex;
+    gap: 25px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.copyright-links a {
+    color: var(--footer-text-secondary);
+    text-decoration: none;
+}
+
+.copyright-links a:hover {
+    color: var(--footer-text-primary);
+    text-decoration: underline;
+}
+
+/* --- Responsive --- */
+@media (max-width: 991px) {
+    .footer-main-content {
+        flex-direction: column;
+    }
+
+    .footer-links-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .footer-decoration-img {
+        display: none;
+        /* Ẩn ảnh nền trên tablet */
+    }
+
+    .footer-client {
+        padding-top: 80px;
+    }
+}
+
+@media (max-width: 767px) {
+    .footer-subscribe {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .subscribe-form {
+        width: 100%;
+    }
+
+    .subscribe-input {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .footer-links-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .footer-copyright {
+        flex-direction: column;
+        text-align: center;
+    }
+}

@@ -1,68 +1,41 @@
 import React, {useCallback, useEffect, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
-import {Alert, Button, Container, Form, InputGroup, Spinner,} from "react-bootstrap"; // Thêm InputGroup
+import {Alert, Button, Col, Container, Form, InputGroup, Row, Spinner} from "react-bootstrap";
 import Constanst from "../../../Constanst";
+import '../../../assets/css/OrderPage.css';
 
 const OrderPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    // Giả định cartItems sẽ bao gồm thông tin product và variation nếu có
-    const { cartItems, userInfo } = location.state || {};
-
-    // States cho thông tin giao hàng
+    const {cartItems, userInfo} = location.state || {cartItems: [], userInfo: null};
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [address, setAddress] = useState("");
-
-    // State cho phương thức thanh toán
-    const [paymentMethod, setPaymentMethod] = useState(1); // 1 = COD
-
-    // States cho UI feedback
+    const [paymentMethod, setPaymentMethod] = useState(1);
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(true); // Thêm state loading cho user info
-
-    // States cho mã giảm giá
+    const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(true);
     const [discountCode, setDiscountCode] = useState("");
     const [appliedDiscount, setAppliedDiscount] = useState(null);
     const [isCheckingDiscount, setIsCheckingDiscount] = useState(false);
     const [discountError, setDiscountError] = useState("");
     const [discountSuccess, setDiscountSuccess] = useState("");
+    const [orderSummary, setOrderSummary] = useState({subtotal: 0, discount: 0, total: 0});
 
-    // State cho tổng tiền
-    const [orderSummary, setOrderSummary] = useState({
-        subtotal: 0,
-        discount: 0,
-        total: 0,
-    });
-
-    // Hàm tính toán giảm giá để sử dụng ở nhiều nơi
     const calculateDiscount = useCallback((subtotal, discount) => {
         if (!discount) return 0;
-
         let discountAmount = 0;
-
         if (discount.discount_type === "percent") {
-            // Giảm giá theo phần trăm
             discountAmount = subtotal * (discount.discount_value / 100);
-
-            // Kiểm tra giới hạn giảm giá tối đa nếu có
-            if (
-                discount.max_discount_value &&
-                discountAmount > discount.max_discount_value
-            ) {
+            if (discount.max_discount_value && discountAmount > discount.max_discount_value) {
                 discountAmount = discount.max_discount_value;
             }
         } else if (discount.discount_type === "fixed") {
-            // Giảm giá cố định
             discountAmount = discount.discount_value;
         }
-
-        // Đảm bảo số tiền giảm giá không âm và không lớn hơn tổng tiền
         return Math.min(Math.max(0, discountAmount), subtotal);
     }, []);
 
-    // useEffect để fetch thông tin người dùng khi component mount hoặc userInfo thay đổi
     useEffect(() => {
         const fetchUserInfo = async () => {
             const token = localStorage.getItem("authToken");
@@ -70,151 +43,72 @@ const OrderPage = () => {
                 setIsLoadingUserInfo(false);
                 return;
             }
-
             try {
-                const res = await fetch(
-                    `${Constanst.DOMAIN_API}/api/users/${userInfo.id}`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-
+                const res = await fetch(`${Constanst.DOMAIN_API}/api/users/${userInfo.id}`, {headers: {Authorization: `Bearer ${token}`}});
                 if (res.ok) {
                     const data = await res.json();
                     setName(data.name || "");
                     setPhone(data.phone || "");
                     setAddress(data.address || "");
-                } else {
-                    console.warn("Không thể lấy thông tin người dùng.");
                 }
             } catch (err) {
                 console.error("Lỗi khi lấy thông tin người dùng:", err);
             } finally {
-                setIsLoadingUserInfo(false); // Dù thành công hay thất bại, set loading false
+                setIsLoadingUserInfo(false);
             }
         };
-
         fetchUserInfo();
-    }, [userInfo]); // Depend on userInfo to refetch if it changes (e.g., after login)
+    }, [userInfo]);
 
-    // Tính toán tổng tiền khi cartItems hoặc appliedDiscount thay đổi
     useEffect(() => {
         if (cartItems && cartItems.length > 0) {
-            try {
-                const subtotal = cartItems.reduce((total, item) => {
-                    const priceToUse =
-                        item.variation?.price || item.product?.price || item.price || 0;
-                    return total + priceToUse * item.quantity;
-                }, 0);
-
-                // Tính số tiền giảm giá sử dụng hàm calculateDiscount
-                const discountAmount = calculateDiscount(subtotal, appliedDiscount);
-
-                const total = subtotal - discountAmount;
-
-                // Làm tròn số tiền để tránh sai số thập phân
-                const roundedSubtotal = Math.round(subtotal);
-                const roundedDiscount = Math.round(discountAmount);
-                const roundedTotal = Math.round(total);
-
-                setOrderSummary({
-                    subtotal: roundedSubtotal,
-                    discount: roundedDiscount,
-                    total: roundedTotal,
-                });
-            } catch (error) {
-                console.error("Error calculating order summary:", error);
-            }
+            const subtotal = cartItems.reduce((total, item) => (total + (item.variation?.price || 0) * item.quantity), 0);
+            const discountAmount = calculateDiscount(subtotal, appliedDiscount);
+            const total = subtotal - discountAmount;
+            setOrderSummary({
+                subtotal: Math.round(subtotal),
+                discount: Math.round(discountAmount),
+                total: Math.round(total)
+            });
         }
     }, [cartItems, appliedDiscount, calculateDiscount]);
 
-    // Hàm kiểm tra và áp dụng mã giảm giá
     const handleApplyDiscount = async () => {
         setDiscountError("");
         setDiscountSuccess("");
-
         if (!discountCode.trim()) {
             setDiscountError("Vui lòng nhập mã giảm giá");
             return;
         }
-
         setIsCheckingDiscount(true);
-
         try {
             const token = localStorage.getItem("authToken");
             if (!token) {
-                setDiscountError("Vui lòng đăng nhập để áp dụng mã giảm giá");
+                setDiscountError("Vui lòng đăng nhập");
                 setIsCheckingDiscount(false);
                 return;
             }
-
-            const orderValue = cartItems.reduce((total, item) => {
-                const priceToUse =
-                    item.variation?.price || item.product?.price || item.price || 0;
-                return total + priceToUse * item.quantity;
-            }, 0);
-
-            const response = await fetch(
-                `${Constanst.DOMAIN_API}/api/discounts/check`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        code: discountCode,
-                        orderValue,
-                    }),
-                }
-            );
-
+            const orderValue = cartItems.reduce((total, item) => total + (item.variation?.price || 0) * item.quantity, 0);
+            const response = await fetch(`${Constanst.DOMAIN_API}/api/discounts/check`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json", Authorization: `Bearer ${token}`},
+                body: JSON.stringify({code: discountCode, orderValue}),
+            });
             const data = await response.json();
-
             if (response.ok) {
-                let discountAmount = 0;
-                if (data.discount_type === "percent") {
-                    discountAmount = orderValue * (data.discount_value / 100);
-                    if (
-                        data.max_discount_value &&
-                        discountAmount > data.max_discount_value
-                    ) {
-                        discountAmount = data.max_discount_value;
-                    }
-                } else if (data.discount_type === "fixed") {
-                    discountAmount = data.discount_value;
-                }
-
-                const roundedDiscount = Math.round(discountAmount);
-                const roundedTotal = Math.round(orderValue - discountAmount);
-
-                setOrderSummary({
-                    subtotal: Math.round(orderValue),
-                    discount: roundedDiscount,
-                    total: roundedTotal,
-                });
-
                 setAppliedDiscount(data);
-                setDiscountSuccess(
-                    `Đã áp dụng mã giảm giá: ${
-                        data.description || discountCode
-                    }. Bạn tiết kiệm ${roundedDiscount.toLocaleString()} VNĐ!`
-                );
+                const savedAmount = calculateDiscount(orderValue, data);
+                setDiscountSuccess(`Áp dụng mã thành công! Bạn tiết kiệm ${Math.round(savedAmount).toLocaleString()}đ.`);
             } else {
                 setDiscountError(data.error || "Mã giảm giá không hợp lệ");
                 setAppliedDiscount(null);
             }
         } catch (err) {
-            setDiscountError("Có lỗi xảy ra khi kiểm tra mã giảm giá");
-            setAppliedDiscount(null);
+            setDiscountError("Có lỗi xảy ra khi kiểm tra mã");
         } finally {
             setIsCheckingDiscount(false);
         }
     };
-
-    // Hàm hủy mã giảm giá đã áp dụng
     const handleRemoveDiscount = () => {
         setAppliedDiscount(null);
         setDiscountCode("");
@@ -222,376 +116,236 @@ const OrderPage = () => {
         setDiscountError("");
     };
 
-    // Hàm xử lý khi đặt hàng
-    // OrderPage.js
     const handlePlaceOrder = async (e) => {
-        e.preventDefault(); // Ngăn chặn hành vi submit mặc định của form
-        setError(""); // Reset lỗi
-        setIsSubmitting(true); // Bắt đầu trạng thái submit
-
-        // Kiểm tra thông tin giao hàng
+        e.preventDefault();
+        setError("");
+        setIsSubmitting(true);
         if (!name || !phone || !address) {
             setError("Vui lòng nhập đầy đủ thông tin giao hàng.");
             setIsSubmitting(false);
             return;
         }
-
-        // Kiểm tra giỏ hàng
         if (!cartItems || cartItems.length === 0) {
-            setError("Giỏ hàng của bạn đang trống. Không thể đặt hàng.");
+            setError("Giỏ hàng trống.");
             setIsSubmitting(false);
             return;
         }
-
-        // Kiểm tra token và user info
         const token = localStorage.getItem("authToken");
         if (!token || !userInfo?.id) {
-            setError("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.");
+            setError("Phiên đăng nhập không hợp lệ.");
             setIsSubmitting(false);
-            navigate("/login", {state: {from: "/order"}});
+            navigate("/login");
             return;
         }
-
-        // Lọc các sản phẩm hợp lệ trong giỏ hàng
-        const validItems = cartItems.filter(
-            (item) => item.variation?.id && item.quantity > 0 // Sử dụng variation_id thay vì product_id
-        );
-
+        const validItems = cartItems.filter((item) => item.variation?.id && item.quantity > 0);
         if (validItems.length === 0) {
-            setError("Danh sách sản phẩm không hợp lệ. Vui lòng kiểm tra giỏ hàng.");
+            setError("Sản phẩm không hợp lệ.");
             setIsSubmitting(false);
             return;
         }
-
-        // Chuẩn bị dữ liệu đặt hàng
         const orderData = {
             user_id: userInfo.id,
             items: validItems.map((item) => ({
-                variationId: item.variation?.id || null, // Thay đổi từ productId sang variationId
+                variationId: item.variation.id,
                 quantity: item.quantity,
-                price: item.variation?.price || item.price, // Ưu tiên giá biến thể
+                price: item.variation.price
             })),
-            name,
-            phone,
-            address,
+            name, phone, address,
             payment_id: parseInt(paymentMethod),
-            payment_status: parseInt(paymentMethod) === 1 ? 0 : 1,
-            status: 1, // Trạng thái mặc định khi đặt hàng (chờ xác nhận)
-            discount_id: appliedDiscount ? appliedDiscount.id : null,
+            payment_status: parseInt(paymentMethod) === 1 ? 0 : 1, status: 1,
+            discount_id: appliedDiscount?.id || null,
             discount_amount: orderSummary.discount || 0,
             total_amount: orderSummary.total || 0,
         };
 
-        console.log("Submitting order with data:", orderData);
-
         try {
-            if (paymentMethod === 1) {
-                // Xử lý thanh toán COD
+            let redirectUrl = null;
+            let responseData;
+
+            if (paymentMethod === 1) { // COD
                 const res = await fetch(`${Constanst.DOMAIN_API}/api/orders/checkout`, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: {"Content-Type": "application/json", Authorization: `Bearer ${token}`},
                     body: JSON.stringify(orderData),
                 });
-
-                if (res.ok) {
-                    await fetch(`${Constanst.DOMAIN_API}/api/cart/clear-selected-items`, {
-                        method: "POST",
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            selectedCartItemIds: validItems.map((item) => item.id),
-                        }),
-                    });
-
-                    localStorage.removeItem("cart");
-                    alert("Đặt hàng thành công!");
-                    navigate("/order-history?message=success");
-                } else {
-                    const result = await res.json();
-                    setError(result.message || "Có lỗi xảy ra khi đặt hàng COD.");
-                }
-            } else if (paymentMethod === 2) {
-                // Xử lý thanh toán VNPay
-                const vnp_Amount = orderSummary.total * 100;
-                const vnp_TxnRef = `ORDER_${Date.now()}_${userInfo.id}`;
-
+                responseData = await res.json();
+                if (!res.ok) throw new Error(responseData.message || "Lỗi đặt hàng COD");
+            } else if (paymentMethod === 2) { // VNPay
                 const res = await fetch(`${Constanst.DOMAIN_API}/api/create-qr`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
+                    method: "POST", headers: {"Content-Type": "application/json", Authorization: `Bearer ${token}`},
                     body: JSON.stringify({
                         ...orderData,
-                        vnp_Amount,
-                        vnp_TxnRef,
+                        vnp_Amount: orderSummary.total * 100,
+                        vnp_TxnRef: `ORDER_${Date.now()}`
                     }),
                 });
-
-                const result = await res.json();
-                if (res.ok && result) {
-                    sessionStorage.setItem(
-                        "vnp_cart_item_ids",
-                        JSON.stringify(validItems.map((item) => item.id))
-                    );
-                    sessionStorage.setItem("vnp_pending", "true");
-                    window.location.href = result;
-                } else {
-                    setError(result.message || "Không thể tạo thanh toán VNPay.");
-                }
-            } else if (paymentMethod === 3) {
-                // Xử lý thanh toán MoMo
-                const momoAmount = orderSummary.total;
-
+                responseData = await res.json();
+                if (!res.ok || !responseData) throw new Error(responseData.message || "Lỗi tạo thanh toán VNPay");
+                redirectUrl = responseData;
+            } else if (paymentMethod === 3) { // MoMo
                 const res = await fetch(`${Constanst.DOMAIN_API}/api/payments/momo`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        ...orderData,
-                        amount: momoAmount,
-                        orderId: `ORDER_${Date.now()}_${userInfo.id}`,
-                    }),
+                    method: "POST", headers: {"Content-Type": "application/json", Authorization: `Bearer ${token}`},
+                    body: JSON.stringify({...orderData, amount: orderSummary.total, orderId: `ORDER_${Date.now()}`}),
                 });
+                responseData = await res.json();
+                if (!res.ok || !responseData.payUrl) throw new Error(responseData.message || "Lỗi tạo thanh toán MoMo");
+                redirectUrl = responseData.payUrl;
+            }
 
-                const result = await res.json();
+            // Xóa các sản phẩm đã chọn khỏi giỏ hàng
+            await fetch(`${Constanst.DOMAIN_API}/api/cart/clear-selected-items`, {
+                method: "POST", headers: {Authorization: `Bearer ${token}`, "Content-Type": "application/json"},
+                body: JSON.stringify({selectedCartItemIds: validItems.map((item) => item.id)}),
+            });
+            localStorage.removeItem("cart"); // Xóa giỏ hàng local cũ nếu có
 
-                if (res.ok && result.payUrl) {
-                    window.location.href = result.payUrl;
-                } else {
-                    setError(result.message || "Không thể tạo thanh toán MoMo.");
-                }
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+            } else {
+                alert("Đặt hàng thành công!");
+                navigate("/order-history?status=success");
             }
         } catch (err) {
-            console.error("Order error:", err);
-            setError("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau.");
+            setError(err.message);
         } finally {
             setIsSubmitting(false);
         }
     };
+    // --- KẾT THÚC KHỐI LOGIC ---
 
-    // Hiển thị spinner trong khi tải thông tin người dùng
+    // Spinner khi tải
     if (isLoadingUserInfo) {
-        return (
-            <Container className="text-center mt-5">
-                <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Đang tải thông tin...</span>
-                </Spinner>
-                <p>Đang tải thông tin người dùng...</p>
-            </Container>
-        );
+        return <Container className="text-center mt-5 p-5"><Spinner animation="border"/> <p className="mt-2">Đang tải
+            thông tin...</p></Container>;
+    }
+    // Chuyển hướng nếu không có sản phẩm
+    if (!cartItems || cartItems.length === 0) {
+        return <Container className="text-center mt-5 p-5"><Alert variant="warning">Không có sản phẩm để thanh toán.
+            Quay về <Alert.Link href="/cartpage">giỏ hàng</Alert.Link>.</Alert></Container>;
     }
 
+    // --- PHẦN RENDER GIAO DIỆN MỚI ---
     return (
-        <div className="container mt-4">
-            <h2>Thông Tin Giao Hàng</h2>
-            {error && <Alert variant="danger">{error}</Alert>}
-            <Form onSubmit={handlePlaceOrder}>
-                <Form.Group className="mb-3" controlId="formName">
-                    <Form.Label>Tên người nhận</Form.Label>
-                    <Form.Control
-                        type="text"
-                        placeholder="Nhập tên người nhận"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                    />
-                </Form.Group>
-
-                <Form.Group className="mb-3" controlId="formPhone">
-                    <Form.Label>Số điện thoại</Form.Label>
-                    <Form.Control
-                        type="tel"
-                        placeholder="Nhập số điện thoại"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        required
-                    />
-                </Form.Group>
-
-                <Form.Group className="mb-3" controlId="formAddress">
-                    <Form.Label>Địa chỉ giao hàng</Form.Label>
-                    <Form.Control
-                        as="textarea"
-                        rows={3}
-                        placeholder="Nhập địa chỉ chi tiết"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        required
-                    />
-                </Form.Group>
-
-                {/* Phần mã giảm giá */}
-                <div className="discount-section mb-4">
-                    <h4>Mã giảm giá</h4>
-                    {discountError && <Alert variant="danger">{discountError}</Alert>}
-                    {discountSuccess && (
-                        <Alert variant="success">{discountSuccess}</Alert>
-                    )}
-
-                    {!appliedDiscount ? (
-                        <InputGroup className="mb-3">
-                            <Form.Control
-                                placeholder="Nhập mã giảm giá"
-                                value={discountCode}
-                                onChange={(e) => setDiscountCode(e.target.value)}
-                                disabled={isCheckingDiscount}
-                            />
-                            <Button
-                                variant="outline-secondary"
-                                onClick={handleApplyDiscount}
-                                disabled={isCheckingDiscount}
-                            >
-                                {isCheckingDiscount ? (
-                                    <Spinner
-                                        as="span"
-                                        animation="border"
-                                        size="sm"
-                                        role="status"
-                                        aria-hidden="true"
-                                    />
-                                ) : (
-                                    "Áp dụng"
-                                )}
-                            </Button>
-                        </InputGroup>
-                    ) : (
-                        <div className="applied-discount p-3 border rounded mb-3">
-                            <div className="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 className="mb-1">{appliedDiscount.code}</h5>
-                                    <p className="mb-0 text-muted">
-                                        {appliedDiscount.description}
-                                    </p>
-                                    <p className="mb-0">
-                                        {appliedDiscount.discount_type === "percent"
-                                            ? `Giảm ${appliedDiscount.discount_value}%`
-                                            : `Giảm ${appliedDiscount.discount_value.toLocaleString()} VNĐ`}
-                                    </p>
-                                    <p className="mb-0 text-success">
-                                        <strong>
-                                            Tiết kiệm: {orderSummary.discount.toLocaleString()} VNĐ
-                                        </strong>
-                                    </p>
-                                </div>
-                                <Button
-                                    variant="outline-danger"
-                                    size="sm"
-                                    onClick={handleRemoveDiscount}
-                                >
-                                    Hủy
-                                </Button>
+        <div className="order-page-wrapper">
+            <Container>
+                <h1 className="text-center page-title">Hoàn Tất Đơn Hàng</h1>
+                {error && <Alert variant="danger" onClose={() => setError("")} dismissible>{error}</Alert>}
+                <Form onSubmit={handlePlaceOrder}>
+                    <Row>
+                        {/* Cột trái: Thông tin & Thanh toán */}
+                        <Col lg={7} className="info-column">
+                            <div className="info-section">
+                                <h3 className="section-title">Thông tin giao hàng</h3>
+                                <Row>
+                                    <Col md={12}><Form.Group className="mb-3"><Form.Label>Tên người
+                                        nhận</Form.Label><Form.Control type="text" value={name}
+                                                                       onChange={(e) => setName(e.target.value)}
+                                                                       required/></Form.Group></Col>
+                                    <Col md={12}><Form.Group className="mb-3"><Form.Label>Số điện
+                                        thoại</Form.Label><Form.Control type="tel" value={phone}
+                                                                        onChange={(e) => setPhone(e.target.value)}
+                                                                        required/></Form.Group></Col>
+                                    <Col md={12}><Form.Group className="mb-3"><Form.Label>Địa chỉ giao hàng</Form.Label><Form.Control
+                                        as="textarea" rows={3} value={address}
+                                        onChange={(e) => setAddress(e.target.value)} required/></Form.Group></Col>
+                                </Row>
                             </div>
-                        </div>
-                    )}
-                </div>
+                            <div className="info-section">
+                                <h3 className="section-title">Phương thức thanh toán</h3>
+                                <div className="payment-options">
+                                    {/* COD */}
+                                    <div className={`payment-option ${paymentMethod === 1 ? 'active' : ''}`}
+                                         onClick={() => setPaymentMethod(1)}>
+                                        <Form.Check type="radio" id="cod" name="paymentMethod"
+                                                    checked={paymentMethod === 1} readOnly/>
+                                        <div className="payment-option-label"><strong>Thanh toán khi nhận hàng
+                                            (COD)</strong><small>Trả tiền mặt trực tiếp cho shipper khi nhận
+                                            hàng.</small></div>
+                                    </div>
+                                    {/* VNPay */}
+                                    <div className={`payment-option ${paymentMethod === 2 ? 'active' : ''}`}
+                                         onClick={() => setPaymentMethod(2)}>
+                                        <Form.Check type="radio" id="vnpay" name="paymentMethod"
+                                                    checked={paymentMethod === 2} readOnly/>
+                                        <div className="payment-option-label"><strong>Ví điện tử VNPay</strong><small>Thanh
+                                            toán bằng QR Code, thẻ ATM nội địa, thẻ quốc tế.</small></div>
+                                    </div>
+                                    {/* MoMo */}
+                                    <div className={`payment-option ${paymentMethod === 3 ? 'active' : ''}`}
+                                         onClick={() => setPaymentMethod(3)}>
+                                        <Form.Check type="radio" id="momo" name="paymentMethod"
+                                                    checked={paymentMethod === 3} readOnly/>
+                                        <div className="payment-option-label"><strong>Ví điện tử MoMo</strong><small>Quét
+                                            mã QR để thanh toán bằng ứng dụng MoMo.</small></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Col>
 
-                {/* Tổng kết đơn hàng */}
-                <div className="order-summary p-3 border rounded mb-4">
-                    <h4>Tổng kết đơn hàng</h4>
-                    <div className="d-flex justify-content-between mb-2">
-                        <span>Tổng tiền hàng:</span>
-                        <span>{orderSummary.subtotal.toLocaleString()} VNĐ</span>
-                    </div>
-                    {appliedDiscount && (
-                        <div className="d-flex justify-content-between mb-2 text-success">
-                <span>
-                  <strong>Giảm giá:</strong>
-                </span>
-                            <span>
-                  <strong>
-                    {appliedDiscount.discount_type === "percent"
-                        ? `${
-                            appliedDiscount.discount_value
-                        }% (${orderSummary.discount.toLocaleString()} VNĐ)`
-                        : `${orderSummary.discount.toLocaleString()} VNĐ`}
-                  </strong>
-                </span>
-                        </div>
-                    )}
-                    <hr/>
-                    <div className="d-flex justify-content-between fw-bold">
-                        <span>Tổng thanh toán:</span>
-                        <span className="text-danger fs-5">
-                {orderSummary.total.toLocaleString()} VNĐ
-              </span>
-                    </div>
-                    {appliedDiscount && (
-                        <div className="text-center mt-2 p-2 bg-light">
-                            <p className="mb-0 text-success">
-                                <strong>
-                                    Bạn đã tiết kiệm: {orderSummary.discount.toLocaleString()}{" "}
-                                    VNĐ!
-                                </strong>
-                            </p>
-                        </div>
-                    )}
-                </div>
+                        {/* Cột phải: Tóm tắt đơn hàng */}
+                        <Col lg={5} className="summary-column">
+                            <div className="summary-section">
+                                <h3 className="section-title">Tóm Tắt Đơn Hàng</h3>
+                                <div className="product-summary-list">
+                                    {cartItems.map(item => (
+                                        <div key={item.id} className="product-summary-item">
+                                            <img src={item.variation?.image_url || 'https://placehold.co/60'}
+                                                 alt={item.variation?.name} className="product-summary-image"/>
+                                            <div className="product-summary-details">
+                                                <p className="product-summary-name mb-0">{item.variation?.name || "Sản phẩm"}</p>
+                                                <small className="product-summary-meta">Số
+                                                    lượng: {item.quantity}</small>
+                                            </div>
+                                            <p className="product-summary-price mb-0">{(item.variation.price * item.quantity).toLocaleString()}đ</p>
+                                        </div>
+                                    ))}
+                                </div>
 
-                <Form.Group className="mb-3">
-                    <Form.Label>Phương thức thanh toán</Form.Label>
+                                <div className="discount-box">
+                                    {discountSuccess && <Alert variant="success" size="sm">{discountSuccess}</Alert>}
+                                    {discountError && <Alert variant="danger" size="sm">{discountError}</Alert>}
+                                    {!appliedDiscount ? (
+                                        <InputGroup>
+                                            <Form.Control placeholder="Nhập mã giảm giá" value={discountCode}
+                                                          onChange={(e) => setDiscountCode(e.target.value)}
+                                                          disabled={isCheckingDiscount}/>
+                                            <Button variant="outline-primary" onClick={handleApplyDiscount}
+                                                    disabled={isCheckingDiscount}>
+                                                {isCheckingDiscount ? <Spinner size="sm"/> : "Áp dụng"}
+                                            </Button>
+                                        </InputGroup>
+                                    ) : (
+                                        <div
+                                            className="applied-discount-info d-flex justify-content-between align-items-center">
+                                            <div><strong>Đã áp dụng mã: {appliedDiscount.code}</strong></div>
+                                            <Button variant="danger" size="sm"
+                                                    onClick={handleRemoveDiscount}>Hủy</Button>
+                                        </div>
+                                    )}
+                                </div>
 
-                    <Form.Check
-                        type="radio"
-                        id="cod"
-                        label="Thanh toán khi nhận hàng (COD)"
-                        name="paymentMethod"
-                        value={1}
-                        checked={paymentMethod === 1}
-                        onChange={(e) => setPaymentMethod(parseInt(e.target.value))}
-                    />
-                    <Form.Check
-                        type="radio"
-                        id="vnpay"
-                        label="Thanh toán VNPay (ATM, QR Code...)"
-                        name="paymentMethod"
-                        value={2}
-                        checked={paymentMethod === 2}
-                        onChange={(e) => setPaymentMethod(parseInt(e.target.value))}
-                    />
-                    <Form.Check
-                        type="radio"
-                        id="momo"
-                        label="Thanh toán MoMo"
-                        name="paymentMethod"
-                        value={3}
-                        checked={paymentMethod === 3}
-                        onChange={(e) => setPaymentMethod(parseInt(e.target.value))}
-                    />
-                </Form.Group>
-
-                <Button variant="primary" type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                        <>
-                            <Spinner
-                                as="span"
-                                animation="border"
-                                size="sm"
-                                role="status"
-                                aria-hidden="true"
-                                className="me-2"
-                            />
-                            Đang đặt hàng...
-                        </>
-                    ) : (
-                        "Hoàn tất đặt hàng"
-                    )}
-                </Button>
-                <Button
-                    variant="secondary"
-                    className="ms-2"
-                    onClick={() => navigate("/cartpage")}
-                >
-                    Quay lại giỏ hàng
-                </Button>
-            </Form>
+                                <div className="order-totals">
+                                    <div className="order-totals-row">
+                                        <span>Tạm tính</span><span>{orderSummary.subtotal.toLocaleString()}đ</span>
+                                    </div>
+                                    {appliedDiscount && <div className="order-totals-row text-success"><strong>Giảm
+                                        giá</strong><strong>-{orderSummary.discount.toLocaleString()}đ</strong></div>}
+                                    <div className="order-totals-row final-total"><span>Tổng cộng</span><span
+                                        className="final-price">{orderSummary.total.toLocaleString()}đ</span></div>
+                                </div>
+                                <div className="d-grid gap-2 mt-4">
+                                    <Button type="submit" size="lg" className="place-order-btn" disabled={isSubmitting}>
+                                        {isSubmitting ? <><Spinner as="span" animation="border" size="sm" role="status"
+                                                                   aria-hidden="true"/> Đang xử lý...</> : "Đặt Hàng"}
+                                    </Button>
+                                    <Button variant="outline-secondary" onClick={() => navigate("/cartpage")}>Quay lại
+                                        giỏ hàng</Button>
+                                </div>
+                            </div>
+                        </Col>
+                    </Row>
+                </Form>
+            </Container>
         </div>
     );
 };
