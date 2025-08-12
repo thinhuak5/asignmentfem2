@@ -354,7 +354,7 @@ const OrderList = () => {
                               title="Xem chi tiết"
                           >
                               <FaEye className="me-1"/>
-                              {order.txn_ref || order.id}
+                              {order.id}
                           </Button>
                       </td>
                     <td>{order.name}</td>
@@ -503,7 +503,7 @@ const OrderList = () => {
                         <>
                             <div className="mb-2">
                                 <strong>Mã đơn:</strong>{" "}
-                                {detailOrder.txn_ref || detailOrder.id} <br/>
+                                {detailOrder.id} <br/>
                                 <strong>Khách hàng:</strong> {detailOrder.name} <br/>
                                 <strong>SĐT:</strong> {detailOrder.phone} <br/>
                                 <strong>Địa chỉ:</strong> {detailOrder.address} <br/>
