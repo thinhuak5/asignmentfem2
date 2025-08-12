@@ -232,19 +232,6 @@ const ProductClient = () => {
                                 </ul>
                             </div>
 
-                            {/* Lọc theo thương hiệu (Dữ liệu giả) */}
-                            <div className="filter-block">
-                                <h5 className="filter-block__title">Thương hiệu</h5>
-                                <ul className="filter-block__content filter-list">
-                                    {brands.map(brand => (
-                                        <li key={brand.id}>
-                                            <label>
-                                                <input type="checkbox"/> {brand.name}
-                                            </label>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
 
                             {/* Lọc theo giá */}
                             <div className="filter-block">
@@ -288,13 +275,7 @@ const ProductClient = () => {
                                     <button className={`sort-options__btn ${sortOrder === "newest" ? "active" : ""}`}
                                             onClick={() => setSortOrder("newest")}>Mới nhất
                                     </button>
-                                    <button className={`sort-options__btn ${sortOrder === "popular" ? "active" : ""}`}
-                                            onClick={() => setSortOrder("popular")}>Phổ biến
-                                    </button>
-                                    <button
-                                        className={`sort-options__btn ${sortOrder === "bestselling" ? "active" : ""}`}
-                                        onClick={() => setSortOrder("bestselling")}>Bán chạy
-                                    </button>
+
                                     <button className={`sort-options__btn ${sortOrder === "price_asc" ? "active" : ""}`}
                                             onClick={() => setSortOrder("price_asc")}>Giá thấp
                                     </button>

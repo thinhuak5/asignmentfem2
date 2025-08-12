@@ -61,9 +61,6 @@ const UserList = () => {
         <div className="container">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2>Danh sách người dùng</h2>
-                <Link className="btn btn-success" to="/admin/user/adduser">
-                    Thêm người dùng
-                </Link>
             </div>
 
             <div className="mb-4 d-flex gap-3">
@@ -75,14 +72,14 @@ const UserList = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <select
-                    className="form-select rounded" // thêm rounded vào đây
+                    className="form-select rounded"
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     style={{maxWidth: "200px"}}
                 >
                     <option value="all">Tất cả</option>
                     <option value="active">Đang hoạt động</option>
-                    <option value="inactive">Không hoạt động</option>
+                    <option value="inactive">Khóa</option>
                 </select>
             </div>
 
@@ -114,15 +111,21 @@ const UserList = () => {
                             <td>{user.email}</td>
                             <td>{user.phone}</td>
                             <td>
-                                <span
-                                    className={`badge ${
-                                        user.status === 1 ? "bg-success" : "bg-danger"
-                                    }`}
-                                >
-                                    {user.status === 1 ? "Đang hoạt động" : "Không hoạt động"}
-                                </span>
+                                    <span
+                                        className={`badge ${
+                                            user.status === 1 ? "bg-success" : "bg-danger"
+                                        }`}
+                                    >
+                                        {user.status === 1 ? "Đang hoạt động" : "Khóa"}
+                                    </span>
                             </td>
-                            <td>{user.role === 1 ? "Admin" : "User"}</td>
+                            <td>
+                                {user.role === 0
+                                    ? "Admin"
+                                    : user.role === 1
+                                        ? "Nhân viên"
+                                        : "Người dùng"}
+                            </td>
                             <td>
                                 {user.avatar ? (
                                     <img
@@ -132,7 +135,6 @@ const UserList = () => {
                                         height="60"
                                         style={{objectFit: "cover", borderRadius: "5px"}}
                                     />
-
                                 ) : (
                                     "Không có"
                                 )}

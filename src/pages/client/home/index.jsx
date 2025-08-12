@@ -4,17 +4,17 @@ import Constanst from "../../../Constanst";
 
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
-    faBolt,
-    faBook,
-    faBookmark,
-    faBookOpen,
-    faChevronRight,
-    faDollarSign,
-    faFire,
-    faLightbulb,
-    faSchool,
-    faStar,
-    faTags,
+  faBolt,
+  faBook,
+  faBookmark,
+  faBookOpen,
+  faChevronRight,
+  faDollarSign,
+  faFire,
+  faLightbulb,
+  faSchool,
+  faStar,
+  faTags,
 } from "@fortawesome/free-solid-svg-icons";
 
 import "../../../assets/css/home.css";
@@ -460,7 +460,7 @@ const Home = () => {
           <div className="section-header">
             <div className="section-title-container">
               <span className="flash-sale-countdown">
-                Kết thúc trong: 01 : 11 : 50
+                Sản phẩm mới nhất
               </span>
             </div>
             <Link to="/flash-sale" className="section-view-all">

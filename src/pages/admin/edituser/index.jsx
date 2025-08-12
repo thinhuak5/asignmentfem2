@@ -24,17 +24,20 @@ const EditUser = () => {
         fetchUser();
     }, [id, navigate]);
 
-    const handleStatusChange = async () => {
+    const handleUpdateUser = async () => {
         try {
             const res = await fetch(`${Constanst.DOMAIN_API}/api/users/${id}`, {
                 method: 'PUT',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({status: parseInt(user.status)}),
+                body: JSON.stringify({
+                    status: parseInt(user.status),
+                    role: parseInt(user.role), // Send the updated role
+                }),
             });
 
             if (!res.ok) throw new Error('Cập nhật thất bại');
 
-            alert("Cập nhật trạng thái thành công");
+            alert("Cập nhật thành công");
             navigate("/admin/user");
         } catch (error) {
             console.error("Lỗi khi cập nhật:", error);
@@ -48,7 +51,7 @@ const EditUser = () => {
         <div className="container">
             <Card>
                 <Card.Body>
-                    <Card.Title>Chỉnh sửa trạng thái người dùng: {user.name}</Card.Title>
+                    <Card.Title>Chỉnh sửa người dùng: {user.name}</Card.Title>
                     <Form>
                         <Form.Group>
                             <Form.Label>Trạng thái</Form.Label>
@@ -57,10 +60,23 @@ const EditUser = () => {
                                 onChange={(e) => setUser({...user, status: e.target.value})}
                             >
                                 <option value={1}>Đang hoạt động</option>
-                                <option value={0}>Không hoạt động</option>
+                                <option value={0}>Khóa</option>
                             </Form.Select>
                         </Form.Group>
-                        <Button className="mt-3" variant="primary" onClick={handleStatusChange}>
+
+                        <Form.Group className="mt-3">
+                            <Form.Label>Vai trò</Form.Label>
+                            <Form.Select
+                                value={user.role}
+                                onChange={(e) => setUser({...user, role: e.target.value})}
+                            >
+
+                                <option value={1}>Nhân viên</option>
+                                <option value={2}>Người dùng</option>
+                            </Form.Select>
+                        </Form.Group>
+
+                        <Button className="mt-3" variant="primary" onClick={handleUpdateUser}>
                             Lưu
                         </Button>
                         <Button className="mt-3 ms-2" variant="secondary" onClick={() => navigate("/admin/user")}>
