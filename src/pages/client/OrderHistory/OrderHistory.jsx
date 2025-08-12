@@ -1,21 +1,88 @@
 import React, {useCallback, useEffect, useState} from "react";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {Accordion, Alert, Badge, Button, Container, Form, Modal, Spinner, Table,} from "react-bootstrap";
-import Constanst from "../../../Constanst"; // Đảm bảo đường dẫn đúng
+import Constanst from "../../../Constanst";
+
 const OrderHistory = () => {
+    // ====== Soft blue theme (CSS in JS) ======
+    const SoftBlueCSS = () => (
+        <style>{`
+      .modal-soft-blue .modal-content{
+        background:#f2f8ff;               /* nền xanh nhạt */
+        border:1px solid #cfe3ff;
+        box-shadow:0 10px 30px rgba(20,60,120,.15);
+        border-radius:14px;
+      }
+      .modal-soft-blue .modal-header{
+        background:#eaf3ff;               /* header xanh nhạt hơn */
+        color:#0b3d91;                     /* chữ xanh đậm */
+        border-bottom:1px solid #cfe3ff;
+        border-top-left-radius:14px;
+        border-top-right-radius:14px;
+      }
+      .modal-soft-blue .modal-title{
+        font-weight:600;
+      }
+      .modal-soft-blue .modal-body{
+        color:#193b6a;
+      }
+      .modal-soft-blue .btn-primary{
+        background:#56a6ff;                /* nút OK xanh nhạt */
+        border-color:#56a6ff;
+      }
+      .modal-soft-blue .btn-primary:hover{
+        background:#3e90fb;
+        border-color:#3e90fb;
+      }
+      .modal-soft-blue .btn-secondary{
+        background:#e9f2ff;
+        color:#0b3d91;
+        border-color:#cfe3ff;
+      }
+      .modal-soft-blue .btn-secondary:hover{
+        background:#dbeaff;
+        color:#0b3d91;
+        border-color:#bed7ff;
+      }
+      .modal-soft-blue .btn-close{
+        filter: invert(24%) sepia(16%) saturate(1783%) hue-rotate(189deg) brightness(90%) contrast(88%);
+      }
+    `}</style>
+    );
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // State cho Modal hủy đơn hàng
+    // Modal hủy
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [orderToCancel, setOrderToCancel] = useState(null); // Lưu trữ ID đơn hàng sẽ hủy
-  const [cancelReason, setCancelReason] = useState(""); // Lý do hủy được chọn/nhập
-  const [otherReason, setOtherReason] = useState(""); // Lý do khác nếu người dùng chọn "Khác"
-  const [isCancelling, setIsCancelling] = useState(false); // Trạng thái đang hủy
+    const [orderToCancel, setOrderToCancel] = useState(null);
+    const [cancelReason, setCancelReason] = useState("");
+    const [otherReason, setOtherReason] = useState("");
+    const [isCancelling, setIsCancelling] = useState(false);
 
-  // Các lý do hủy cố định
+    // Modal kết quả/thông báo (dùng chung)
+    const [resultModal, setResultModal] = useState({
+        show: false,
+        title: "",
+        message: "",
+    });
+    const [resultOnClose, setResultOnClose] = useState(null);
+
+    const openResultModal = (title, message, onClose = null) => {
+        setResultModal({show: true, title, message});
+        setResultOnClose(() => onClose);
+    };
+    const closeResultModal = () => {
+        setResultModal((s) => ({...s, show: false}));
+        if (typeof resultOnClose === "function") {
+            const fn = resultOnClose;
+            setResultOnClose(null);
+            setTimeout(fn, 0);
+        }
+    };
+
   const cancellationReasons = [
     "Đổi ý, không muốn mua nữa",
     "Tìm thấy sản phẩm tốt hơn/giá rẻ hơn",
@@ -25,13 +92,9 @@ const OrderHistory = () => {
     "Khác (ghi rõ lý do)",
   ];
 
-  // Đổi tên biến location từ useLocation:
   const routerLocation = useLocation();
-
-  // Đặt setPaymentMessage trước useEffect:
   const [paymentMessage, setPaymentMessage] = useState(null);
 
-  // Sửa lại useEffect dùng routerLocation:
   useEffect(() => {
     const params = new URLSearchParams(routerLocation.search);
     const message = params.get("message");
@@ -57,13 +120,12 @@ const OrderHistory = () => {
           body: JSON.stringify({ cartItemIds }),
         })
           .then((res) => res.json())
-          .then((data) => {
-            console.log("Xóa cart sau VNPAY:", data);
+            .then(() => {
             sessionStorage.removeItem("vnp_cart_item_ids");
             localStorage.removeItem("cart");
-            // Tùy: reload lại cart context nếu có
           })
-          .catch((err) => console.error("Lỗi khi xóa cart:", err));
+            .catch(() => {
+            });
       }
     }
 
@@ -74,27 +136,24 @@ const OrderHistory = () => {
       });
     }
 
-    // Xoá query `message` sau vài giây cho đẹp
-    setTimeout(() => {
+      const t = setTimeout(() => {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, "", newUrl);
     }, 3000);
+      return () => clearTimeout(t);
   }, [routerLocation.search]);
 
-  // Hàm định dạng ngày tháng
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    const options = {
+      return new Date(dateString).toLocaleDateString("vi-VN", {
       year: "numeric",
       month: "long",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    };
-    return new Date(dateString).toLocaleDateString("vi-VN", options);
+      });
   };
 
-  // Hàm lấy text trạng thái đơn hàng
   const getOrderStatus = (status) => {
     switch (status) {
       case 1:
@@ -116,7 +175,6 @@ const OrderHistory = () => {
     }
   };
 
-  // Hàm lấy text trạng thái thanh toán
   const getPaymentStatus = (status) => {
     switch (status) {
       case 0:
@@ -132,30 +190,31 @@ const OrderHistory = () => {
     }
   };
 
-  // Hàm lấy phương thức thanh toán
   const getPaymentMethod = (method) => {
     switch (method) {
       case 1:
         return "Thanh toán khi nhận hàng (COD)";
       case 2:
-        return "Chuyển khoản ngân hàng"; // Ví dụ
+          return "Chuyển khoản ngân hàng";
       case 3:
-        return "Ví điện tử"; // Ví dụ
+          return "Ví điện tử";
       default:
         return "Không xác định";
     }
   };
 
-  // Hàm fetch lịch sử đơn hàng
   const fetchOrderHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
     const token = localStorage.getItem("authToken");
 
     if (!token) {
-      setError("Vui lòng đăng nhập để xem lịch sử đơn hàng.");
+        const msg = "Vui lòng đăng nhập để xem lịch sử đơn hàng.";
+        setError(msg);
+        openResultModal("Cần đăng nhập", msg, () =>
+            navigate("/login", {state: {from: "/order-history"}})
+        );
       setLoading(false);
-      navigate("/login", { state: { from: "/order-history" } }); // Chuyển hướng nếu không có token
       return;
     }
 
@@ -177,23 +236,26 @@ const OrderHistory = () => {
         try {
           const errorData = await res.json();
           errorMsg = errorData.message || errorMsg;
-        } catch (e) {
-          /* Bỏ qua nếu không parse được json lỗi */
+        } catch {
         }
-
         if (res.status === 401 || res.status === 403) {
-          errorMsg =
-            "Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.";
           localStorage.removeItem("authToken");
-          navigate("/login", { state: { from: "/order-history" } });
+            openResultModal(
+                "Phiên đăng nhập hết hạn",
+                "Vui lòng đăng nhập lại.",
+                () => navigate("/login", {state: {from: "/order-history"}})
+            );
+        } else {
+            openResultModal("Không thể tải dữ liệu", errorMsg);
         }
         setError(errorMsg);
         setOrders([]);
       }
-    } catch (err) {
-      console.error("Lỗi mạng khi fetch lịch sử đơn hàng:", err);
-      setError("Lỗi mạng, không thể kết nối đến máy chủ.");
+    } catch {
+        const msg = "Lỗi mạng, không thể kết nối đến máy chủ.";
+        setError(msg);
       setOrders([]);
+        openResultModal("Lỗi mạng", msg);
     } finally {
       setLoading(false);
     }
@@ -203,7 +265,6 @@ const OrderHistory = () => {
     fetchOrderHistory();
   }, [fetchOrderHistory]);
 
-  // Thêm useEffect này để tự động bổ sung hình ảnh nếu thiếu (giống CartPage)
   useEffect(() => {
     const fetchMissingProductImages = async () => {
       const updatedOrders = await Promise.all(
@@ -211,7 +272,6 @@ const OrderHistory = () => {
           if (!order.items || order.items.length === 0) return order;
           const updatedItems = await Promise.all(
             order.items.map(async (item) => {
-              // Nếu thiếu productImages và images, fetch lại chi tiết sản phẩm
               if (
                 item.product &&
                 !item.product.productImages &&
@@ -232,8 +292,7 @@ const OrderHistory = () => {
                       },
                     };
                   }
-                } catch (e) {
-                  // Bỏ qua lỗi, giữ nguyên item
+                } catch {
                 }
               }
               return item;
@@ -248,13 +307,13 @@ const OrderHistory = () => {
     if (
       orders.length > 0 &&
       orders.some(
-        (order) =>
-          order.items &&
-          order.items.some(
-            (item) =>
-              item.product &&
-              !item.product.productImages &&
-              !item.product.images
+          (o) =>
+              o.items &&
+              o.items.some(
+                  (it) =>
+                      it.product &&
+                      !it.product.productImages &&
+                      !it.product.images
           )
       )
     ) {
@@ -262,15 +321,13 @@ const OrderHistory = () => {
     }
   }, [orders]);
 
-  // Hàm mở modal hủy đơn hàng
   const handleShowCancelModal = (orderId) => {
     setOrderToCancel(orderId);
-    setCancelReason(""); // Reset lý do khi mở modal
+      setCancelReason("");
     setOtherReason("");
     setShowCancelModal(true);
   };
 
-  // Hàm đóng modal hủy đơn hàng
   const handleCloseCancelModal = () => {
     setShowCancelModal(false);
     setOrderToCancel(null);
@@ -278,17 +335,19 @@ const OrderHistory = () => {
     setOtherReason("");
   };
 
-  // Hàm gửi yêu cầu hủy đơn hàng đến API
   const confirmCancelOrder = async () => {
     if (!orderToCancel || (!cancelReason && !otherReason)) {
-      alert("Vui lòng chọn hoặc nhập lý do hủy đơn hàng.");
+        openResultModal(
+            "Thiếu lý do hủy",
+            "Vui lòng chọn hoặc nhập lý do hủy đơn hàng."
+        );
       return;
     }
 
     let finalReason = cancelReason;
     if (cancelReason === "Khác (ghi rõ lý do)") {
       if (!otherReason.trim()) {
-        alert("Vui lòng ghi rõ lý do hủy.");
+          openResultModal("Thiếu lý do khác", "Vui lòng ghi rõ lý do hủy.");
         return;
       }
       finalReason = otherReason.trim();
@@ -297,9 +356,12 @@ const OrderHistory = () => {
     setIsCancelling(true);
     const token = localStorage.getItem("authToken");
     if (!token) {
-      alert("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.");
+        openResultModal(
+            "Phiên đăng nhập hết hạn",
+            "Vui lòng đăng nhập lại để tiếp tục hủy đơn.",
+            () => navigate("/login", {state: {from: "/order-history"}})
+        );
       setIsCancelling(false);
-      navigate("/login", { state: { from: "/order-history" } });
       return;
     }
 
@@ -307,43 +369,46 @@ const OrderHistory = () => {
       const res = await fetch(
         `${Constanst.DOMAIN_API}/api/orders/${orderToCancel}/cancel`,
         {
-          method: "PUT", // Hoặc PATCH tùy theo API của bạn
+            method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ reason: finalReason }), // Gửi lý do hủy
+            body: JSON.stringify({reason: finalReason}),
         }
       );
 
       if (res.ok) {
-        alert(
-          `Đơn hàng #${orderToCancel} đã được hủy thành công với lý do: ${finalReason}`
+          openResultModal(
+              "Hủy đơn hàng thành công",
+              `Đơn hàng #${orderToCancel} đã được hủy với lý do: ${finalReason}`
         );
-        handleCloseCancelModal(); // Đóng modal
-        fetchOrderHistory(); // Tải lại danh sách đơn hàng để cập nhật trạng thái
+          handleCloseCancelModal();
+          fetchOrderHistory();
       } else {
         const errorData = await res.json();
-        alert(
-            `Lỗi khi hủy đơn hàng #${orderToCancel}: ${
-                errorData.message || res.statusText
-          }`
+          openResultModal(
+              "Hủy đơn hàng thất bại",
+              `Lỗi khi hủy đơn #${orderToCancel}: ${errorData.message || res.statusText}`
         );
       }
-    } catch (error) {
-      console.error("Lỗi mạng khi hủy đơn hàng:", error);
-      alert(
-        `Lỗi mạng, không thể hủy đơn hàng #${orderToCancel}. Vui lòng thử lại.`
+    } catch {
+        openResultModal(
+            "Lỗi mạng",
+            `Không thể hủy đơn #${orderToCancel}. Vui lòng thử lại.`
       );
     } finally {
       setIsCancelling(false);
     }
   };
 
-  // Hàm tính tổng tiền nếu backend không trả về sẵn
   const calculateOrderTotal = (items) => {
     if (!items || items.length === 0) return 0;
-    return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      return items.reduce((sum, item) => {
+          const price = Number(item.price) || 0;
+          const qty = Number(item.quantity) || 0;
+          return sum + price * qty;
+      }, 0);
   };
 
   if (loading) {
@@ -359,14 +424,15 @@ const OrderHistory = () => {
 
   return (
     <Container className="mt-4 mb-5 min-vh-100">
+        <SoftBlueCSS/>
+
       <h2 className="mb-4 text-center">Lịch sử Đơn Hàng</h2>
+
       {paymentMessage && (
         <Alert variant={paymentMessage.variant} className="mt-3">
           {paymentMessage.text}
         </Alert>
       )}
-
-      {error && <Alert variant="danger">{error}</Alert>}
 
       {!error && orders.length === 0 && (
         <Alert variant="info">Bạn chưa có đơn hàng nào.</Alert>
@@ -391,12 +457,13 @@ const OrderHistory = () => {
                   <span className="col-12 col-md-3">
                     <strong>Trạng thái:</strong> {getOrderStatus(order.status)}
                   </span>
-                                    <span className="col-12 col-md-3 fw-bold text-md-end">
+                    <span className="col-12 col-md-3 fw-bold text-md-end">
                     Tổng tiền:{" "}
-                    {(order.total_amount !== undefined
-                      ? order.total_amount
-                      : calculateOrderTotal((order.items) - (order.discount_amount || 0)
-                    )).toLocaleString()}{" "}
+                        {(
+                            (order.total_amount ??
+                                calculateOrderTotal(order.items || [])) -
+                            (order.discount_amount || 0)
+                        ).toLocaleString()}{" "}
                     VNĐ
                     {order.discount_amount > 0 && (
                       <div className="text-success small">
@@ -448,7 +515,7 @@ const OrderHistory = () => {
                             <div className="product-thumbnail">
                                 {item.variation?.image_url ? (
                                 <img
-                                    src={item.variation.image_url} // Dùng image_url từ variation
+                                    src={item.variation.image_url}
                                     alt={item.variation?.name || "Product Image"}
                                   style={{
                                     width: "50px",
@@ -457,7 +524,7 @@ const OrderHistory = () => {
                                   }}
                                 />
                               ) : (
-                                    <span>Không có ảnh</span> // Nếu không có ảnh, hiển thị thông báo này
+                                    <span>Không có ảnh</span>
                               )}
                             </div>
                           </td>
@@ -480,12 +547,16 @@ const OrderHistory = () => {
 
                           <td>{item.quantity}</td>
                           <td>
-                            {item.price ? item.price.toLocaleString() : "N/A"}{" "}
+                              {item.price
+                                  ? Number(item.price).toLocaleString()
+                                  : "N/A"}{" "}
                             VNĐ
                           </td>
                           <td>
                             {item.price && item.quantity
-                              ? (item.quantity * item.price).toLocaleString()
+                                ? (
+                                    Number(item.quantity) * Number(item.price)
+                                ).toLocaleString()
                               : "N/A"}{" "}
                             VNĐ
                           </td>
@@ -497,8 +568,7 @@ const OrderHistory = () => {
                   <p>Không có thông tin chi tiết sản phẩm cho đơn hàng này.</p>
                 )}
 
-                {/* Nút hủy đơn hàng */}
-                {/* Hiển thị nút hủy nếu trạng thái là "Chờ xác nhận" (status: 1) */}
+                  {/* Nút hủy (khi Chờ xác nhận) */}
                 {order.status === 1 && (
                   <Button
                     variant="danger"
@@ -515,8 +585,15 @@ const OrderHistory = () => {
         </Accordion>
       )}
 
-      {/* Modal Hủy Đơn Hàng */}
-      <Modal show={showCancelModal} onHide={handleCloseCancelModal} centered>
+        {/* Modal Hủy Đơn Hàng - tông xanh nước nhạt */}
+        <Modal
+            show={showCancelModal}
+            onHide={handleCloseCancelModal}
+            centered
+            dialogClassName="modal-soft-blue"
+            backdrop="static"
+            keyboard={false}
+        >
         <Modal.Header closeButton>
           <Modal.Title>Hủy Đơn Hàng #{orderToCancel}</Modal.Title>
         </Modal.Header>
@@ -562,7 +639,7 @@ const OrderHistory = () => {
             Đóng
           </Button>
           <Button
-            variant="danger"
+              variant="primary"
             onClick={confirmCancelOrder}
             disabled={isCancelling || (!cancelReason && !otherReason)}
           >
@@ -584,6 +661,28 @@ const OrderHistory = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+        {/* Modal Thông báo/Kết quả - tông xanh nước nhạt */}
+        <Modal
+            show={resultModal.show}
+            onHide={closeResultModal}
+            centered
+            dialogClassName="modal-soft-blue"
+            backdrop="static"
+            keyboard={false}
+        >
+            <Modal.Header closeButton>
+                <Modal.Title>{resultModal.title}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <div>{resultModal.message}</div>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="primary" onClick={closeResultModal}>
+                    OK
+                </Button>
+            </Modal.Footer>
+        </Modal>
     </Container>
   );
 };

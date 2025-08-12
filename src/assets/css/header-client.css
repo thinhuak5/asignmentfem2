@@ -33,20 +33,30 @@
 }
 
 /* --- Logo --- */
+/* --- Logo --- */
 .header-brand {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--header-text);
-    text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  /* Giữ chiều cao header, không cần màu chữ vì dùng hình */
 }
 
-.header-brand:hover {
-    transform: scale(1.05);
+.header-logo {
+  height: 85px;           /* khớp header 70px, vẫn có khoảng thở */
+  width: auto;
+  display: block;
+  object-fit: contain;
+  transition: transform .15s ease;
 }
 
-.header-brand span {
-    color: var(--header-accent);
+.header-brand:hover .header-logo {
+  transform: scale(1.05); /* hover nhẹ nhàng trên ảnh logo */
 }
+
+@media (max-width: 576px) {
+  .header-logo { height: 36px; }
+}
+
 
 /* --- Khu vực Navigation chung --- */
 .header-nav {

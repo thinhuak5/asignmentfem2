@@ -266,7 +266,6 @@ export default function AddProduct() {
         encType="multipart/form-data"
         className="border p-4 rounded bg-light"
       >
-          {/* Thông tin sản phẩm */}
         <div className="card mb-3">
           <div className="card-body">
             <h5 className="card-title">Thông tin sản phẩm</h5>
@@ -348,12 +347,11 @@ export default function AddProduct() {
           </div>
         </div>
 
-          {/* Variations (giao diện cũ) */}
         <div className="row">
             {variationFields.map((field, idx) => {
                 const qty = getValues(`variations.${idx}.quantity`) || 0;
                 return (
-                    <div key={field.id} className="col-12 col-md-6 mb-3">
+                    <div key={field.id} className="col-12 mb-3">
                         <div className="card">
                             <div className="card-body">
                                 <h5 className="card-title">Biến thể #{idx + 1}</h5>
@@ -365,7 +363,6 @@ export default function AddProduct() {
                                     Xóa
                                 </button>
                                 <div className="row g-2">
-                                    {/* Tên */}
                                     <div className="col">
                                         <input
                                             className="form-control"
@@ -381,7 +378,6 @@ export default function AddProduct() {
                                         )}
                                     </div>
 
-                                    {/* Mô tả */}
                                     <div className="col">
                                         <input
                                             className="form-control"
@@ -397,7 +393,6 @@ export default function AddProduct() {
                                         )}
                                     </div>
 
-                                    {/* Giá */}
                                     <div className="col">
                                         <input
                                             type="number"

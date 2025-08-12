@@ -10,7 +10,6 @@ import MainUser from './components/user/MainUser';
 import MainAdmin from './components/admin/MainAdmin';
 import ProductClient from './pages/client/product';
 import About from "./pages/client/about";
-import Services from "./pages/client/services";
 import Blog from './pages/client/blog';
 import Contact from './pages/client/contact';
 import Order from './pages/admin/order';
@@ -58,7 +57,6 @@ function App() {
             <Route path='forgot-password' element={<ForgotPassword/>}/>
             <Route path='forgot-password/change' element={<ChangePassword/>}/>
             <Route path='about' element={<About/>}/>
-            <Route path='services' element={<Services/>}/>
             <Route path='blog' element={<Blog/>}/>
             <Route path='contact' element={<Contact/>}/>
             <Route path='cartpage' element={<CartPage/>}/>

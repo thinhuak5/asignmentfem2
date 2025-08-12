@@ -258,7 +258,6 @@ const Sidebar = () => {
               </Link>
             </li>
 
-            {/* Logout */}
             <li className="sidebar-item">
               <Link className="sidebar-link" to="/logout" aria-expanded="false">
                 <i className="ti ti-logout fs-6"></i>
