@@ -2,12 +2,7 @@ import {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
 import {
     FaCheckCircle,
-    FaCogs,
     FaEdit,
-    FaImage,
-    FaList,
-    FaRegFileAlt,
-    FaTags,
     FaTimesCircle,
     FaTrashAlt,
 } from "react-icons/fa";
@@ -212,31 +207,31 @@ const ProductList = () => {
         <thead className="table-dark">
           <tr>
               <th>
-                  <FaList/> STT
+                 STT
               </th>
               <th>
-                  <FaImage/> Ảnh
+                  Ảnh
               </th>
               <th>
-                  <FaRegFileAlt/> Tên
+                  Tên
               </th>
               <th>
-                  <FaTags/> Mô tả
+                Mô tả
               </th>
               <th>
-                  <FaTags/> Danh mục cha
+                  Danh mục cha
               </th>
               <th>
-                  <FaTags/> Danh mục con
+                   Danh mục con
               </th>
               <th>
-                  <FaCogs/> Trạng thái
+                  Trạng thái
               </th>
               <th>
-                  <FaTags/> Số lượng
+                  Số lượng
               </th>
               <th>
-                  <FaCogs/> Thao tác
+                 Thao tác
               </th>
           </tr>
         </thead>

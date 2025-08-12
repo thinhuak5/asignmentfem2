@@ -13,8 +13,8 @@
   --body-bg:#f4f4f4;
 
   /* Admin sidebar */
-  --sidebar-width: 280px;     /* bạn có thể tăng/giảm */
-  --sidebar-logo-h: 120px;    /* độ cao header logo (logo to) */
+  --sidebar-width: 280px;
+  --sidebar-logo-h: 120px;
 }
 
 /* =========================================================
@@ -27,24 +27,36 @@
 .home-container a,.home-container a:hover{ text-decoration:none; color:inherit; }
 .home-container img{ display:block; }
 
-/* HERO GRID */
+/* ================= HERO GRID (FIX CHỒNG LẤN) ================= */
 .home-container .banner-grid{
   max-width:1280px;
   margin:14px auto;
   padding:0 12px;
   display:grid;
-  grid-template-columns:2fr 1fr;
+  /* 2 cột co giãn đúng, không bị ảnh đẩy tràn track */
+  grid-template-columns:minmax(0,2fr) minmax(0,1fr);
   gap:6px;
   align-items:stretch;
 }
 .home-container .card{
   background:#fff;
   border-radius:14px;
-  overflow:hidden;
+  overflow:hidden;           /* chặn mọi tràn */
   position:relative;
   box-shadow:0 1px 2px rgba(0,0,0,.04);
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
 }
-.home-container .hero{ aspect-ratio:16/5; background:#fff; }
+.home-container .hero,
+.home-container .side{ min-width:0; position:relative; }
+
+/* Banner lớn bên trái (giữ contain) */
+.home-container .hero{
+  aspect-ratio:16/5;
+  background:#fff;
+  z-index:1;                 /* thấp hơn cột phải */
+}
 .home-container .hero__stage{ position:absolute; inset:0; }
 .home-container .hero__img{
   position:absolute; inset:0; width:100%; height:100%;
@@ -70,9 +82,25 @@
 }
 .home-container .hero__dot.is-active{ background:#ee4d2d; opacity:1; }
 
-.home-container .side{ display:grid; grid-template-rows:1fr 1fr; gap:6px; }
-.home-container .side__item{ aspect-ratio:16/5; background:#fff; }
-.home-container .side__img{ width:100%; height:100%; object-fit:contain; background:#fff; }
+/* Hai banner nhỏ bên phải */
+.home-container .side{
+  display:grid;
+  grid-template-rows:1fr 1fr;
+  gap:6px;
+  z-index:2;                 /* ✅ luôn nổi trên cột trái */
+}
+.home-container .side__item{
+  width:100%;
+  aspect-ratio:16/5;
+  background:#fff;
+  overflow:hidden;           /* chặn tràn */
+}
+.home-container .side__img{
+  width:100%; height:100%;
+  object-fit:contain;        /* giữ cách hiển thị hiện tại */
+  background:#fff;
+  display:block;
+}
 
 /* QUICK LINKS */
 .home-container .quick-links-section{ padding:20px 0; background:#dcebf7; }
@@ -111,7 +139,7 @@
 }
 .home-container .product-card:hover{ transform:translateY(-3px); box-shadow:0 4px 12px rgba(0,0,0,.1); }
 
-/* ép ảnh KHÔNG CROP */
+/* ẢNH SẢN PHẨM: hiển thị 100% (không crop) */
 .home-container .product-card__image-container{
   position:relative; aspect-ratio:1/1; padding-top:0 !important; background:#fff;
 }
@@ -132,6 +160,7 @@
 .home-container .product-card__price{ font-size:16px; font-weight:600; color:#ee4d2d; margin-bottom:8px; }
 .home-container .product-card__review{ display:flex; align-items:center; font-size:12px; color:#757575; gap:2px; }
 .home-container .product-card__review .star-icon{ color:var(--star-color); font-size:10px; }
+/* Ẩn lượt mua */
 .home-container .product-card__review .sold-count{ display:none !important; }
 
 /* CATEGORY GRID */

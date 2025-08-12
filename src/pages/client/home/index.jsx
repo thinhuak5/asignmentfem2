@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {Link, useNavigate} from "react-router-dom";
 import Constanst from "../../../Constanst";
 
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
-  faBolt,
-  faBook,
-  faBookmark,
-  faChevronRight,
-  faDollarSign,
-  faFire,
-  faStar,
-  faTags,
-  faBookOpen,
-  faSchool,
-  faLightbulb,
+    faBolt,
+    faBook,
+    faBookmark,
+    faBookOpen,
+    faChevronRight,
+    faDollarSign,
+    faFire,
+    faLightbulb,
+    faSchool,
+    faStar,
+    faTags,
 } from "@fortawesome/free-solid-svg-icons";
 
 import "../../../assets/css/home.css";
