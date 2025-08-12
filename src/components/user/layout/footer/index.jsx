@@ -2,10 +2,12 @@ import React from 'react';
 
 // IMPORT CSS FOOTER
 import "../../../../assets/css/footer-client.css";
+import SupportFloatingButtons from '../../../Client/SupportFloatingButtons';
 
 const FooterClient = () => {
   return (
     <footer className="footer-client">
+       <SupportFloatingButtons></SupportFloatingButtons>
       <div className="footer-container">
         {/* ĐÃ XÓA ẢNH TRANG TRÍ */}
 
