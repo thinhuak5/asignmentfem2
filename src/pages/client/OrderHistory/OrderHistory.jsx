@@ -457,13 +457,12 @@ const OrderHistory = () => {
                   <span className="col-12 col-md-3">
                     <strong>Trạng thái:</strong> {getOrderStatus(order.status)}
                   </span>
-                    <span className="col-12 col-md-3 fw-bold text-md-end">
+                                    <span className="col-12 col-md-3 fw-bold text-md-end">
                     Tổng tiền:{" "}
-                        {(
-                            (order.total_amount ??
-                                calculateOrderTotal(order.items || [])) -
-                            (order.discount_amount || 0)
-                        ).toLocaleString()}{" "}
+                    {(order.total_amount !== undefined
+                      ? order.total_amount
+                      : calculateOrderTotal((order.items) - (order.discount_amount || 0)
+                    )).toLocaleString()}{" "}
                     VNĐ
                     {order.discount_amount > 0 && (
                       <div className="text-success small">
