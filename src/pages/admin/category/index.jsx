@@ -172,9 +172,9 @@ const CategoryList = () => {
                         </td>
                         <td>{category.status === 1 ? "Hiển thị" : "Ẩn"}</td>
                         <td>{getParentName(category.parent_id)}</td>
-                        <td>
+                        <td className="d-flex justify-content-center">
                             <Link to={`/admin/category/editcategory/${category.id}`}
-                                  className="btn btn-warning btn-sm me-2">Sửa</Link>
+                                  className="btn btn-success btn-sm me-2">Sửa</Link>
                             <button
                                 className="btn btn-danger btn-sm"
                                 onClick={() => openDeleteModal(category.id)}

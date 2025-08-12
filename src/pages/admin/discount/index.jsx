@@ -95,9 +95,9 @@ const DiscountAdmin = () => {
                 <td>{d.start_date?.slice(0, 10)}</td>
                 <td>{d.end_date?.slice(0, 10)}</td>
                 <td>{d.status ? "✔️" : "❌"}</td>
-                <td>
+                <td className="d-flex justify-content-center">
                   <button
-                    className="btn btn-sm btn-warning me-2"
+                    className="btn btn-sm btn-success me-2"
                     onClick={() => navigate(`/admin/discount/edit/${d.id}`)}
                   >
                     Sửa

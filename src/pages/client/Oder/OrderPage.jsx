@@ -271,6 +271,8 @@ const OrderPage = () => {
             ...orderData,
             vnp_Amount: orderSummary.total * 100,
             vnp_TxnRef: `ORDER_${Date.now()}`,
+            discount_id: appliedDiscount?.id || null,
+            discount_amount: orderSummary.discount || 0,
           }),
         });
         responseData = await res.json();
