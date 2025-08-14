@@ -105,27 +105,43 @@ const OrderHistory = () => {
         text: "Thanh toán đơn hàng thành công!",
       });
 
-      const token = localStorage.getItem("authToken");
-      const cartItemIds = JSON.parse(
-        sessionStorage.getItem("vnp_cart_item_ids") || "[]"
-      );
+            const token = localStorage.getItem("authToken");
+      
+      // Check for both old and new cart item ID storage keys
+      const oldCartItemIds = JSON.parse(sessionStorage.getItem("vnp_cart_item_ids") || "[]");
+      const pendingCartItemIds = JSON.parse(sessionStorage.getItem("pending_cart_item_ids") || "[]");
+      const cartItemIds = oldCartItemIds.length > 0 ? oldCartItemIds : pendingCartItemIds;
 
       if (cartItemIds.length > 0) {
-        fetch(`${Constanst.DOMAIN_API}/api/vnpay-success`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ cartItemIds }),
-        })
-          .then((res) => res.json())
-            .then(() => {
-            sessionStorage.removeItem("vnp_cart_item_ids");
-            localStorage.removeItem("cart");
+        // Clear cart items from database
+        Promise.all([
+          fetch(`${Constanst.DOMAIN_API}/api/vnpay-success`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ cartItemIds }),
+          }),
+          fetch(`${Constanst.DOMAIN_API}/api/cart/clear-selected-items`, {
+            method: "POST",
+            headers: { 
+              Authorization: `Bearer ${token}`, 
+              "Content-Type": "application/json" 
+            },
+            body: JSON.stringify({ selectedCartItemIds: cartItemIds }),
           })
-            .catch(() => {
-            });
+        ])
+          .then(() => {
+            // Clean up session storage and local storage
+            sessionStorage.removeItem("vnp_cart_item_ids");
+            sessionStorage.removeItem("pending_cart_item_ids");
+            localStorage.removeItem("cart");
+            fetchOrderHistory();
+          })
+          .catch((err) => {
+            console.error("Error processing VNPay success:", err);
+          });
       }
     }
 

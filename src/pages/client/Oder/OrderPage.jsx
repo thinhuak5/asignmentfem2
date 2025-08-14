@@ -298,19 +298,23 @@ const OrderPage = () => {
         redirectUrl = responseData.payUrl;
       }
 
-      // Clear selected items in cart
-      await fetch(`${Constanst.DOMAIN_API}/api/cart/clear-selected-items`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedCartItemIds: validItems.map((item) => item.id) }),
-      });
-      localStorage.removeItem("cart");
-
+      // Store cart item IDs for later clearing when payment is confirmed
+      const cartItemIds = validItems.map((item) => item.id);
+      
       if (redirectUrl) {
+        // For online payment methods (VNPay, MoMo), store cart info for later clearing
+        sessionStorage.setItem("pending_cart_item_ids", JSON.stringify(cartItemIds));
         window.location.href = redirectUrl;
       } else {
+        // For COD payment, clear cart immediately since order is confirmed
+        await fetch(`${Constanst.DOMAIN_API}/api/cart/clear-selected-items`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ selectedCartItemIds: cartItemIds }),
+        });
+        localStorage.removeItem("cart");
         alert("Đặt hàng thành công!");
-        navigate("/order-history?status=success");
+        navigate("/order-history?message=success");
       }
     } catch (err) {
       setError(err.message);
