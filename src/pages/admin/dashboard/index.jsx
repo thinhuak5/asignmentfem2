@@ -1,5 +1,6 @@
+// src/pages/admin/dashboard/Dashboard.jsx
 import {useEffect, useState} from "react";
-import Constanst from "../../../Constanst";
+import {useNavigate} from "react-router-dom";
 import {Bar, Pie} from "react-chartjs-2";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import {
@@ -14,13 +15,24 @@ import {
     PointElement,
     Tooltip,
 } from "chart.js";
+import adminApi from "../../../api/adminApi";
 
 ChartJS.register(
-    ArcElement, Tooltip, Legend, CategoryScale, LinearScale,
-    BarElement, LineElement, PointElement, Filler, ChartDataLabels
+    ArcElement,
+    Tooltip,
+    Legend,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    Filler,
+    ChartDataLabels
 );
 
 const Dashboard = () => {
+    const navigate = useNavigate();
+
     const [stats, setStats] = useState({
         totalProducts: 0,
         totalOrders: 0,
@@ -44,7 +56,7 @@ const Dashboard = () => {
         delivered: 0,
     });
 
-    // Biểu đồ động: labels, data, đơn hàng, đơn hủy, tổng doanh thu
+    // Biểu đồ động
     const [statType, setStatType] = useState("week"); // "day" | "week" | "month" | "year"
     const [labels, setLabels] = useState([]);
     const [revenues, setRevenues] = useState([]);
@@ -54,19 +66,20 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchStatistics();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         fetchRevenue(statType);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [statType]);
 
-    // Thống kê tổng quan
+    // Thống kê tổng quan (ADMIN)
     const fetchStatistics = async () => {
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/statistics`);
-            if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu thống kê");
-            const result = await res.json();
-            const data = result.data || {};
+            const res = await adminApi.get("/statistics");
+            const result = res.data || {};
+            const data = result.data || result || {};
 
             setStats({
                 totalProducts: data.products ?? 0,
@@ -90,24 +103,32 @@ const Dashboard = () => {
                 shipping: data.orderTypeStats?.shipping ?? 0,
                 delivered: data.orderTypeStats?.delivered ?? 0,
             });
-
         } catch (err) {
+            const http = err?.response?.status;
+            if (http === 401 || http === 403) {
+                navigate("/admin-login", {replace: true});
+                return;
+            }
             console.error("Lỗi fetch statistics:", err);
         }
     };
 
-    // Biểu đồ động: fetch theo loại
+    // Biểu đồ động: fetch theo loại (ADMIN)
     const fetchRevenue = async (type) => {
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/statistics/revenue?type=${type}`);
-            if (!res.ok) throw new Error("Lỗi khi lấy dữ liệu thống kê");
-            const result = await res.json();
+            const res = await adminApi.get("/statistics/revenue", {params: {type}});
+            const result = res.data || {};
             setLabels(result.labels || []);
             setRevenues(result.data || []);
             setTotalRevenue(result.total || 0);
             setOrders(result.orders || []);
             setRefunds(result.refunds || []);
         } catch (err) {
+            const http = err?.response?.status;
+            if (http === 401 || http === 403) {
+                navigate("/admin-login", {replace: true});
+                return;
+            }
             setLabels([]);
             setRevenues([]);
             setOrders([]);
@@ -119,8 +140,8 @@ const Dashboard = () => {
     // Tính maxY cho trục Y tiền tệ
     const maxY = Math.max(
         ...(revenues.length ? revenues : [0]),
-        ...(orders.length ? orders.map(x => x * 1e6 / (orders.length || 1)) : [0]),
-        ...(refunds.length ? refunds.map(x => x * 1e6 / (refunds.length || 1)) : [0])
+        ...(orders.length ? orders.map((x) => x * 1e6 / (orders.length || 1)) : [0]),
+        ...(refunds.length ? refunds.map((x) => x * 1e6 / (refunds.length || 1)) : [0])
     );
     const yMax = Math.ceil((maxY + 1e5) / 1e6) * 1e6;
 
@@ -138,7 +159,7 @@ const Dashboard = () => {
                 categoryPercentage: 0.5,
                 borderSkipped: false,
                 order: 1,
-                yAxisID: "y"
+                yAxisID: "y",
             },
             {
                 type: "line",
@@ -151,7 +172,7 @@ const Dashboard = () => {
                 pointRadius: 0,
                 borderWidth: 2,
                 order: 2,
-                yAxisID: "y1"
+                yAxisID: "y1",
             },
             {
                 type: "line",
@@ -164,9 +185,9 @@ const Dashboard = () => {
                 pointRadius: 0,
                 borderWidth: 2,
                 order: 3,
-                yAxisID: "y1"
-            }
-        ]
+                yAxisID: "y1",
+            },
+        ],
     };
 
     // Tùy chỉnh legend, tooltip, scales
@@ -181,7 +202,7 @@ const Dashboard = () => {
                     usePointStyle: true,
                     padding: 30,
                     color: "#25396f",
-                }
+                },
             },
             tooltip: {
                 mode: "index",
@@ -210,10 +231,10 @@ const Dashboard = () => {
                         if (context.dataset.label === "Đơn đã hủy")
                             return {borderColor: "#ff715b", backgroundColor: "#ff715b"};
                         return {borderColor: "#222", backgroundColor: "#222"};
-                    }
-                }
+                    },
+                },
             },
-            datalabels: {display: false}
+            datalabels: {display: false},
         },
         scales: {
             x: {
@@ -229,12 +250,12 @@ const Dashboard = () => {
                     display: true,
                     text: "VNĐ",
                     color: "#26C6DA",
-                    font: {size: 14, weight: "bold"}
+                    font: {size: 14, weight: "bold"},
                 },
                 ticks: {
                     font: {size: 13},
                     color: "#26C6DA",
-                    callback: value => value.toLocaleString()
+                    callback: (value) => value.toLocaleString(),
                 },
                 max: yMax,
             },
@@ -247,16 +268,16 @@ const Dashboard = () => {
                     display: true,
                     text: "Đơn hàng / Đơn đã hủy",
                     color: "#25396f",
-                    font: {size: 14, weight: "bold"}
+                    font: {size: 14, weight: "bold"},
                 },
                 ticks: {
                     font: {size: 13},
                     color: "#25396f",
-                    callback: value => value.toLocaleString()
+                    callback: (value) => value.toLocaleString(),
                 },
                 min: 0,
-            }
-        }
+            },
+        },
     };
 
     // ----------- Biểu đồ Doughnut -----------
@@ -265,31 +286,35 @@ const Dashboard = () => {
 
     const priceDoughnutData = {
         labels: ["Dưới 100.000", "100k - 500k", "500k - 1 triệu", "Trên 1 triệu"],
-        datasets: [{
-            data: [
-                orderPriceStats.below100k,
-                orderPriceStats.from100kTo500k,
-                orderPriceStats.from500kTo1mil,
-                orderPriceStats.over1mil
-            ],
-            backgroundColor: doughnutColors1,
-            borderWidth: 0,
-        }]
+        datasets: [
+            {
+                data: [
+                    orderPriceStats.below100k,
+                    orderPriceStats.from100kTo500k,
+                    orderPriceStats.from500kTo1mil,
+                    orderPriceStats.over1mil,
+                ],
+                backgroundColor: doughnutColors1,
+                borderWidth: 0,
+            },
+        ],
     };
 
     const typeDoughnutData = {
         labels: ["Đã huỷ", "Chờ xác nhận", "Đã xác nhận", "Đang giao hàng", "Đã giao hàng"],
-        datasets: [{
-            data: [
-                orderTypeStats.canceled,
-                orderTypeStats.pending,
-                orderTypeStats.confirmed,
-                orderTypeStats.shipping,
-                orderTypeStats.delivered
-            ],
-            backgroundColor: doughnutColors2,
-            borderWidth: 0,
-        }]
+        datasets: [
+            {
+                data: [
+                    orderTypeStats.canceled,
+                    orderTypeStats.pending,
+                    orderTypeStats.confirmed,
+                    orderTypeStats.shipping,
+                    orderTypeStats.delivered,
+                ],
+                backgroundColor: doughnutColors2,
+                borderWidth: 0,
+            },
+        ],
     };
 
     const doughnutOptions = {
@@ -301,8 +326,8 @@ const Dashboard = () => {
                 labels: {
                     usePointStyle: true,
                     padding: 20,
-                    font: {size: 16}
-                }
+                    font: {size: 16},
+                },
             },
             datalabels: {
                 color: "#fff",
@@ -311,9 +336,9 @@ const Dashboard = () => {
                     const dataArr = ctx.chart.data.datasets[0].data;
                     const total = dataArr.reduce((a, b) => a + b, 0);
                     if (!total) return "0%";
-                    const pct = (value / total * 100);
+                    const pct = (value / total) * 100;
                     return pct >= 1 ? `${pct.toFixed(1)}%` : "";
-                }
+                },
             },
             tooltip: {
                 callbacks: {
@@ -321,10 +346,10 @@ const Dashboard = () => {
                         const label = context.label || "";
                         const value = context.parsed;
                         return ` ${label}: ${value.toLocaleString()} đơn`;
-                    }
-                }
-            }
-        }
+                    },
+                },
+            },
+        },
     };
 
     // -----------------------------------
@@ -333,7 +358,7 @@ const Dashboard = () => {
         <div className="container">
             <h2 className="mt-4">Dashboard Thống kê</h2>
 
-            {/* Các thẻ tổng quan */}
+            {/* Cards tổng quan */}
             <div className="row row-cols-1 row-cols-md-5 g-4 mt-4">
                 <div className="col">
                     <div className="card text-white bg-primary h-100">
@@ -377,7 +402,7 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Biểu đồ Doughnut */}
+            {/* Doughnut */}
             <div className="row mt-4">
                 <div className="col-md-6">
                     <div className="card mb-3">
@@ -397,13 +422,16 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Chọn loại thống kê ngày/tuần/tháng/năm */}
+            {/* Chọn loại thống kê */}
             <div className="row mt-4">
                 <div className="col-12">
                     <div className="mb-3 text-end">
                         <label style={{fontWeight: 600, marginRight: 8}}>Kiểu thống kê: </label>
-                        <select value={statType} onChange={e => setStatType(e.target.value)}
-                                style={{width: 180, padding: 4, fontSize: 16}}>
+                        <select
+                            value={statType}
+                            onChange={(e) => setStatType(e.target.value)}
+                            style={{width: 180, padding: 4, fontSize: 16}}
+                        >
                             <option value="day">Trong ngày (theo giờ)</option>
                             <option value="week">7 ngày gần nhất</option>
                             <option value="month">Tháng này (theo ngày)</option>
@@ -423,6 +451,7 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
             <div className="text-end mt-2 fw-bold">
                 Tổng VNĐ: <span style={{color: "#39FF14"}}>{totalRevenue.toLocaleString()} VNĐ</span>
             </div>

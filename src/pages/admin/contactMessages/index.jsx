@@ -1,31 +1,62 @@
+// src/pages/admin/contact/ContactMessages.jsx
 import React, {useEffect, useState} from "react";
-import axios from "axios";
 import {useNavigate} from "react-router-dom";
+// ⚠️ chỉnh path cho đúng vị trí file của bạn
+import adminApi from "../../../api/adminApi";
 
 const ContactMessages = () => {
     const [messages, setMessages] = useState([]);
-    const [showReplied, setShowReplied] = useState(false); // ✅ Trạng thái bật/tắt hiển thị phản hồi đã trả lời
+    const [showReplied, setShowReplied] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [errMsg, setErrMsg] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
-        axios.get("http://localhost:3000/api/admin/contact")
-            .then(res => {
-                if (res.data.success) {
-                    setMessages(res.data.data);
+        const loadContacts = async () => {
+            setLoading(true);
+            setErrMsg("");
+            try {
+                // GET /api/admin/contact (đã qua authenticateToken + isAdmin)
+                const res = await adminApi.get("/contact");
+                // Theo router bạn gửi: GET /admin/contact trả { success, data }
+                const payload = res.data;
+                const list = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+                setMessages(list);
+            } catch (err) {
+                const http = err?.response?.status;
+                if (http === 401 || http === 403) {
+                    navigate("/admin-login", {replace: true});
+                    return;
                 }
-            })
-            .catch(err => {
-                console.error("Lỗi khi tải danh sách liên hệ:", err);
-            });
-    }, []);
+                setErrMsg(err?.response?.data?.message || err.message || "Không thể tải danh sách liên hệ.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadContacts();
+    }, [navigate]);
 
     const handleReply = (id) => {
         navigate(`/admin/contact/reply/${id}`);
     };
 
-    const filteredMessages = showReplied
-        ? messages
-        : messages.filter(msg => !msg.replied); // ✅ Ẩn phản hồi đã trả lời
+    const filteredMessages = showReplied ? messages : messages.filter((m) => !m.replied);
+
+    if (loading) {
+        return (
+            <div className="container mt-5 text-center">
+                <h4>Đang tải dữ liệu...</h4>
+            </div>
+        );
+    }
+
+    if (errMsg) {
+        return (
+            <div className="container mt-5">
+                <div className="alert alert-danger">{errMsg}</div>
+            </div>
+        );
+    }
 
     return (
         <div className="container mt-5">
@@ -33,7 +64,7 @@ const ContactMessages = () => {
 
             <button
                 className="btn btn-outline-secondary mb-3"
-                onClick={() => setShowReplied(!showReplied)}
+                onClick={() => setShowReplied((v) => !v)}
             >
                 {showReplied ? "Ẩn phản hồi đã trả lời" : "Hiện phản hồi đã trả lời"}
             </button>
@@ -59,7 +90,7 @@ const ContactMessages = () => {
                             <td>{index + 1}</td>
                             <td>{msg.name}</td>
                             <td>{msg.email}</td>
-                            <td>{msg.message}</td>
+                            <td style={{maxWidth: 380, whiteSpace: "pre-wrap"}}>{msg.message}</td>
                             <td>
                                 {msg.replied ? (
                                     <span className="text-success">Đã trả lời</span>
@@ -67,7 +98,9 @@ const ContactMessages = () => {
                                     <span className="text-danger">Chưa trả lời</span>
                                 )}
                             </td>
-                            <td>{msg.replyContent || "—"}</td>
+                            <td style={{maxWidth: 380, whiteSpace: "pre-wrap"}}>
+                                {msg.replyContent || "—"}
+                            </td>
                             <td>
                                 {msg.replied ? (
                                     <button className="btn btn-secondary btn-sm" disabled>
