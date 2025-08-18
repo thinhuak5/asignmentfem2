@@ -11,6 +11,7 @@ import "slick-carousel/slick/slick-theme.css";
 
 import "../../../assets/css/product-listing.css";
 
+/* ======================= slider top ======================= */
 const TopSlider = () => {
     const settings = {
         dots: true,
@@ -35,8 +36,11 @@ const TopSlider = () => {
                 <Slider {...settings}>
                     {sliderImages.map((img, index) => (
                         <div key={index}>
-                            <img src={img} alt={`Slide ${index + 1}`}
-                                 style={{width: "100%", height: "auto", borderRadius: '8px'}}/>
+                            <img
+                                src={img}
+                                alt={`Slide ${index + 1}`}
+                                style={{width: "100%", height: "auto", borderRadius: "8px"}}
+                            />
                         </div>
                     ))}
                 </Slider>
@@ -45,35 +49,52 @@ const TopSlider = () => {
     );
 };
 
+/* ======================= helpers ======================= */
+const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 
-// --- ProductCard Component (Được thiết kế lại) ---
+const getDisplayPrice = (product) => {
+    if (isNum(product?.price)) return product.price;
+    const vPrices = Array.isArray(product?.variations)
+        ? product.variations
+            .map((v) => Number(v?.price))
+            .filter((n) => Number.isFinite(n))
+        : [];
+    if (vPrices.length) return Math.min(...vPrices);
+    return 0;
+};
+
+const getFirstImage = (product) =>
+    product?.variations?.[0]?.productImages?.[0]?.image_url ||
+    product?.productImages?.[0]?.image_url ||
+    "https://via.placeholder.com/300x300.png?text=No+Image";
+
+/* ======================= thẻ sản phẩm ======================= */
 const ProductCard = ({product}) => {
-    const productPrice = product.price ?? (product.variations?.[0]?.price ?? 0);
-    const productImage =
-        product.variations?.[0]?.productImages?.[0]?.image_url ??
-        product.productImages?.[0]?.image_url ??
-        "https://via.placeholder.com/300x300.png?text=No+Image";
+    const productPrice = getDisplayPrice(product);
+    const productImage = getFirstImage(product);
 
-    // Dữ liệu giả cho đánh giá và số lượng đã bán để giống với hình ảnh
-    const rating = 5;
-    const soldCount = Math.floor(Math.random() * 200) + 50; // Random từ 50 đến 250
-    const discount = Math.floor(Math.random() * 40) + 10; // Giảm giá giả từ 10-50%
+    const rating = 5; // demo UI
+    const soldCount = Math.floor(Math.random() * 200) + 50; // demo UI
+    const discount = Math.floor(Math.random() * 40) + 10; // demo UI
 
     return (
         <Link to={`/product/${product.id}`} className="product-card">
             <div className="product-card__image-container">
-                <img src={productImage} className="product-card__image" alt={product.name}/>
+                <img src={productImage} className="product-card__image" alt={product?.name || "product"}/>
                 {discount > 0 && <div className="product-card__discount">-{discount}%</div>}
             </div>
             <div className="product-card__info">
-                <h3 className="product-card__name" title={product.name}>{product.name}</h3>
+                <h3 className="product-card__name" title={product?.name}>
+                    {product?.name}
+                </h3>
                 <div className="product-card__price-n-rating">
                     <div className="product-card__price">
-                        {productPrice.toLocaleString()}đ
+                        {(Number(productPrice) || 0).toLocaleString("vi-VN")}đ
                     </div>
                     <div className="product-card__review">
-                        {[...Array(rating)].map((_, i) => <FontAwesomeIcon key={i} icon={faStar}
-                                                                           className="star-icon"/>)}
+                        {[...Array(rating)].map((_, i) => (
+                            <FontAwesomeIcon key={i} icon={faStar} className="star-icon"/>
+                        ))}
                         <span className="sold-count">Đã bán {soldCount}</span>
                     </div>
                 </div>
@@ -82,7 +103,7 @@ const ProductCard = ({product}) => {
     );
 };
 
-// --- Helper function để fetch data (Không đổi) ---
+/* ======================= fetch tiện ích ======================= */
 const fetchData = async (url, errorMessage = "Lỗi khi tải dữ liệu:") => {
     try {
         const res = await fetch(url);
@@ -94,108 +115,129 @@ const fetchData = async (url, errorMessage = "Lỗi khi tải dữ liệu:") => 
     }
 };
 
-
-// --- Main Component: ProductClient ---
+/* ======================= trang chính ======================= */
 const ProductClient = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [brands, setBrands] = useState([ // Dữ liệu giả cho Thương hiệu
+    // demo thương hiệu
+    const [brands] = useState([
         {id: 1, name: "Thiên Long"},
         {id: 2, name: "Casio"},
         {id: 3, name: "Deli"},
     ]);
+
     const [selectedCategories, setSelectedCategories] = useState(new Set());
     const [minPrice, setMinPrice] = useState("");
     const [maxPrice, setMaxPrice] = useState("");
     const [appliedPriceRange, setAppliedPriceRange] = useState({min: null, max: null});
-    const [sortOrder, setSortOrder] = useState("newest"); // 'newest', 'popular', 'bestselling', 'price_asc', 'price_desc'
+    const [sortOrder, setSortOrder] = useState("newest");
 
     const location = useLocation();
 
     useEffect(() => {
-        fetchData(`${Constants.DOMAIN_API}/api/products/list`).then(setProducts);
-        fetchData(`${Constants.DOMAIN_API}/api/categories/list`).then(setCategories);
+        // products: public
+        fetchData(`${Constants.DOMAIN_API}/api/products/list`).then((data) =>
+            setProducts(Array.isArray(data) ? data : [])
+        );
+        // categories: dùng public (đã sửa)
+        fetchData(`${Constants.DOMAIN_API}/api/public/categories`).then((data) =>
+            setCategories(Array.isArray(data) ? data : [])
+        );
     }, []);
 
-    // Logic lấy category từ URL query được giữ lại nhưng điều chỉnh cho phù hợp
+    // chọn danh mục theo query
     useEffect(() => {
         const params = queryString.parse(location.search);
-        const categoryId = params.categoryId ? parseInt(params.categoryId) : null;
-        if (categoryId) {
-            setSelectedCategories(new Set([categoryId]));
-        } else {
-            setSelectedCategories(new Set());
-        }
+        const catId = params.categoryId ? parseInt(params.categoryId) : null;
+        if (catId) setSelectedCategories(new Set([catId]));
+        else setSelectedCategories(new Set());
     }, [location.search]);
 
+    // danh mục cha (khi BE trả full list thì parent_id === null; nếu BE chỉ trả cha, vẫn ok)
     const categoryParents = useMemo(
-        () => categories.filter((c) => c.parent_id === null),
+        () => (Array.isArray(categories) ? categories.filter((c) => c?.parent_id == null) : []),
         [categories]
     );
 
     const handleCategoryChange = (categoryId) => {
-        // Giao diện checkbox nhưng hoạt động như radio button để giữ logic cũ (chỉ lọc theo 1 danh mục)
-        const newSelected = new Set();
-        if (!selectedCategories.has(categoryId)) {
-            newSelected.add(categoryId);
-        }
-        setSelectedCategories(newSelected);
+        const next = new Set();
+        if (!selectedCategories.has(categoryId)) next.add(categoryId);
+        setSelectedCategories(next); // hành vi radio
     };
-    
+
     const handleApplyCustomPrice = () => {
-        setAppliedPriceRange({min: parseFloat(minPrice) || null, max: parseFloat(maxPrice) || null});
+        setAppliedPriceRange({
+            min: Number.isFinite(parseFloat(minPrice)) ? parseFloat(minPrice) : null,
+            max: Number.isFinite(parseFloat(maxPrice)) ? parseFloat(maxPrice) : null,
+        });
     };
+
+    // build map parent -> children để lọc (nếu BE có trả con)
+    const childrenByParent = useMemo(() => {
+        const map = new Map();
+        (Array.isArray(categories) ? categories : []).forEach((c) => {
+            if (c?.parent_id != null) {
+                const list = map.get(c.parent_id) || [];
+                list.push(c.id);
+                map.set(c.parent_id, list);
+            }
+        });
+        return map;
+    }, [categories]);
 
     const processedProducts = useMemo(() => {
-        let currentFilteredProducts = products.filter((product) => {
-            if (product.status !== 1) return false;
+        let list = (Array.isArray(products) ? products : []).filter((p) => Number(p?.status) === 1);
 
-            // Lọc theo danh mục
-            let matchesCategory = true;
-            if (selectedCategories.size > 0) {
-                const selectedCatId = selectedCategories.values().next().value;
-                const parentCat = categoryParents.find(p => p.id === selectedCatId);
-                if (parentCat) { // Nếu là danh mục cha
-                    const childCatIds = categories.filter(c => c.parent_id === selectedCatId).map(c => c.id);
-                    matchesCategory = childCatIds.includes(product.category_id);
-                } else { // Nếu là danh mục con (logic cũ)
-                    matchesCategory = product.category_id === selectedCatId;
-                }
-            }
+        // lọc danh mục (hỗ trợ khi BE chỉ trả danh mục cha hoặc trả đủ)
+        if (selectedCategories.size > 0) {
+            const selectedCatId = [...selectedCategories][0];
 
-            // Lọc theo giá
-            let matchesPriceRange = true;
-            const price = product.price ?? 0;
-            const {min, max} = appliedPriceRange;
-            if (min !== null && price < min) matchesPriceRange = false;
-            if (max !== null && price > max) matchesPriceRange = false;
+            const childIds = childrenByParent.get(selectedCatId) || [];
+            list = list.filter(
+                (p) =>
+                    String(p?.category_id) === String(selectedCatId) ||
+                    childIds.some((id) => String(id) === String(p?.category_id))
+            );
+        }
 
-            return matchesCategory && matchesPriceRange;
-        });
+        // lọc giá
+        const {min, max} = appliedPriceRange;
+        if (min != null || max != null) {
+            list = list.filter((p) => {
+                const price = getDisplayPrice(p);
+                if (min != null && price < min) return false;
+                if (max != null && price > max) return false;
+                return true;
+            });
+        }
 
-        // Sắp xếp
+        // sắp xếp
         switch (sortOrder) {
-            case 'price_asc':
-                currentFilteredProducts.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+            case "price_asc":
+                list.sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b));
                 break;
-            case 'price_desc':
-                currentFilteredProducts.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+            case "price_desc":
+                list.sort((a, b) => getDisplayPrice(b) - getDisplayPrice(a));
                 break;
-            case 'newest':
+            case "newest":
             default:
-                currentFilteredProducts.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at));
+                list.sort(
+                    (a, b) =>
+                        new Date(b?.createdAt || b?.created_at || 0) -
+                        new Date(a?.createdAt || a?.created_at || 0)
+                );
                 break;
         }
 
-        return currentFilteredProducts;
-    }, [products, categories, selectedCategories, appliedPriceRange, sortOrder, categoryParents]);
+        return list;
+    }, [products, selectedCategories, appliedPriceRange, sortOrder, childrenByParent]);
 
     const discoverCategories = [
         {name: "English book", icon: "https://cdn1.fahasa.com/media/wysiwyg/Thang-08-2025/Icon_88_120x120.png"},
         {name: "Sách tiếng Việt", icon: "https://cdn1.fahasa.com/media/wysiwyg/Thang-06-2024/icon_ManngaT06.png"},
         {name: "Văn phòng phẩm", icon: "https://cdn1.fahasa.com/media/wysiwyg/HUYEN-1/8936235570006-1.jpg"},
         {name: "Quà lưu niệm", icon: "https://cdn1.fahasa.com/media/wysiwyg/Duy-VHDT/ngoai-van-t1-24(1).jpg"},
-    ]
+    ];
 
     return (
         <div className="product-listing-page">
@@ -213,11 +255,11 @@ const ProductClient = () => {
                         <div className="filter-sidebar">
                             <h4 className="filter-title">▼ BỘ LỌC TÌM KIẾM</h4>
 
-                            {/* Lọc theo danh mục */}
+                            {/* Danh mục */}
                             <div className="filter-block">
                                 <h5 className="filter-block__title">Theo danh mục</h5>
                                 <ul className="filter-block__content filter-list">
-                                    {categoryParents.map(cat => (
+                                    {categoryParents.map((cat) => (
                                         <li key={cat.id}>
                                             <label>
                                                 <input
@@ -232,26 +274,48 @@ const ProductClient = () => {
                                 </ul>
                             </div>
 
+                            {/* Thương hiệu (demo) */}
+                            <div className="filter-block">
+                                <h5 className="filter-block__title">Thương hiệu</h5>
+                                <ul className="filter-block__content filter-list">
+                                    {brands.map((brand) => (
+                                        <li key={brand.id}>
+                                            <label>
+                                                <input type="checkbox"/> {brand.name}
+                                            </label>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
 
-                            {/* Lọc theo giá */}
+                            {/* Giá */}
                             <div className="filter-block">
                                 <h5 className="filter-block__title">Khoảng giá</h5>
                                 <div className="filter-block__content">
                                     <div className="price-range-inputs">
-                                        <input type="number" placeholder="Từ" value={minPrice}
-                                               onChange={(e) => setMinPrice(e.target.value)}/>
+                                        <input
+                                            type="number"
+                                            placeholder="Từ"
+                                            value={minPrice}
+                                            onChange={(e) => setMinPrice(e.target.value)}
+                                        />
                                         <span>-</span>
-                                        <input type="number" placeholder="Đến" value={maxPrice}
-                                               onChange={(e) => setMaxPrice(e.target.value)}/>
+                                        <input
+                                            type="number"
+                                            placeholder="Đến"
+                                            value={maxPrice}
+                                            onChange={(e) => setMaxPrice(e.target.value)}
+                                        />
                                     </div>
-                                    <button className="apply-price-btn" onClick={handleApplyCustomPrice}>Áp dụng
+                                    <button className="apply-price-btn" onClick={handleApplyCustomPrice}>
+                                        Áp dụng
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </aside>
 
-                    {/* Main Content */}
+                    {/* Main */}
                     <main className="col-lg-9">
                         <TopSlider/>
 
@@ -259,7 +323,7 @@ const ProductClient = () => {
                         <div className="discover-by-category">
                             <h4>Khám phá theo danh mục</h4>
                             <div className="discover-grid">
-                                {discoverCategories.map(cat => (
+                                {discoverCategories.map((cat) => (
                                     <Link to="#" key={cat.name} className="discover-item">
                                         <img src={cat.icon} alt={cat.name}/>
                                         <span>{cat.name}</span>
@@ -272,23 +336,43 @@ const ProductClient = () => {
                             <div className="toolbar">
                                 <span className="sort-options__label">Sắp xếp theo</span>
                                 <div className="sort-options">
-                                    <button className={`sort-options__btn ${sortOrder === "newest" ? "active" : ""}`}
-                                            onClick={() => setSortOrder("newest")}>Mới nhất
+                                    <button
+                                        className={`sort-options__btn ${sortOrder === "newest" ? "active" : ""}`}
+                                        onClick={() => setSortOrder("newest")}
+                                    >
+                                        Mới nhất
                                     </button>
-
-                                    <button className={`sort-options__btn ${sortOrder === "price_asc" ? "active" : ""}`}
-                                            onClick={() => setSortOrder("price_asc")}>Giá thấp
+                                    <button
+                                        className={`sort-options__btn ${sortOrder === "popular" ? "active" : ""}`}
+                                        onClick={() => setSortOrder("popular")}
+                                    >
+                                        Phổ biến
+                                    </button>
+                                    <button
+                                        className={`sort-options__btn ${sortOrder === "bestselling" ? "active" : ""}`}
+                                        onClick={() => setSortOrder("bestselling")}
+                                    >
+                                        Bán chạy
+                                    </button>
+                                    <button
+                                        className={`sort-options__btn ${sortOrder === "price_asc" ? "active" : ""}`}
+                                        onClick={() => setSortOrder("price_asc")}
+                                    >
+                                        Giá thấp
                                     </button>
                                     <button
                                         className={`sort-options__btn ${sortOrder === "price_desc" ? "active" : ""}`}
-                                        onClick={() => setSortOrder("price_desc")}>Giá cao
+                                        onClick={() => setSortOrder("price_desc")}
+                                    >
+                                        Giá cao
                                     </button>
                                 </div>
                             </div>
+
                             <div className="product-grid">
                                 {processedProducts.length > 0 ? (
-                                    processedProducts.map((product) => (
-                                        <ProductCard key={product.id} product={product}/>))
+                                    processedProducts.map((product) => <ProductCard key={product.id}
+                                                                                    product={product}/>)
                                 ) : (
                                     <div className="no-products-found">
                                         <p>Không tìm thấy sản phẩm nào phù hợp.</p>

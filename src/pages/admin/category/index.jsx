@@ -1,15 +1,20 @@
+// src/pages/admin/category/CategoryList.jsx
 import React, {useEffect, useState} from "react";
-import {Link} from "react-router-dom";
-import Constanst from "../../../Constanst";
+import {Link, useNavigate} from "react-router-dom";
+import adminApi from "../../../api/adminApi";
 import {FaCheckCircle, FaTimesCircle} from "react-icons/fa";
 
 const CategoryList = () => {
+    const navigate = useNavigate();
+
     const [categories, setCategories] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterParentId, setFilterParentId] = useState("");
+
     // Modal state
     const [showModal, setShowModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
+
     // Toast state
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
@@ -17,14 +22,21 @@ const CategoryList = () => {
 
     useEffect(() => {
         fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchData = async () => {
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
-            const data = await res.json();
-            if (Array.isArray(data)) setCategories(data);
+            // adminApi đã có baseURL: /api/admin
+            const res = await adminApi.get("/categories/list");
+            if (Array.isArray(res.data)) setCategories(res.data);
         } catch (error) {
+            // Nếu token hết hạn hoặc không có quyền → đẩy về /admin-login
+            const status = error?.response?.status;
+            if (status === 401 || status === 403) {
+                navigate("/admin-login", {replace: true});
+                return;
+            }
             showToastMessage("Lỗi khi tải dữ liệu!", "error");
         }
     };
@@ -47,13 +59,15 @@ const CategoryList = () => {
     const confirmDelete = async () => {
         setShowModal(false);
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${deleteId}`, {
-                method: "DELETE",
-            });
-            if (!res.ok) throw new Error("Không thể xóa danh mục");
-            setCategories(categories.filter(category => category.id !== deleteId));
+            await adminApi.delete(`/categories/${deleteId}`);
+            setCategories((prev) => prev.filter((category) => category.id !== deleteId));
             showToastMessage("Đã xóa danh mục thành công!", "success");
         } catch (error) {
+            const status = error?.response?.status;
+            if (status === 401 || status === 403) {
+                navigate("/admin-login", {replace: true});
+                return;
+            }
             showToastMessage("Có lỗi xảy ra khi xóa danh mục.", "error");
         }
     };
@@ -61,17 +75,21 @@ const CategoryList = () => {
     // Lấy tên danh mục cha theo parent_id từ mảng categories
     const getParentName = (parent_id) => {
         if (!parent_id) return "Không có";
-        const parent = categories.find(cat => cat.id === parent_id);
+        const parent = categories.find((cat) => cat.id === parent_id);
         return parent ? parent.name : "Không có";
     };
 
     // Các danh mục cha (parent_id === null) cho dropdown lọc
-    const parentCategories = categories.filter(cat => cat.parent_id === null);
+    const parentCategories = categories.filter((cat) => cat.parent_id === null);
 
     // Lọc theo tên và theo danh mục cha nếu có
-    const filteredCategories = categories.filter(category => {
-        const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesParent = filterParentId ? category.parent_id === parseInt(filterParentId) : true;
+    const filteredCategories = categories.filter((category) => {
+        const matchesSearch = category.name
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase());
+        const matchesParent = filterParentId
+            ? category.parent_id === parseInt(filterParentId, 10)
+            : true;
         return matchesSearch && matchesParent;
     });
 
@@ -132,8 +150,10 @@ const CategoryList = () => {
                     onChange={(e) => setFilterParentId(e.target.value)}
                 >
                     <option value="">-- Lọc theo danh mục cha --</option>
-                    {parentCategories.map(parent => (
-                        <option key={parent.id} value={parent.id}>{parent.name}</option>
+                    {parentCategories.map((parent) => (
+                        <option key={parent.id} value={parent.id}>
+                            {parent.name}
+                        </option>
                     ))}
                 </select>
                 <Link to="/admin/category/addcategory" className="btn btn-primary ms-3">
@@ -153,39 +173,47 @@ const CategoryList = () => {
                 </tr>
                 </thead>
                 <tbody>
-                {filteredCategories.length > 0 ? filteredCategories.map(category => (
-                    <tr key={category.id}>
-                        <td>{category.id}</td>
-                        <td>{category.name}</td>
-                        <td>
-                            {category.images ? (
-                                <img
-                                    src={category.images}
-                                    alt="category"
-                                    width="60"
-                                    height="60"
-                                    style={{objectFit: "cover"}}
-                                />
-                            ) : (
-                                <span>Không có ảnh</span>
-                            )}
-                        </td>
-                        <td>{category.status === 1 ? "Hiển thị" : "Ẩn"}</td>
-                        <td>{getParentName(category.parent_id)}</td>
-                        <td className="d-flex justify-content-center">
-                            <Link to={`/admin/category/editcategory/${category.id}`}
-                                  className="btn btn-success btn-sm me-2">Sửa</Link>
-                            <button
-                                className="btn btn-danger btn-sm"
-                                onClick={() => openDeleteModal(category.id)}
-                            >
-                                Xóa
-                            </button>
-                        </td>
-                    </tr>
-                )) : (
+                {filteredCategories.length > 0 ? (
+                    filteredCategories.map((category) => (
+                        <tr key={category.id}>
+                            <td>{category.id}</td>
+                            <td>{category.name}</td>
+                            <td>
+                                {category.images ? (
+                                    <img
+                                        src={category.images}
+                                        alt="category"
+                                        width="60"
+                                        height="60"
+                                        style={{objectFit: "cover"}}
+                                    />
+                                ) : (
+                                    <span>Không có ảnh</span>
+                                )}
+                            </td>
+                            <td>{category.status === 1 ? "Hiển thị" : "Ẩn"}</td>
+                            <td>{getParentName(category.parent_id)}</td>
+                            <td>
+                                <Link
+                                    to={`/admin/category/editcategory/${category.id}`}
+                                    className="btn btn-warning btn-sm me-2"
+                                >
+                                    Sửa
+                                </Link>
+                                <button
+                                    className="btn btn-danger btn-sm"
+                                    onClick={() => openDeleteModal(category.id)}
+                                >
+                                    Xóa
+                                </button>
+                            </td>
+                        </tr>
+                    ))
+                ) : (
                     <tr>
-                        <td colSpan="6" className="text-center">Không tìm thấy danh mục phù hợp</td>
+                        <td colSpan="6" className="text-center">
+                            Không tìm thấy danh mục phù hợp
+                        </td>
                     </tr>
                 )}
                 </tbody>

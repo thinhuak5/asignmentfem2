@@ -1,60 +1,28 @@
+// src/pages/admin/category/EditCategory.jsx
 import React, {useEffect, useState} from "react";
 import {Link, useNavigate, useParams} from "react-router-dom";
-import Constanst from "../../../Constanst";
+// ⚠️ điều chỉnh path cho phù hợp dự án của bạn
+import adminApi from "../../../api/adminApi";
 import {FaCheckCircle, FaRegFileAlt, FaTimesCircle} from "react-icons/fa";
 
 const EditCategory = () => {
     const {id} = useParams();
     const navigate = useNavigate();
+
     const [category, setCategory] = useState({
         name: "",
         status: "Hiển thị",
-        images: null,
+        images: null,        // URL ảnh hiện tại (string)
         parent_id: "",
     });
     const [newImage, setNewImage] = useState(null);
     const [categoryParents, setCategoryParents] = useState([]);
     const [errors, setErrors] = useState({});
 
-    // Toast state
+    // Toast
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [toastType, setToastType] = useState("success");
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // Lấy chi tiết danh mục cần sửa
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${id}`);
-                const data = await res.json();
-
-                if (!res.ok) throw new Error("Không tìm thấy danh mục");
-                if (!data) throw new Error("Không có dữ liệu danh mục");
-
-                setCategory({
-                    name: data.name,
-                    status: data.status === 1 ? "Hiển thị" : "Ẩn",
-                    images: data.images || null,
-                    parent_id: data.parent_id || "",
-                });
-
-                // Lấy danh sách danh mục cha
-                const resParents = await fetch(
-                    `${Constanst.DOMAIN_API}/api/categories/parents`
-                );
-                const parentData = await resParents.json();
-                if (Array.isArray(parentData)) {
-                    setCategoryParents(parentData);
-                }
-            } catch (err) {
-                showToastMessage("Lỗi khi tải dữ liệu danh mục!", "error");
-                navigate("/admin/category");
-            }
-        };
-
-        fetchData();
-        // eslint-disable-next-line
-    }, [id, navigate]);
 
     const showToastMessage = (msg, type = "info") => {
         setToastType(type);
@@ -63,9 +31,42 @@ const EditCategory = () => {
         setTimeout(() => setShowToast(false), 3000);
     };
 
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Lấy chi tiết danh mục (ADMIN)
+                const res = await adminApi.get(`/categories/${id}`);
+                const data = res.data?.data || res.data;
+                if (!data) throw new Error("Không có dữ liệu danh mục");
+
+                setCategory({
+                    name: data.name || "",
+                    status: data.status === 1 ? "Hiển thị" : "Ẩn",
+                    images: data.images || null,
+                    parent_id: data.parent_id || "",
+                });
+
+                // Lấy danh mục cha (ADMIN)
+                const resParents = await adminApi.get(`/categories/parents`);
+                const parentData = resParents.data?.data || resParents.data || [];
+                setCategoryParents(Array.isArray(parentData) ? parentData : []);
+            } catch (err) {
+                const http = err?.response?.status;
+                if (http === 401 || http === 403) {
+                    navigate("/admin-login", {replace: true});
+                    return;
+                }
+                showToastMessage("Lỗi khi tải dữ liệu danh mục!", "error");
+                navigate("/admin/category");
+            }
+        };
+
+        fetchData();
+    }, [id, navigate]);
+
     const handleChange = (e) => {
         const {name, value} = e.target;
-        setCategory({...category, [name]: value});
+        setCategory((prev) => ({...prev, [name]: value}));
         setErrors((prev) => ({...prev, [name]: ""}));
     };
 
@@ -106,7 +107,6 @@ const EditCategory = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!validateForm()) {
             showToastMessage("Vui lòng kiểm tra lại thông tin!", "info");
             return;
@@ -117,25 +117,27 @@ const EditCategory = () => {
         const formData = new FormData();
         formData.append("name", category.name);
         formData.append("status", status);
+        // backend có thể không dùng old_image, nhưng để phòng trường hợp controller cần
         formData.append("old_image", category.images || "");
         if (newImage) formData.append("images", newImage);
         if (category.parent_id) formData.append("parent_id", category.parent_id);
 
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/${id}`, {
-                method: "PUT",
-                body: formData,
+            // PUT /api/admin/categories/:id
+            await adminApi.put(`/categories/${id}`, formData, {
+                headers: {"Content-Type": "multipart/form-data"},
             });
-
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || "Cập nhật thất bại");
-            }
 
             showToastMessage("Cập nhật danh mục thành công!", "success");
             setTimeout(() => navigate("/admin/category"), 1200);
         } catch (err) {
-            showToastMessage("Lỗi khi cập nhật danh mục: " + err.message, "error");
+            const http = err?.response?.status;
+            if (http === 401 || http === 403) {
+                navigate("/admin-login", {replace: true});
+                return;
+            }
+            const msg = err?.response?.data?.error || err?.response?.data?.message || err.message || "Cập nhật thất bại";
+            showToastMessage("Lỗi khi cập nhật danh mục: " + msg, "error");
         }
     };
 
@@ -181,6 +183,7 @@ const EditCategory = () => {
             </div>
 
             <h2>Sửa danh mục</h2>
+
             <form
                 onSubmit={handleSubmit}
                 className="border p-4 bg-light rounded"

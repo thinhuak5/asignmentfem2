@@ -1,10 +1,12 @@
+// src/pages/admin/category/AddCategory.jsx
 import React, {useEffect, useState} from "react";
 import {Link, useNavigate} from "react-router-dom";
-import Constanst from "../../../Constanst";
 import {FaCheckCircle, FaRegFileAlt, FaTimesCircle} from "react-icons/fa";
+import adminApi from "../../../api/adminApi";
 
 const AddCategory = () => {
     const navigate = useNavigate();
+
     const [category, setCategory] = useState({
         name: "",
         status: "Hiển thị",
@@ -21,32 +23,29 @@ const AddCategory = () => {
     const [toastType, setToastType] = useState("success");
 
     useEffect(() => {
-        // Lấy tất cả danh mục (để kiểm tra trùng tên)
-        const fetchAllCategories = async () => {
+        // load dữ liệu ban đầu: tất cả danh mục (để check trùng) + danh mục cha
+        const loadInitial = async () => {
             try {
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/list`);
-                const data = await res.json();
-                if (Array.isArray(data)) setAllCategories(data);
-            } catch {
+                const [allRes, parentsRes] = await Promise.all([
+                    adminApi.get("/categories/list"),
+                    adminApi.get("/categories/parents"),
+                ]);
+                if (Array.isArray(allRes.data)) setAllCategories(allRes.data);
+                if (Array.isArray(parentsRes.data)) setCategoryParents(parentsRes.data);
+            } catch (error) {
+                const status = error?.response?.status;
+                if (status === 401 || status === 403) {
+                    navigate("/admin-login", {replace: true});
+                    return;
+                }
+                showToastMessage("Lỗi khi load dữ liệu danh mục!", "error");
             }
         };
-
-        // Lấy danh mục cha
-        const fetchCategoryParents = async () => {
-            try {
-                const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/parents`);
-                const data = await res.json();
-                if (Array.isArray(data)) setCategoryParents(data);
-            } catch {
-                showToastMessage("Lỗi khi load danh mục cha!", "error");
-            }
-        };
-        fetchAllCategories();
-        fetchCategoryParents();
-        // eslint-disable-next-line
+        loadInitial();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Toast function
+    // Toast helper
     const showToastMessage = (msg, type = "info") => {
         setToastType(type);
         setToastMessage(msg);
@@ -56,26 +55,23 @@ const AddCategory = () => {
 
     const handleChange = (e) => {
         const {name, value} = e.target;
-        setCategory({...category, [name]: value});
-        setErrors((prev) => ({...prev, [name]: ""})); // clear lỗi khi sửa field
+        setCategory((prev) => ({...prev, [name]: value}));
+        setErrors((prev) => ({...prev, [name]: ""}));
     };
 
     const handleImageChange = (e) => {
         if (e.target.files && e.target.files[0]) {
-            setCategory({...category, image: e.target.files[0]});
-            setErrors((prev) => ({...prev, image: ""})); // clear lỗi khi sửa field
+            setCategory((prev) => ({...prev, image: e.target.files[0]}));
+            setErrors((prev) => ({...prev, image: ""}));
         }
     };
 
-    // Hàm kiểm tra tên trùng, không phân biệt hoa thường, bỏ khoảng trắng thừa
+    // tên trùng (không phân biệt hoa/thường, normalize space)
     const isDuplicateName = (name) => {
         const normalize = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
-        return allCategories.some(
-            (cat) => normalize(cat.name) === normalize(name)
-        );
+        return allCategories.some((cat) => normalize(cat.name) === normalize(name));
     };
 
-    // Validate dưới từng trường
     const validateForm = () => {
         const errs = {};
         if (!category.name.trim()) {
@@ -83,6 +79,7 @@ const AddCategory = () => {
         } else if (isDuplicateName(category.name)) {
             errs.name = "Tên danh mục đã tồn tại!";
         }
+
         if (!category.image) {
             errs.image = "Phải chọn ảnh cho danh mục!";
         } else {
@@ -93,12 +90,14 @@ const AddCategory = () => {
                 errs.image = "Ảnh phải nhỏ hơn 2MB!";
             }
         }
+
         if (
             category.parent_id &&
             !categoryParents.some((item) => String(item.id) === String(category.parent_id))
         ) {
             errs.parent_id = "Danh mục cha không hợp lệ!";
         }
+
         setErrors(errs);
         return Object.keys(errs).length === 0;
     };
@@ -124,18 +123,23 @@ const AddCategory = () => {
         if (category.parent_id) formData.append("parent_id", category.parent_id);
 
         try {
-            const res = await fetch(`${Constanst.DOMAIN_API}/api/categories/add`, {
-                method: "POST",
-                body: formData,
+            await adminApi.post("/categories/add", formData, {
+                headers: {"Content-Type": "multipart/form-data"},
             });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error || "Thêm thất bại");
-            }
             showToastMessage("Thêm danh mục thành công!", "success");
             setTimeout(() => navigate("/admin/category"), 1200);
         } catch (err) {
-            showToastMessage("Lỗi khi thêm danh mục: " + err.message, "error");
+            const status = err?.response?.status;
+            if (status === 401 || status === 403) {
+                navigate("/admin-login", {replace: true});
+                return;
+            }
+            const msg =
+                err?.response?.data?.error ||
+                err?.response?.data?.message ||
+                err?.message ||
+                "Thêm thất bại";
+            showToastMessage("Lỗi khi thêm danh mục: " + msg, "error");
         }
     };
 
@@ -199,6 +203,7 @@ const AddCategory = () => {
                     />
                     {errors.name && <div className="invalid-feedback">{errors.name}</div>}
                 </div>
+
                 <div className="mb-3">
                     <label className="form-label">
                         Ảnh <span className="text-danger">*</span>
@@ -212,6 +217,7 @@ const AddCategory = () => {
                     />
                     {errors.image && <div className="invalid-feedback">{errors.image}</div>}
                 </div>
+
                 <div className="mb-3">
                     <label className="form-label">Trạng thái</label>
                     <select
@@ -224,6 +230,7 @@ const AddCategory = () => {
                         <option value="Ẩn">Ẩn</option>
                     </select>
                 </div>
+
                 <div className="mb-3">
                     <label className="form-label">Danh mục cha</label>
                     <select
@@ -243,6 +250,7 @@ const AddCategory = () => {
                         <div className="invalid-feedback">{errors.parent_id}</div>
                     )}
                 </div>
+
                 <button type="submit" className="btn btn-success me-2">
                     Thêm danh mục
                 </button>
