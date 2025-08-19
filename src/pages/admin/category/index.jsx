@@ -27,11 +27,15 @@ const CategoryList = () => {
 
     const fetchData = async () => {
         try {
-            // adminApi đã có baseURL: /api/admin
             const res = await adminApi.get("/categories/list");
-            if (Array.isArray(res.data)) setCategories(res.data);
+            const raw = res?.data;
+            const list = Array.isArray(raw)
+                ? raw
+                : Array.isArray(raw?.data)
+                    ? raw.data
+                    : [];
+            setCategories(list);
         } catch (error) {
-            // Nếu token hết hạn hoặc không có quyền → đẩy về /admin-login
             const status = error?.response?.status;
             if (status === 401 || status === 403) {
                 navigate("/admin-login", {replace: true});
@@ -74,21 +78,25 @@ const CategoryList = () => {
 
     // Lấy tên danh mục cha theo parent_id từ mảng categories
     const getParentName = (parent_id) => {
-        if (!parent_id) return "Không có";
-        const parent = categories.find((cat) => cat.id === parent_id);
+        if (!parent_id && parent_id !== 0) return "Không có";
+        const parent = (Array.isArray(categories) ? categories : []).find(
+            (cat) => String(cat.id) === String(parent_id)
+        );
         return parent ? parent.name : "Không có";
     };
 
-    // Các danh mục cha (parent_id === null) cho dropdown lọc
-    const parentCategories = categories.filter((cat) => cat.parent_id === null);
+    // Các danh mục cha cho dropdown lọc (an toàn)
+    const parentCategories = (Array.isArray(categories) ? categories : []).filter(
+        (cat) => cat?.parent_id === null || cat?.parent_id === undefined
+    );
 
     // Lọc theo tên và theo danh mục cha nếu có
-    const filteredCategories = categories.filter((category) => {
-        const matchesSearch = category.name
-            ?.toLowerCase()
+    const filteredCategories = (Array.isArray(categories) ? categories : []).filter((category) => {
+        const matchesSearch = String(category.name || "")
+            .toLowerCase()
             .includes(searchTerm.toLowerCase());
         const matchesParent = filterParentId
-            ? category.parent_id === parseInt(filterParentId, 10)
+            ? String(category.parent_id) === String(filterParentId)
             : true;
         return matchesSearch && matchesParent;
     });

@@ -1,11 +1,10 @@
-// src/pages/admin/product/EditProduct.jsx
-import React, {useEffect, useState} from "react";
-import {useFieldArray, useForm} from "react-hook-form";
+// src/pages/admin/products/EditProduct.jsx
+import React, {useEffect, useMemo, useState} from "react";
+import {Controller, useFieldArray, useForm} from "react-hook-form";
 import {Link, useNavigate, useParams} from "react-router-dom";
 import {FaCheckCircle, FaTimesCircle} from "react-icons/fa";
 import {CKEditor} from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
-// ⚠️ điều chỉnh path cho đúng dự án của bạn
 import adminApi from "../../../api/adminApi";
 
 const errorStyle = {
@@ -14,6 +13,180 @@ const errorStyle = {
     fontSize: "0.9rem",
     marginTop: "4px",
 };
+
+const SPEC_PRESET = [
+    {label: "Mã hàng", value: "195"},
+    {label: "Nhà cung cấp", value: "Fahasa"},
+    {label: "Tác giả", value: "Nhiều tác giả"},
+    {label: "NXB", value: "Fahasa"},
+    {label: "Năm XB", value: "2023"},
+    {label: "Trọng lượng (gr)", value: "300"},
+    {label: "Kích thước", value: "20 x 14 x 2 cm"},
+    {label: "Số trang", value: "250"},
+    {label: "Hình thức", value: "Bìa mềm"},
+];
+
+/** Component con cho 1 biến thể (useFieldArray lồng nhau cho specs) */
+function VariationItem({
+                           index,
+                           control,
+                           register,
+                           errors,
+                           getValues,
+                           removeVariation,
+                           variationImageUrls,
+                           onRemoveImage,
+                       }) {
+    const {fields: specFields, append: appendSpec, remove: removeSpec} =
+        useFieldArray({control, name: `variations.${index}.specs`});
+
+    return (
+        <div className="col-12 mb-3">
+            <div className="card">
+                <div className="card-body">
+                    <h5 className="card-title d-flex justify-content-between align-items-center">
+                        <span>Biến thể #{index + 1}</span>
+                        <button type="button" className="btn btn-sm btn-danger" onClick={() => removeVariation(index)}>
+                            Xóa
+                        </button>
+                    </h5>
+
+                    <div className="row g-2">
+                        <div className="col">
+                            <input
+                                className="form-control"
+                                placeholder="Tên biến thể"
+                                {...register(`variations.${index}.name`, {required: "Bắt buộc"})}
+                            />
+                            {errors.variations?.[index]?.name && (
+                                <small style={errorStyle}>{errors.variations[index].name.message}</small>
+                            )}
+                        </div>
+
+                        <div className="col">
+                            <input
+                                type="number"
+                                className="form-control"
+                                placeholder="Giá"
+                                {...register(`variations.${index}.price`, {
+                                    required: "Bắt buộc",
+                                    valueAsNumber: true,
+                                    min: {value: 0, message: "Không được nhỏ hơn 0"},
+                                })}
+                            />
+                            {errors.variations?.[index]?.price && (
+                                <small style={errorStyle}>{errors.variations[index].price.message}</small>
+                            )}
+                        </div>
+
+                        <div className="col">
+                            <input
+                                type="number"
+                                className="form-control"
+                                placeholder="Số lượng"
+                                {...register(`variations.${index}.quantity`, {
+                                    required: "Bắt buộc",
+                                    valueAsNumber: true,
+                                    min: {value: 0, message: "Không được nhỏ hơn 0"},
+                                })}
+                            />
+                            {errors.variations?.[index]?.quantity && (
+                                <small style={errorStyle}>{errors.variations[index].quantity.message}</small>
+                            )}
+                        </div>
+
+                        <div className="col-12">
+                            <label className="form-label">Ảnh biến thể #{index + 1}</label>
+                            <input type="file" className="form-control" {...register(`variations.${index}.images`)}
+                                   multiple/>
+                            {errors.variations?.[index]?.images && (
+                                <small style={errorStyle}>{errors.variations[index].images.message}</small>
+                            )}
+
+                            {variationImageUrls[index]?.length > 0 && (
+                                <div className="mt-2 d-flex flex-wrap">
+                                    {variationImageUrls[index].map((url, i) => (
+                                        <div key={i} style={{position: "relative", marginRight: 10, marginBottom: 10}}>
+                                            <img src={url} alt="" width="60" height="60"
+                                                 style={{objectFit: "cover", borderRadius: 6}}/>
+                                            <button
+                                                type="button"
+                                                onClick={() => onRemoveImage(index, i)}
+                                                style={{
+                                                    position: "absolute",
+                                                    top: 2,
+                                                    right: 2,
+                                                    border: "none",
+                                                    borderRadius: "50%",
+                                                    background: "rgba(255,255,255,0.85)",
+                                                    color: "#e74c3c",
+                                                    cursor: "pointer",
+                                                    width: 22,
+                                                    height: 22,
+                                                    lineHeight: "18px",
+                                                    fontWeight: "bold",
+                                                    padding: 0,
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="mt-3">
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                            <h6 className="mb-0">Thông tin chi tiết (biến thể)</h6>
+                            <button
+                                type="button"
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => appendSpec({label: "Thuộc tính mới", value: ""})}
+                            >
+                                + Thêm dòng
+                            </button>
+                        </div>
+
+                        <div className="row">
+                            {specFields.map((sf, j) => (
+                                <div className="col-md-6 mb-2" key={sf.id}>
+                                    <div className="row g-2 align-items-center">
+                                        <div className="col-5">
+                                            <input
+                                                className="form-control"
+                                                {...register(`variations.${index}.specs.${j}.label`)}
+                                                readOnly
+                                            />
+                                        </div>
+                                        <div className="col-5">
+                                            <input
+                                                className="form-control"
+                                                {...register(`variations.${index}.specs.${j}.value`, {required: "Bắt buộc"})}
+                                            />
+                                            {errors.variations?.[index]?.specs?.[j]?.value && (
+                                                <small
+                                                    style={errorStyle}>{errors.variations[index].specs[j].value.message}</small>
+                                            )}
+                                        </div>
+                                        <div className="col-2 text-end">
+                                            <button type="button" className="btn btn-sm btn-outline-danger"
+                                                    onClick={() => removeSpec(j)}>
+                                                Xóa
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function EditProduct() {
     const navigate = useNavigate();
@@ -29,7 +202,6 @@ export default function EditProduct() {
         setError,
         clearErrors,
         reset,
-        watch,
     } = useForm({
         defaultValues: {
             name: "",
@@ -42,212 +214,239 @@ export default function EditProduct() {
     });
 
     const [categories, setCategories] = useState([]);
-    const [parentCategories, setParentCategories] = useState([]);
-    const [childCategories, setChildCategories] = useState([]);
     const [selectedParentId, setSelectedParentId] = useState("");
+
     const [description, setDescription] = useState("");
     const [variationImageUrls, setVariationImageUrls] = useState({});
-    const [removedImages, setRemovedImages] = useState([]);
+    const [removedVarImgsMap, setRemovedVarImgsMap] = useState({});
     const [variationError, setVariationError] = useState("");
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [toastType, setToastType] = useState("success");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [productNames, setProductNames] = useState([]); // tên sp khác để check trùng
+    const [productNames, setProductNames] = useState([]);
 
-    const {
-        fields: variationFields,
-        append,
-        remove,
-    } = useFieldArray({
+    const {fields: variationFields, append, remove} = useFieldArray({
         control,
         name: "variations",
     });
 
-    // register description for validation
+    // validate description
     useEffect(() => {
         register("description", {required: "Bắt buộc"});
     }, [register]);
 
-    const toast = (msg, type = "success", timeout = 3000) => {
-        setToastType(type);
-        setToastMessage(msg);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), timeout);
-    };
-
-    // fetch categories (ADMIN)
+    // Fetch & normalize categories
     useEffect(() => {
-        const loadCats = async () => {
-            try {
-                const res = await adminApi.get("/categories/list");
-                const list = res.data?.data || res.data || [];
+        adminApi
+            .get("/categories/list")
+            .then((res) => {
+                const raw = res?.data;
+                const listRaw = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
+                const list = listRaw.map((c) => {
+                    const pidRaw = c?.parent_id;
+                    const pid =
+                        pidRaw === null ||
+                        pidRaw === undefined ||
+                        pidRaw === "" ||
+                        pidRaw === "null" ||
+                        pidRaw === 0 ||
+                        pidRaw === "0"
+                            ? null
+                            : String(pidRaw);
+                    return {...c, id: String(c.id), parent_id: pid};
+                });
                 setCategories(list);
-                setParentCategories(list.filter((c) => c.parent_id === null));
-            } catch (err) {
-                const http = err?.response?.status;
-                if (http === 401 || http === 403) {
-                    navigate("/admin-login", {replace: true});
-                    return;
-                }
-                toast("Lỗi tải danh mục!", "error");
-            }
-        };
-        loadCats();
-    }, [navigate]);
+            })
+            .catch(() => setCategories([]));
+    }, []);
 
-    // fetch product names (ADMIN) — loại trừ sp hiện tại
+    // Derived lists
+    const parentCategories = useMemo(
+        () => (Array.isArray(categories) ? categories : []).filter((c) => c.parent_id === null),
+        [categories]
+    );
+
+    const childOptions = useMemo(
+        () => (Array.isArray(categories) ? categories : []).filter((c) => c.parent_id === selectedParentId),
+        [categories, selectedParentId]
+    );
+
+    // Product names
     useEffect(() => {
-        const loadNames = async () => {
-            try {
-                const res = await adminApi.get("/products/list");
-                const arr = (res.data?.data || res.data || []).filter(
-                    (p) => String(p.id) !== String(id)
+        adminApi
+            .get("/products/list")
+            .then((res) => {
+                const raw = res?.data;
+                const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
+                setProductNames(
+                    list
+                        .filter((p) => String(p?.id) !== String(id))
+                        .map((p) => String(p?.name || "").toLowerCase())
+                        .filter(Boolean)
                 );
-                setProductNames(arr.map((p) => (p.name || "").toLowerCase()));
-            } catch {
-                // tên không phải critical → bỏ qua
-            }
-        };
-        loadNames();
+            })
+            .catch(() => setProductNames([]));
     }, [id]);
 
-    // fetch product (ADMIN)
+    // Fetch product then set parent BEFORE reset
     useEffect(() => {
-        if (!categories.length) return;
-        const loadProduct = async () => {
-            try {
-                const res = await adminApi.get(`/products/${id}`);
-                const data = res.data?.data || res.data;
-                if (!data) throw new Error("Không tìm thấy sản phẩm");
+        if (!Array.isArray(categories) || categories.length === 0) return;
 
-                const vars = (data.variations || []).map((v) => ({
+        adminApi
+            .get(`/products/${id}`)
+            .then((res) => {
+                const raw = res?.data;
+                const data = raw?.data ?? raw;
+
+                const vars = (Array.isArray(data?.variations) ? data.variations : []).map((v) => ({
                     id: v.id,
                     name: v.name,
-                    value: v.value,
                     price: v.price ?? "",
                     quantity: v.quantity ?? "",
-                    min_stock: v.min_stock ?? "",
-                    images: [], // input file mới
+                    images: [],
+                    specs: (Array.isArray(v.specs) ? v.specs : [])
+                        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+                        .map((s) => ({label: s.label, value: s.value})),
                 }));
 
-                const prodCat = categories.find((c) => c.id === data.category_id);
-                const parentId = prodCat?.parent_id?.toString() || "";
+                // xác định parent/child hiện tại
+                const allCats = Array.isArray(categories) ? categories : [];
 
-                reset({
-                    name: data.name,
-                    description: data.description || "",
-                    status: data.status === 1 ? "Còn hàng" : "Hết hàng",
-                    categoryparent_id: parentId,
-                    category_id: data.category_id?.toString() || "",
-                    variations: vars,
-                });
-                setDescription(data.description || "");
+                // Ưu tiên từ category_id (backend thường trả)
+                let parentId = "";
+                let childId = "";
+
+                if (data?.category_id != null) {
+                    const currentCat = allCats.find((c) => c.id === String(data.category_id));
+                    if (currentCat) {
+                        if (currentCat.parent_id === null) {
+                            // category_id là CHA
+                            parentId = currentCat.id;
+                            childId = "";
+                        } else {
+                            // category_id là CON
+                            parentId = currentCat.parent_id;
+                            childId = currentCat.id;
+                        }
+                    }
+                }
+
+                // Nếu không suy ra được từ category_id, thử từ categoryparent_id
+                if (!parentId && (data?.categoryparent_id != null)) {
+                    const pc = allCats.find((c) => c.id === String(data.categoryparent_id));
+                    if (pc) parentId = pc.id;
+                }
+
+                // Đặt parent trước để childOptions render đúng
                 setSelectedParentId(parentId);
 
-                // map ảnh cũ theo index biến thể
+                // Reset form với childId (nếu có)
+                reset({
+                    name: data?.name || "",
+                    description: data?.description || "",
+                    status: data?.status === 1 ? "Còn hàng" : "Hết hàng",
+                    categoryparent_id: parentId,
+                    category_id: childId,
+                    variations: vars,
+                });
+
+                setDescription(data?.description || "");
+
+                // map ảnh đang có
                 const map = {};
-                (data.variations || []).forEach((v, i) => {
-                    map[i] = (v.productImages || []).map((img) => img.image_url);
+                (Array.isArray(data?.variations) ? data.variations : []).forEach((v, i) => {
+                    map[i] = (Array.isArray(v?.productImages) ? v.productImages : []).map((img) => img.image_url);
                 });
                 setVariationImageUrls(map);
-            } catch (err) {
-                const http = err?.response?.status;
-                if (http === 401 || http === 403) {
-                    navigate("/admin-login", {replace: true});
-                    return;
-                }
-                toast("Lỗi tải sản phẩm!", "error");
-                navigate("/admin/product");
-            }
-        };
-        loadProduct();
-    }, [categories, id, navigate, reset]);
+                setRemovedVarImgsMap({});
+            })
+            .catch(() => {
+            });
+    }, [categories, id, reset]);
 
-    // update childCategories when parent changes
+    // Khi đổi danh mục cha, nếu child hiện tại không thuộc nhóm con mới thì clear
     useEffect(() => {
         setValue("categoryparent_id", selectedParentId);
-        setChildCategories(
-            categories.filter((c) => c.parent_id?.toString() === selectedParentId)
-        );
-        setValue("category_id", "");
-    }, [selectedParentId, categories, setValue]);
+        const currentChild = String(getValues("category_id") || "");
+        if (currentChild && !childOptions.some((c) => c.id === currentChild)) {
+            setValue("category_id", "");
+        }
+    }, [selectedParentId, childOptions, setValue, getValues]);
 
-    // remove existing image
-    const handleRemoveImage = (i, j) => {
+    const handleRemoveImage = (varIdx, imgIdx) => {
         setVariationImageUrls((prev) => {
             const next = {...prev};
-            const rem = next[i][j];
-            next[i] = next[i].filter((_, k) => k !== j);
-            setRemovedImages((r) => [...r, rem]);
+            const removedUrl = next[varIdx][imgIdx];
+            next[varIdx] = next[varIdx].filter((_, k) => k !== imgIdx);
+            setRemovedVarImgsMap((m) => {
+                const mm = {...m};
+                mm[varIdx] = [...(mm[varIdx] || []), removedUrl];
+                return mm;
+            });
             return next;
         });
     };
 
     const onSubmit = async (data) => {
-        // 1) trùng tên
         if (productNames.includes(data.name.trim().toLowerCase())) {
             setError("name", {type: "manual", message: "Tên sản phẩm đã tồn tại!"});
-            toast("Tên sản phẩm đã tồn tại!", "error");
+            setToastType("error");
+            setToastMessage("Tên sản phẩm đã tồn tại!");
+            setShowToast(true);
             setIsSubmitting(false);
+            setTimeout(() => setShowToast(false), 3000);
             return;
         }
 
-        // 2) ít nhất 1 biến thể
-        if (!data.variations.length) {
+        if (!Array.isArray(data.variations) || !data.variations.length) {
             setVariationError("Phải có ít nhất 1 biến thể!");
             setError("variations", {type: "manual"});
             return;
         }
-
-        // 3) mỗi biến thể phải có ảnh (cũ hoặc mới), và min_stock < quantity
         for (let idx = 0; idx < data.variations.length; idx++) {
             const hasExisting = (variationImageUrls[idx] || []).length > 0;
             const files = getValues(`variations.${idx}.images`);
             const hasNew = files && files.length;
             if (!hasExisting && !hasNew) {
                 setVariationError(`Biến thể #${idx + 1} phải có ít nhất 1 ảnh`);
-                setError(`variations.${idx}.images`, {
-                    type: "manual",
-                    message: "Bắt buộc",
-                });
-                return;
-            }
-            const qty = getValues(`variations.${idx}.quantity`);
-            const minStock = getValues(`variations.${idx}.min_stock`);
-            if (
-                qty !== "" &&
-                minStock !== "" &&
-                !isNaN(Number(qty)) &&
-                !isNaN(Number(minStock)) &&
-                Number(minStock) >= Number(qty)
-            ) {
-                setError(`variations.${idx}.min_stock`, {
-                    type: "manual",
-                    message: "Tồn kho tối thiểu phải nhỏ hơn số lượng!",
-                });
-                toast(`Biến thể #${idx + 1}: Tồn kho tối thiểu phải nhỏ hơn số lượng!`, "error");
-                setIsSubmitting(false);
+                setError(`variations.${idx}.images`, {type: "manual", message: "Bắt buộc"});
                 return;
             }
         }
-
-        // clear
         setVariationError("");
         clearErrors("variations");
         setIsSubmitting(true);
 
-        // build formData
         const formData = new FormData();
         formData.append("name", data.name);
         formData.append("description", data.description);
         formData.append("status", data.status === "Còn hàng" ? 1 : 0);
-        formData.append("categoryparent_id", data.categoryparent_id);
-        formData.append("category_id", data.category_id);
-        formData.append("removedImages", JSON.stringify(removedImages));
+
+        // Bắt buộc parent, child không bắt buộc
+        const parentId = data.categoryparent_id || "";
+        const childId = data.category_id || "";
+
+        formData.append("categoryparent_id", parentId);
+        // Nếu có con → category_id = con ; nếu không → category_id = parent
+        formData.append("category_id", childId ? childId : parentId);
+
+        formData.append("removedVariationImages", JSON.stringify(removedVarImgsMap));
+
         formData.append(
             "variations",
-            JSON.stringify(data.variations.map(({images, ...rest}) => rest))
+            JSON.stringify(
+                data.variations.map(({images, specs, ...rest}) => ({
+                    id: rest.id,
+                    name: rest.name || "",
+                    price: rest.price === "" ? null : Number(rest.price),
+                    quantity: rest.quantity === "" ? 0 : Number(rest.quantity),
+                    type: rest.type || "regular",
+                    specs: Array.isArray(specs)
+                        ? specs.map((s, idx) => ({label: s.label, value: s.value, sort_order: idx}))
+                        : [],
+                }))
+            )
         );
 
         data.variations.forEach((v, idx) => {
@@ -260,55 +459,45 @@ export default function EditProduct() {
         });
 
         try {
-            // PUT /api/admin/products/:id
             await adminApi.put(`/products/${id}`, formData, {
                 headers: {"Content-Type": "multipart/form-data"},
             });
-
-            toast("Cập nhật thành công!", "success");
+            setToastType("success");
+            setToastMessage("Cập nhật thành công!");
+            setShowToast(true);
             setTimeout(() => {
                 setShowToast(false);
                 navigate("/admin/product");
             }, 2000);
         } catch (err) {
-            const http = err?.response?.status;
-            if (http === 401 || http === 403) {
-                navigate("/admin-login", {replace: true});
-                return;
-            }
-            toast(err?.response?.data?.error || err?.response?.data?.message || err.message, "error");
+            const msg =
+                err?.response?.data?.error ||
+                err?.response?.data?.message ||
+                err?.message ||
+                "Cập nhật thất bại";
+            setToastType("error");
+            setToastMessage(`Lỗi: ${msg}`);
+            setShowToast(true);
             setIsSubmitting(false);
+            setTimeout(() => setShowToast(false), 3000);
         }
     };
 
     return (
         <div className="container position-relative">
             {/* Toast */}
-            <div
-                aria-live="polite"
-                aria-atomic="true"
-                className="position-fixed top-0 end-0 p-3"
-                style={{zIndex: 1060}}
-            >
+            <div aria-live="polite" aria-atomic="true" className="position-fixed top-0 end-0 p-3"
+                 style={{zIndex: 1060}}>
                 {showToast && (
                     <div
-                        className={`toast show align-items-center text-white bg-${
-                            toastType === "success" ? "success" : "danger"
-                        } border-0`}
-                        role="alert"
-                    >
+                        className={`toast show align-items-center text-white bg-${toastType === "success" ? "success" : "danger"} border-0`}
+                        role="alert">
                         <div className="d-flex align-items-center">
-                            {toastType === "success" ? (
-                                <FaCheckCircle className="me-2 fs-4"/>
-                            ) : (
-                                <FaTimesCircle className="me-2 fs-4"/>
-                            )}
+                            {toastType === "success" ? <FaCheckCircle className="me-2 fs-4"/> :
+                                <FaTimesCircle className="me-2 fs-4"/>}
                             <div className="toast-body">{toastMessage}</div>
-                            <button
-                                type="button"
-                                className="btn-close btn-close-white ms-auto me-2"
-                                onClick={() => setShowToast(false)}
-                            />
+                            <button type="button" className="btn-close btn-close-white ms-auto me-2"
+                                    onClick={() => setShowToast(false)}/>
                         </div>
                     </div>
                 )}
@@ -317,37 +506,27 @@ export default function EditProduct() {
             <h2 className="mb-4">Sửa sản phẩm</h2>
 
             {variationError && (
-                <div
-                    className="alert alert-info"
-                    style={{
-                        background: "#eaf6ff",
-                        border: "1px solid #b6e0fe",
-                        color: "#222",
-                        borderRadius: 8,
-                        marginBottom: 16,
-                        padding: "16px 24px",
-                    }}
-                >
+                <div className="alert alert-info" style={{
+                    background: "#eaf6ff",
+                    border: "1px solid #b6e0fe",
+                    color: "#222",
+                    borderRadius: 8,
+                    marginBottom: 16,
+                    padding: "16px 24px"
+                }}>
                     {variationError}
                 </div>
             )}
 
-            <form
-                onSubmit={handleSubmit(onSubmit)}
-                encType="multipart/form-data"
-                className="border p-4 rounded bg-light"
-            >
-                {/* Product info */}
+            <form onSubmit={handleSubmit(onSubmit)} encType="multipart/form-data"
+                  className="border p-4 rounded bg-light">
                 <div className="card mb-3">
                     <div className="card-body">
                         <h5 className="card-title">Thông tin sản phẩm</h5>
 
                         <div className="mb-3">
                             <label className="form-label">Tên sản phẩm</label>
-                            <input
-                                className="form-control"
-                                {...register("name", {required: "Bắt buộc"})}
-                            />
+                            <input className="form-control" {...register("name", {required: "Bắt buộc"})} />
                             {errors.name && <small style={errorStyle}>{errors.name.message}</small>}
                         </div>
 
@@ -364,28 +543,21 @@ export default function EditProduct() {
                                     }}
                                 />
                             </div>
-                            {errors.description && (
-                                <small style={errorStyle}>{errors.description.message}</small>
-                            )}
+                            {errors.description && <small style={errorStyle}>{errors.description.message}</small>}
                         </div>
 
                         <div className="row g-3">
-                            <div className="col-md-4">
+                            <div className="col-12 col-md-4">
                                 <label className="form-label">Trạng thái</label>
-                                <select
-                                    className="form-select"
-                                    {...register("status", {required: "Bắt buộc"})}
-                                >
+                                <select className="form-select" {...register("status", {required: "Bắt buộc"})}>
                                     <option value="Còn hàng">Còn hàng</option>
                                     <option value="Hết hàng">Hết hàng</option>
                                 </select>
-                                {errors.status && (
-                                    <small style={errorStyle}>{errors.status.message}</small>
-                                )}
+                                {errors.status && <small style={errorStyle}>{errors.status.message}</small>}
                             </div>
 
-                            <div className="col-md-4">
-                                <label className="form-label">Danh mục cha</label>
+                            <div className="col-12 col-md-4">
+                                <label className="form-label">Danh mục cha (bắt buộc)</label>
                                 <select
                                     className="form-select"
                                     value={selectedParentId}
@@ -398,200 +570,61 @@ export default function EditProduct() {
                                         </option>
                                     ))}
                                 </select>
+
+                                {/* hidden để validate required cho parent */}
+                                <input
+                                    type="hidden"
+                                    {...register("categoryparent_id", {
+                                        required: "Vui lòng chọn danh mục cha",
+                                        validate: (v) => (v ? true : "Vui lòng chọn danh mục cha"),
+                                    })}
+                                    value={selectedParentId}
+                                    readOnly
+                                />
+                                {errors.categoryparent_id &&
+                                    <small style={errorStyle}>{errors.categoryparent_id.message}</small>}
                             </div>
 
-                            <div className="col-md-4">
-                                <label className="form-label">Danh mục con</label>
-                                <select
-                                    className="form-select"
-                                    {...register("category_id", {required: "Bắt buộc"})}
-                                    disabled={!selectedParentId}
-                                >
-                                    <option value="">-- Chọn --</option>
-                                    {childCategories.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.category_id && (
-                                    <small style={errorStyle}>{errors.category_id.message}</small>
-                                )}
+                            <div className="col-12 col-md-4">
+                                <label className="form-label">Danh mục con (không bắt buộc)</label>
+                                <Controller
+                                    name="category_id"
+                                    control={control}
+                                    defaultValue=""
+                                    render={({field}) => (
+                                        <select
+                                            className="form-select"
+                                            disabled={!selectedParentId}
+                                            {...field}
+                                        >
+                                            <option value="">-- Không chọn --</option>
+                                            {childOptions.map((c) => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Variations */}
                 <div className="row">
-                    {variationFields.map((field, idx) => {
-                        const qty = getValues(`variations.${idx}.quantity`) || 0;
-                        return (
-                            <div key={field.id} className="col-12 mb-3">
-                                <div className="card">
-                                    <div className="card-body">
-                                        <h5 className="card-title">Biến thể #{idx + 1}</h5>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-danger float-end"
-                                            onClick={() => remove(idx)}
-                                        >
-                                            Xóa
-                                        </button>
-
-                                        <div className="row g-2">
-                                            <div className="col">
-                                                <input
-                                                    className="form-control"
-                                                    placeholder="Tên biến thể"
-                                                    {...register(`variations.${idx}.name`, {
-                                                        required: "Bắt buộc",
-                                                    })}
-                                                />
-                                                {errors.variations?.[idx]?.name && (
-                                                    <small style={errorStyle}>
-                                                        {errors.variations[idx].name.message}
-                                                    </small>
-                                                )}
-                                            </div>
-
-                                            <div className="col">
-                                                <input
-                                                    className="form-control"
-                                                    placeholder="Mô tả"
-                                                    {...register(`variations.${idx}.value`, {
-                                                        required: "Bắt buộc",
-                                                    })}
-                                                />
-                                                {errors.variations?.[idx]?.value && (
-                                                    <small style={errorStyle}>
-                                                        {errors.variations[idx].value.message}
-                                                    </small>
-                                                )}
-                                            </div>
-
-                                            <div className="col">
-                                                <input
-                                                    type="number"
-                                                    className="form-control"
-                                                    placeholder="Giá"
-                                                    {...register(`variations.${idx}.price`, {
-                                                        required: "Bắt buộc",
-                                                        valueAsNumber: true,
-                                                        min: {value: 0, message: "Không được nhỏ hơn 0"},
-                                                    })}
-                                                />
-                                                {errors.variations?.[idx]?.price && (
-                                                    <small style={errorStyle}>
-                                                        {errors.variations[idx].price.message}
-                                                    </small>
-                                                )}
-                                            </div>
-
-                                            <div className="col">
-                                                <input
-                                                    type="number"
-                                                    className="form-control"
-                                                    placeholder="Số lượng"
-                                                    {...register(`variations.${idx}.quantity`, {
-                                                        required: "Bắt buộc",
-                                                        valueAsNumber: true,
-                                                        min: {value: 0, message: "Không được nhỏ hơn 0"},
-                                                    })}
-                                                />
-                                                {errors.variations?.[idx]?.quantity && (
-                                                    <small style={errorStyle}>
-                                                        {errors.variations[idx].quantity.message}
-                                                    </small>
-                                                )}
-                                            </div>
-
-                                            <div className="col">
-                                                <input
-                                                    type="number"
-                                                    className="form-control"
-                                                    placeholder="Tồn kho tối thiểu"
-                                                    {...register(`variations.${idx}.min_stock`, {
-                                                        required: "Bắt buộc",
-                                                        valueAsNumber: true,
-                                                        min: {value: 0, message: "Không được nhỏ hơn 0"},
-                                                        validate: (v) =>
-                                                            v < qty || "Tồn kho tối thiểu phải nhỏ hơn số lượng",
-                                                    })}
-                                                />
-                                                {errors.variations?.[idx]?.min_stock && (
-                                                    <small style={errorStyle}>
-                                                        {errors.variations[idx].min_stock.message}
-                                                    </small>
-                                                )}
-                                            </div>
-
-                                            {/* File images */}
-                                            <div className="col-12">
-                                                <label className="form-label">Ảnh biến thể #{idx + 1}</label>
-                                                <input
-                                                    type="file"
-                                                    className="form-control"
-                                                    {...register(`variations.${idx}.images`)}
-                                                    multiple
-                                                />
-                                                {errors.variations?.[idx]?.images && (
-                                                    <small style={errorStyle}>
-                                                        {errors.variations[idx].images.message}
-                                                    </small>
-                                                )}
-
-                                                {/* Ảnh cũ */}
-                                                {variationImageUrls[idx]?.length > 0 && (
-                                                    <div className="mt-2 d-flex flex-wrap">
-                                                        {variationImageUrls[idx].map((url, i) => (
-                                                            <div
-                                                                key={i}
-                                                                style={{
-                                                                    position: "relative",
-                                                                    marginRight: 10,
-                                                                    marginBottom: 10,
-                                                                }}
-                                                            >
-                                                                <img
-                                                                    src={url}
-                                                                    alt=""
-                                                                    width="60"
-                                                                    height="60"
-                                                                    style={{objectFit: "cover", borderRadius: 6}}
-                                                                />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleRemoveImage(idx, i)}
-                                                                    style={{
-                                                                        position: "absolute",
-                                                                        top: 2,
-                                                                        right: 2,
-                                                                        border: "none",
-                                                                        borderRadius: "50%",
-                                                                        background: "rgba(255,255,255,0.8)",
-                                                                        color: "#e74c3c",
-                                                                        cursor: "pointer",
-                                                                        width: 22,
-                                                                        height: 22,
-                                                                        lineHeight: "18px",
-                                                                        fontWeight: "bold",
-                                                                        padding: 0,
-                                                                    }}
-                                                                >
-                                                                    ×
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
+                    {variationFields.map((field, idx) => (
+                        <VariationItem
+                            key={field.id}
+                            index={idx}
+                            control={control}
+                            register={register}
+                            errors={errors}
+                            getValues={getValues}
+                            removeVariation={remove}
+                            variationImageUrls={variationImageUrls}
+                            onRemoveImage={handleRemoveImage}
+                        />
+                    ))}
                 </div>
 
                 <button
@@ -600,11 +633,10 @@ export default function EditProduct() {
                     onClick={() =>
                         append({
                             name: "",
-                            value: "",
                             price: "",
                             quantity: "",
-                            min_stock: "",
                             images: [],
+                            specs: SPEC_PRESET.map((s) => ({...s})),
                         })
                     }
                 >
@@ -614,11 +646,7 @@ export default function EditProduct() {
                 <button type="submit" className="btn btn-success me-2" disabled={isSubmitting}>
                     {isSubmitting ? (
                         <>
-              <span
-                  className="spinner-border spinner-border-sm me-2"
-                  role="status"
-                  aria-hidden="true"
-              />
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"/>
                             Đang xử lý...
                         </>
                     ) : (

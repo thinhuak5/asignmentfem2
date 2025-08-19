@@ -55,9 +55,7 @@ const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 const getDisplayPrice = (product) => {
     if (isNum(product?.price)) return product.price;
     const vPrices = Array.isArray(product?.variations)
-        ? product.variations
-            .map((v) => Number(v?.price))
-            .filter((n) => Number.isFinite(n))
+        ? product.variations.map((v) => Number(v?.price)).filter((n) => Number.isFinite(n))
         : [];
     if (vPrices.length) return Math.min(...vPrices);
     return 0;
@@ -67,6 +65,22 @@ const getFirstImage = (product) =>
     product?.variations?.[0]?.productImages?.[0]?.image_url ||
     product?.productImages?.[0]?.image_url ||
     "https://via.placeholder.com/300x300.png?text=No+Image";
+
+/* ===== normalize id ===== */
+const toId = (v) => {
+    if (v === null || v === undefined || v === "" || v === "null" || v === 0 || v === "0") return null;
+    return String(v);
+};
+
+/* ===== lấy id danh mục từ product ===== */
+const getCatIdOfProduct = (p) => toId(p?.category_id ?? p?.categoryId ?? p?.category);
+const getParentIdDirectFromProduct = (p) =>
+    toId(
+        p?.categoryparent_id ??
+        p?.category_parent_id ??
+        p?.categoryParentId ??
+        p?.parent_category_id
+    );
 
 /* ======================= thẻ sản phẩm ======================= */
 const ProductCard = ({product}) => {
@@ -118,7 +132,8 @@ const fetchData = async (url, errorMessage = "Lỗi khi tải dữ liệu:") => 
 /* ======================= trang chính ======================= */
 const ProductClient = () => {
     const [products, setProducts] = useState([]);
-    const [categories, setCategories] = useState([]);
+    const [categoriesRaw, setCategoriesRaw] = useState([]);
+
     // demo thương hiệu
     const [brands] = useState([
         {id: 1, name: "Thiên Long"},
@@ -126,7 +141,13 @@ const ProductClient = () => {
         {id: 3, name: "Deli"},
     ]);
 
-    const [selectedCategories, setSelectedCategories] = useState(new Set());
+    // Filter state
+    // selectedFilter: { type: 'all' | 'parent' | 'child', id: string|null }
+    const [selectedFilter, setSelectedFilter] = useState({type: "all", id: null});
+    // expandedParents: Set<string>
+    const [expandedParents, setExpandedParents] = useState(new Set());
+
+    // Price + sort
     const [minPrice, setMinPrice] = useState("");
     const [maxPrice, setMaxPrice] = useState("");
     const [appliedPriceRange, setAppliedPriceRange] = useState({min: null, max: null});
@@ -135,34 +156,116 @@ const ProductClient = () => {
     const location = useLocation();
 
     useEffect(() => {
-        // products: public
         fetchData(`${Constants.DOMAIN_API}/api/products/list`).then((data) =>
-            setProducts(Array.isArray(data) ? data : [])
+            setProducts(Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [])
         );
-        // categories: dùng public (đã sửa)
+
+        // ✅ Sau khi sửa API, endpoint này trả CẢ cha + con
         fetchData(`${Constants.DOMAIN_API}/api/public/categories`).then((data) =>
-            setCategories(Array.isArray(data) ? data : [])
+            setCategoriesRaw(Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [])
         );
     }, []);
 
-    // chọn danh mục theo query
-    useEffect(() => {
-        const params = queryString.parse(location.search);
-        const catId = params.categoryId ? parseInt(params.categoryId) : null;
-        if (catId) setSelectedCategories(new Set([catId]));
-        else setSelectedCategories(new Set());
-    }, [location.search]);
+    /* ===== Chuẩn hoá CATEGORIES (id=string, parent_id=null nếu là cha) ===== */
+    const categories = useMemo(() => {
+        return (Array.isArray(categoriesRaw) ? categoriesRaw : []).map((c) => {
+            const pid =
+                c?.parent_id === null ||
+                c?.parent_id === undefined ||
+                c?.parent_id === "null" ||
+                c?.parent_id === 0 ||
+                c?.parent_id === "0" ||
+                c?.parent_id === ""
+                    ? null
+                    : String(c.parent_id);
+            return {...c, id: String(c.id), parent_id: pid};
+        });
+    }, [categoriesRaw]);
 
-    // danh mục cha (khi BE trả full list thì parent_id === null; nếu BE chỉ trả cha, vẫn ok)
+    // Danh mục cha
     const categoryParents = useMemo(
-        () => (Array.isArray(categories) ? categories.filter((c) => c?.parent_id == null) : []),
+        () => categories.filter((c) => c.parent_id === null),
         [categories]
     );
 
-    const handleCategoryChange = (categoryId) => {
-        const next = new Set();
-        if (!selectedCategories.has(categoryId)) next.add(categoryId);
-        setSelectedCategories(next); // hành vi radio
+    // Map parent -> children (từ categories, vì giờ đã có con)
+    const childrenByParent = useMemo(() => {
+        const map = new Map();
+        categories.forEach((c) => {
+            if (c.parent_id !== null) {
+                const key = String(c.parent_id);
+                const list = map.get(key) || [];
+                list.push({id: c.id, name: c.name});
+                map.set(key, list);
+            }
+        });
+        return map;
+    }, [categories]);
+
+    // Bản đồ parentOf: catId -> parentId (cha tự trỏ về chính nó)
+    const parentOf = useMemo(() => {
+        const map = new Map();
+        categories.forEach((c) => {
+            if (c.parent_id === null) map.set(c.id, c.id);
+            else map.set(c.id, c.parent_id);
+        });
+        return map;
+    }, [categories]);
+
+    // ==== Chuẩn hoá tuỳ theo product (để dễ lấy id) ====
+    const normalizedProducts = useMemo(() => {
+        return (Array.isArray(products) ? products : []).map((p) => ({
+            ...p,
+            _catId: getCatIdOfProduct(p), // có thể là CHA hoặc CON
+            _parentId: getParentIdDirectFromProduct(p), // nếu BE có lưu riêng
+        }));
+    }, [products]);
+
+    // ===== Đọc query ?categoryId=... để set sẵn filter + expand
+    useEffect(() => {
+        const params = queryString.parse(location.search);
+        const raw = params.categoryId ? String(params.categoryId) : null;
+        if (!raw) return;
+
+        // Nếu là CHA (có trong categoryParents)
+        if (categoryParents.some((p) => p.id === raw)) {
+            setSelectedFilter({type: "parent", id: raw});
+            return;
+        }
+        // Nếu là CON (có trong parentOf)
+        const pid = parentOf.get(raw);
+        if (pid) {
+            setSelectedFilter({type: "child", id: raw});
+            setExpandedParents((prev) => {
+                const next = new Set(prev);
+                next.add(String(pid));
+                return next;
+            });
+        }
+    }, [location.search, categoryParents, parentOf]);
+
+    /* ===== Handlers ===== */
+    const handleAllChange = () => setSelectedFilter({type: "all", id: null});
+
+    // 1 lần: lọc theo CHA
+    const handleParentCheck = (parentId) => {
+        setSelectedFilter({type: "parent", id: String(parentId)});
+    };
+
+    // 2 lần: bung/tắt danh mục con
+    const handleParentDoubleClick = (parentId) => {
+        const key = String(parentId);
+        setExpandedParents((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    };
+
+    // 1 lần: lọc theo CON
+    const handleChildCheck = (childId) => {
+        setSelectedFilter({type: "child", id: String(childId)});
     };
 
     const handleApplyCustomPrice = () => {
@@ -172,35 +275,32 @@ const ProductClient = () => {
         });
     };
 
-    // build map parent -> children để lọc (nếu BE có trả con)
-    const childrenByParent = useMemo(() => {
-        const map = new Map();
-        (Array.isArray(categories) ? categories : []).forEach((c) => {
-            if (c?.parent_id != null) {
-                const list = map.get(c.parent_id) || [];
-                list.push(c.id);
-                map.set(c.parent_id, list);
-            }
-        });
-        return map;
-    }, [categories]);
+    /* ===== Lấy CHA hiệu lực của product ===== */
+    const getEffectiveParentId = (p) => {
+        // Ưu tiên field parent lưu trên product
+        const direct = p._parentId;
+        if (direct) return String(direct);
 
+        // Nếu không có, suy luận từ category_id qua parentOf
+        const cid = p._catId;
+        if (!cid) return null;
+        return parentOf.get(String(cid)) || null;
+    };
+
+    /* ===== Xử lý sản phẩm theo filter ===== */
     const processedProducts = useMemo(() => {
-        let list = (Array.isArray(products) ? products : []).filter((p) => Number(p?.status) === 1);
+        let list = normalizedProducts.filter((p) => Number(p?.status) === 1);
 
-        // lọc danh mục (hỗ trợ khi BE chỉ trả danh mục cha hoặc trả đủ)
-        if (selectedCategories.size > 0) {
-            const selectedCatId = [...selectedCategories][0];
-
-            const childIds = childrenByParent.get(selectedCatId) || [];
-            list = list.filter(
-                (p) =>
-                    String(p?.category_id) === String(selectedCatId) ||
-                    childIds.some((id) => String(id) === String(p?.category_id))
-            );
+        // Lọc theo danh mục
+        if (selectedFilter.type === "parent" && selectedFilter.id) {
+            const pid = String(selectedFilter.id);
+            list = list.filter((p) => String(getEffectiveParentId(p)) === pid);
+        } else if (selectedFilter.type === "child" && selectedFilter.id) {
+            const cid = String(selectedFilter.id);
+            list = list.filter((p) => String(p._catId) === cid);
         }
 
-        // lọc giá
+        // Lọc giá
         const {min, max} = appliedPriceRange;
         if (min != null || max != null) {
             list = list.filter((p) => {
@@ -211,13 +311,16 @@ const ProductClient = () => {
             });
         }
 
-        // sắp xếp
+        // Sắp xếp
         switch (sortOrder) {
             case "price_asc":
                 list.sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b));
                 break;
             case "price_desc":
                 list.sort((a, b) => getDisplayPrice(b) - getDisplayPrice(a));
+                break;
+            case "popular":
+            case "bestselling":
                 break;
             case "newest":
             default:
@@ -230,7 +333,7 @@ const ProductClient = () => {
         }
 
         return list;
-    }, [products, selectedCategories, appliedPriceRange, sortOrder, childrenByParent]);
+    }, [normalizedProducts, selectedFilter, appliedPriceRange, sortOrder, parentOf]);
 
     const discoverCategories = [
         {name: "English book", icon: "https://cdn1.fahasa.com/media/wysiwyg/Thang-08-2025/Icon_88_120x120.png"},
@@ -259,18 +362,85 @@ const ProductClient = () => {
                             <div className="filter-block">
                                 <h5 className="filter-block__title">Theo danh mục</h5>
                                 <ul className="filter-block__content filter-list">
-                                    {categoryParents.map((cat) => (
-                                        <li key={cat.id}>
-                                            <label>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedCategories.has(cat.id)}
-                                                    onChange={() => handleCategoryChange(cat.id)}
-                                                />
-                                                {cat.name}
-                                            </label>
-                                        </li>
-                                    ))}
+                                    {/* Tất cả sản phẩm */}
+                                    <li>
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedFilter.type === "all"}
+                                                onChange={handleAllChange}
+                                            />{" "}
+                                            Tất cả sản phẩm
+                                        </label>
+                                    </li>
+
+                                    {/* Cha + dropdown con */}
+                                    {categoryParents.map((cat) => {
+                                        const key = String(cat.id);
+                                        const childs = childrenByParent.get(key) || [];
+                                        const isExpanded = expandedParents.has(key);
+                                        const isChecked = selectedFilter.type === "parent" && String(selectedFilter.id) === key;
+
+                                        return (
+                                            <li key={key}>
+                                                {/* Hàng cha */}
+                                                <div
+                                                    className="category-parent-row"
+                                                    onDoubleClick={() => handleParentDoubleClick(key)}
+                                                    title={childs.length ? "Nhấp 2 lần để xem danh mục con" : "Danh mục này chưa có danh mục con"}
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        gap: 8,
+                                                        cursor: "default"
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={() => handleParentCheck(key)}
+                                                        style={{cursor: "pointer"}}
+                                                    />
+                                                    <span style={{userSelect: "none"}}>{cat.name}</span>
+                                                    {childs.length > 0 && (
+                                                        <span
+                                                            style={{
+                                                                marginLeft: "auto",
+                                                                fontSize: 12,
+                                                                opacity: 0.7,
+                                                                userSelect: "none"
+                                                            }}
+                                                        >
+                              {isExpanded ? "▼" : "▶"}
+                            </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Dropdown con */}
+                                                {isExpanded && childs.length > 0 && (
+                                                    <ul className="filter-list" style={{paddingLeft: 20, marginTop: 6}}>
+                                                        {childs.map((child) => {
+                                                            const ckey = String(child.id);
+                                                            const childChecked =
+                                                                selectedFilter.type === "child" && String(selectedFilter.id) === ckey;
+                                                            return (
+                                                                <li key={ckey}>
+                                                                    <label>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={childChecked}
+                                                                            onChange={() => handleChildCheck(ckey)}
+                                                                        />{" "}
+                                                                        {child.name}
+                                                                    </label>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ul>
+                                                )}
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             </div>
 
