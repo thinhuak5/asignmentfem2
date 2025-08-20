@@ -22,8 +22,18 @@ adminApi.interceptors.response.use(
     (err) => {
         const status = err?.response?.status;
         if (status === 401 || status === 403) {
-            // Có thể clear token nếu muốn:
+            // Hết phiên hoặc không đủ quyền ở khu vực admin:
+            // - Xoá cờ phiên admin
+            // - Điều hướng về trang đăng nhập admin
+            try {
+                sessionStorage.removeItem("adminAuthed");
+            } catch {
+            }
+            // (Tuỳ chọn) Nếu muốn đăng xuất luôn cả client, bỏ comment dòng dưới:
             // localStorage.removeItem("authToken");
+            if (typeof window !== "undefined") {
+                window.location.href = "/admin-login";
+            }
         }
         return Promise.reject(err);
     }

@@ -1,13 +1,18 @@
 // src/pages/admin/user/UserList.jsx
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {Link, useNavigate} from "react-router-dom";
-// ⚠️ Cập nhật path cho đúng cấu trúc dự án
+import {jwtDecode} from "jwt-decode";
 import adminApi from "../../../api/adminApi";
 
 const roleLabel = (role) => {
-    if (role === 0) return "Super Admin";
-    if (role === 1) return "Admin";
-    return "User";
+    switch (Number(role)) {
+        case 0:
+            return "Admin";
+        case 1:
+            return "Nhân viên";
+        default:
+            return "Khách hàng";
+    }
 };
 
 const UserList = () => {
@@ -17,9 +22,24 @@ const UserList = () => {
     const [statusFilter, setStatusFilter] = useState("all"); // all | active | inactive
     const [loading, setLoading] = useState(true);
 
+    // Lấy role hiện tại từ token để điều khiển UI (ẩn/hiện nút)
+    const myRole = useMemo(() => {
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) return null;
+            const dec = jwtDecode(token);
+            return typeof dec.role === "number" ? dec.role : Number(dec.role);
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const isSuperAdmin = myRole === 0;
+
     const handleAuthError = (err) => {
         const code = err?.response?.status;
         if (code === 401 || code === 403) {
+            // Nếu BE chặn thì đưa về admin-login
             navigate("/admin-login", {replace: true});
             return true;
         }
@@ -50,12 +70,17 @@ const UserList = () => {
     const handleDelete = async (id) => {
         if (!window.confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
         try {
-            // Admin delete: DELETE /api/admin/users/:id
-            await adminApi.delete(`/users/${id}`);
+            // Chỉ Super Admin mới có quyền xóa (BE cũng đã siết)
+            await adminApi.delete(`/users/${id}`); // DELETE /api/admin/users/:id
             setUsers((prev) => prev.filter((u) => u.id !== id));
             alert("Người dùng đã được xóa!");
         } catch (err) {
-            if (handleAuthError(err)) return;
+            const code = err?.response?.status;
+            if (code === 401 || code === 403) {
+                alert("Bạn không có quyền xóa. Chỉ Admin (role 0) mới được phép.");
+                navigate("/admin-login", {replace: true});
+                return;
+            }
             console.error("Lỗi khi xóa người dùng:", err);
             alert(err?.response?.data?.message || "Có lỗi xảy ra khi xóa người dùng.");
         }
@@ -82,9 +107,11 @@ const UserList = () => {
         <div className="container">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2>Danh sách người dùng</h2>
-                <Link className="btn btn-success" to="/admin/user/adduser">
-                    Thêm người dùng
-                </Link>
+                {isSuperAdmin && (
+                    <Link className="btn btn-success" to="/admin/user/adduser">
+                        Thêm người dùng
+                    </Link>
+                )}
             </div>
 
             <div className="mb-4 d-flex gap-3">
@@ -119,7 +146,7 @@ const UserList = () => {
                         <th>Email</th>
                         <th>SĐT</th>
                         <th>Trạng thái</th>
-                        <th>Role</th>
+                        <th>Chức vụ</th>
                         <th>Avatar</th>
                         <th>Thao tác</th>
                     </tr>
@@ -148,7 +175,7 @@ const UserList = () => {
                           : "Không hoạt động"}
                     </span>
                                 </td>
-                                <td>{roleLabel(Number(user.role))}</td>
+                                <td>{roleLabel(user.role)}</td>
                                 <td>
                                     {user.avatar ? (
                                         <img
@@ -166,18 +193,24 @@ const UserList = () => {
                                     )}
                                 </td>
                                 <td>
-                                    <Link
-                                        className="btn btn-warning btn-sm me-2"
-                                        to={`/admin/user/edituser/${user.id}`}
-                                    >
-                                        Sửa
-                                    </Link>
-                                    <button
-                                        className="btn btn-danger btn-sm"
-                                        onClick={() => handleDelete(user.id)}
-                                    >
-                                        Xóa
-                                    </button>
+                                    {isSuperAdmin ? (
+                                        <>
+                                            <Link
+                                                className="btn btn-warning btn-sm me-2"
+                                                to={`/admin/user/edituser/${user.id}`}
+                                            >
+                                                Sửa
+                                            </Link>
+                                            <button
+                                                className="btn btn-danger btn-sm"
+                                                onClick={() => handleDelete(user.id)}
+                                            >
+                                                Xóa
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="text-muted">—</span>
+                                    )}
                                 </td>
                             </tr>
                         ))
