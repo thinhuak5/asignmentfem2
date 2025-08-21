@@ -77,9 +77,9 @@ const Home = () => {
 
   // 3 ảnh banner
   const heroImages = [
-    "https://cdn1.fahasa.com/media/magentothem/banner7/Trangdungcuhoctap_840x320.png",
-    "https://file.hstatic.net/1000230347/collection/vpp_828d5e53921b4e31bc81df3170f9e39b.jpg",
-    "https://vanphongphamthanhthai.com/wp-content/uploads/2022/09/van-phong-pham-thanh-thai.png",
+    "/images/banner.png",
+    "/images/banner1.png",
+    "/images/banner2.png",
   ];
 
   const [slide, setSlide] = useState(0);
@@ -401,12 +401,7 @@ const Home = () => {
                   />
               ))}
             </div>
-            <button className="hero__arrow hero__arrow--prev" onClick={prevSlide}>
-              ‹
-            </button>
-            <button className="hero__arrow hero__arrow--next" onClick={nextSlide}>
-              ›
-            </button>
+          
             <div className="hero__dots">
               {heroImages.map((_, i) => (
                   <button

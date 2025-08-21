@@ -82,25 +82,25 @@
 }
 .home-container .hero__dot.is-active{ background:#ee4d2d; opacity:1; }
 
-/* Hai banner nhỏ bên phải */
 .home-container .side{
   display:grid;
   grid-template-rows:1fr 1fr;
   gap:6px;
-  z-index:2;                 /* ✅ luôn nổi trên cột trái */
+  z-index:2;
 }
 .home-container .side__item{
   width:100%;
   aspect-ratio:16/5;
   background:#fff;
-  overflow:hidden;           /* chặn tràn */
+  overflow:hidden;
 }
 .home-container .side__img{
-  width:100%; height:100%;
-  object-fit:contain;        /* giữ cách hiển thị hiện tại */
-  background:#fff;
+  width:100%;
+  height:100%;
+  object-fit:cover;  
   display:block;
 }
+
 
 /* QUICK LINKS */
 .home-container .quick-links-section{ padding:20px 0; background:#dcebf7; }
