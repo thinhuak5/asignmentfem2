@@ -1,7 +1,7 @@
 // src/pages/admin/discount/EditDiscount.jsx
 import {useEffect, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-// ĐIỀU CHỈNH đường dẫn này cho đúng dự án của bạn:
+import {FaCheckCircle, FaRegFileAlt, FaTimesCircle} from "react-icons/fa";
 import adminApi from "../../../api/adminApi";
 
 const EditDiscount = () => {
@@ -11,6 +11,11 @@ const EditDiscount = () => {
     const [form, setForm] = useState(null);
     const [loading, setLoading] = useState(true);
     const [errMsg, setErrMsg] = useState("");
+
+    // Thêm state cho toast
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastType, setToastType] = useState("success");
 
   useEffect(() => {
       const fetchDiscount = async () => {
@@ -75,11 +80,19 @@ const EditDiscount = () => {
         return "";
     };
 
+    // Thêm hàm helper cho toast
+    const showToastMessage = (msg, type = "info") => {
+        setToastType(type);
+        setToastMessage(msg);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+    };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
       const msg = validate();
       if (msg) {
-          alert(msg);
+          showToastMessage(msg, "info");
           return;
       }
 
@@ -99,19 +112,20 @@ const EditDiscount = () => {
       try {
           // PUT /api/admin/discounts/:id
           await adminApi.put(`/discounts/${id}`, payload);
-      alert("Cập nhật thành công!");
-      navigate("/admin/discount");
+          showToastMessage("Cập nhật mã giảm giá thành công!", "success");
+          setTimeout(() => navigate("/admin/discount"), 1200);
       } catch (err) {
           const http = err?.response?.status;
           if (http === 401 || http === 403) {
               navigate("/admin-login", {replace: true});
               return;
           }
-          alert(
+          showToastMessage(
               err?.response?.data?.message ||
               err?.response?.data?.error ||
               err.message ||
-              "Có lỗi xảy ra!"
+              "Có lỗi xảy ra!",
+              "error"
           );
     }
   };
@@ -141,7 +155,46 @@ const EditDiscount = () => {
     if (!form) return null;
 
   return (
-      <div className="container">
+      <div className="container position-relative">
+          {/* Toast Component */}
+          <div
+              aria-live="polite"
+              aria-atomic="true"
+              className="position-fixed top-0 end-0 p-3"
+              style={{zIndex: 1060}}
+          >
+              {showToast && (
+                  <div
+                      className={`toast show align-items-center ${
+                          toastType === "success"
+                              ? "bg-success text-white"
+                              : toastType === "error"
+                                  ? "bg-danger text-white"
+                                  : "bg-info text-dark"
+                      } border-0`}
+                      role="alert"
+                      aria-live="assertive"
+                      aria-atomic="true"
+                  >
+                      <div className="d-flex align-items-center">
+                          {toastType === "success" ? (
+                              <FaCheckCircle className="me-2 fs-4"/>
+                          ) : toastType === "error" ? (
+                              <FaTimesCircle className="me-2 fs-4"/>
+                          ) : (
+                              <FaRegFileAlt className="me-2 fs-4"/>
+                          )}
+                          <div className="toast-body">{toastMessage}</div>
+                          <button
+                              type="button"
+                              className="btn-close btn-close-white ms-auto me-2"
+                              onClick={() => setShowToast(false)}
+                          ></button>
+                      </div>
+                  </div>
+              )}
+          </div>
+
           <div className="card mt-4">
               <div className="card-body">
                   <h2 className="mb-4 text-center">Sửa mã giảm giá</h2>
