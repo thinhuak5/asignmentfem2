@@ -1,14 +1,17 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import emailjs from "@emailjs/browser";
-import Constanst from "../../../Constanst"; // Đường dẫn tới file config của bạn
-import { GoogleOAuthProvider } from "@react-oauth/google";
-import { GoogleLogin } from "@react-oauth/google";
+import Constanst from "../../../Constanst";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { useSnackbar } from "notistack";
+
 const Register = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [queryParams] = useSearchParams();
+  const [loading, setLoading] = useState(false); // ⬅️ loading state
 
   const {
     register,
@@ -48,8 +51,7 @@ const Register = () => {
   const validateAvatar = (files) => {
     if (queryParams.get("id") && (!files || files.length === 0)) return true;
     if (!files || files.length === 0) return "Bạn phải chọn ảnh đại diện";
-
-    const maxSize = 1024 * 1024 * 15; // 15MB
+    const maxSize = 1024 * 1024 * 15;
     const types = [
       "image/jpg",
       "image/jpeg",
@@ -58,8 +60,7 @@ const Register = () => {
       "image/gif",
     ];
     for (let file of files) {
-      if (!types.includes(file.type))
-        return "Ảnh không đúng định dạng (jpg, jpeg, png, webp, gif)";
+      if (!types.includes(file.type)) return "Ảnh không đúng định dạng";
       if (file.size > maxSize)
         return `Kích thước ảnh "${file.name}" quá lớn (tối đa 15MB)`;
     }
@@ -67,6 +68,7 @@ const Register = () => {
   };
 
   const handleRegister = async (data) => {
+    setLoading(true); // ⬅️ bật loading
     try {
       let formData = new FormData();
       formData.append("username", data.username);
@@ -80,21 +82,21 @@ const Register = () => {
       }
 
       if (queryParams.get("id")) {
-        // Chức năng cập nhật user (chưa triển khai)
-        alert("Chức năng cập nhật chưa hỗ trợ trong ví dụ này.");
+        alert("Chức năng cập nhật chưa hỗ trợ.");
+        setLoading(false);
         return;
       }
 
-      // Gửi dữ liệu đăng ký lên backend
       const res = await axios.post(
         `${Constanst.DOMAIN_API}/api/register`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      alert(res.data.message || "Đăng ký thành công!");
+      enqueueSnackbar(res.data.message || "Đăng ký thành công!", {
+        variant: "success",
+      });
 
-      // Gửi mail chào mừng qua EmailJS
       const templateParams = {
         to_name: data.name || data.username,
         to_email: data.email,
@@ -107,31 +109,32 @@ const Register = () => {
           templateParams,
           "eI2hATDjbArRM5Snh"
         );
-        alert("mail chào mừng gửi thành công");
-        console.log("Mail chào mừng đã được gửi thành công");
-      } catch (mailError) {
-        console.error("Lỗi gửi mail chào mừng:", mailError);
-        alert(
-          "Đăng ký thành công, nhưng gửi mail chào mừng thất bại. Vui lòng thử lại sau."
-        );
+        enqueueSnackbar("Mail chào mừng gửi thành công!", {
+          variant: "success",
+        });
+      } catch {
+        enqueueSnackbar("Đăng ký thành công nhưng gửi mail thất bại!", {
+          variant: "error",
+        });
       }
 
       navigate("/login");
     } catch (err) {
-      console.error("Lỗi đăng ký:", err);
       if (err.response) {
-        alert(
-          `Đăng ký thất bại: ${
-            err.response.data.message || "Có lỗi xảy ra từ server"
-          }`
+        enqueueSnackbar(
+          err.response.data.message || "Có lỗi xảy ra từ server",
+          { variant: "error" }
         );
       } else if (err.request) {
-        alert("Đăng ký thất bại: Không thể kết nối đến server.");
+        enqueueSnackbar("Không thể kết nối đến server.", { variant: "error" });
       } else {
-        alert(`Đăng ký thất bại: ${err.message}`);
+        enqueueSnackbar(`Lỗi: ${err.message}`, { variant: "error" });
       }
+    } finally {
+      setLoading(false); // ⬅️ tắt loading
     }
   };
+
   const handleSuccess = async (response) => {
     const { credential } = response;
     try {
@@ -139,14 +142,14 @@ const Register = () => {
         tokenGoogle: credential,
       });
       localStorage.setItem("authToken", res.data.token);
-      console.log(res.data.token); // Phải là chuỗi JWT
-      alert(res.data.message || "Đăng nhập Google thành công!");
+      enqueueSnackbar(res.data.message || "Đăng nhập Google thành công!", {
+        variant: "success",
+      });
       window.location.href = "/";
     } catch (err) {
-      console.error("Lỗi đăng nhập Google:", err);
-      alert(
-        err?.response?.data?.message ||
-          "Đăng nhập Google thất bại, vui lòng thử lại!"
+      enqueueSnackbar(
+        err?.response?.data?.message || "Đăng nhập Google thất bại!",
+        { variant: "error" }
       );
     }
   };
@@ -164,127 +167,90 @@ const Register = () => {
               </h3>
               <form onSubmit={handleSubmit(handleRegister)}>
                 {/* Username */}
-                <div className="mb-3 text-start">
-                  <label htmlFor="username" className="form-label">
-                    Tên đăng nhập <span className="text-danger">*</span>
-                  </label>
+                <div className="mb-3">
+                  <label className="form-label">Tên đăng nhập</label>
                   <input
                     type="text"
-                    className={`form-control ${
-                      errors.username ? "is-invalid" : ""
-                    }`}
-                    id="username"
+                    className="form-control"
                     placeholder="Nhập tên đăng nhập"
                     {...register("username", {
-                      required: "Vui lòng nhập tên đăng nhập",
-                      minLength: {
-                        value: 3,
-                        message: "Tên đăng nhập tối thiểu 3 ký tự",
-                      },
+                      required: "Tên đăng nhập là bắt buộc",
                     })}
                   />
                   {errors.username && (
-                    <div className="invalid-feedback">
+                    <small className="text-danger">
                       {errors.username.message}
-                    </div>
+                    </small>
                   )}
                 </div>
 
-                {/* Name */}
-                <div className="mb-3 text-start">
-                  <label htmlFor="name" className="form-label">
-                    Họ và Tên <span className="text-danger">*</span>
-                  </label>
+                {/* Họ và tên */}
+                <div className="mb-3">
+                  <label className="form-label">Họ và tên</label>
                   <input
                     type="text"
-                    className={`form-control ${
-                      errors.name ? "is-invalid" : ""
-                    }`}
-                    id="name"
+                    className="form-control"
                     placeholder="Nhập họ và tên"
-                    {...register("name", {
-                      required: "Vui lòng nhập họ và tên",
-                    })}
+                    {...register("name", { required: "Họ và tên là bắt buộc" })}
                   />
                   {errors.name && (
-                    <div className="invalid-feedback">
-                      {errors.name.message}
-                    </div>
+                    <small className="text-danger">{errors.name.message}</small>
                   )}
                 </div>
 
                 {/* Email */}
-                <div className="mb-3 text-start">
-                  <label htmlFor="email" className="form-label">
-                    Email <span className="text-danger">*</span>
-                  </label>
+                <div className="mb-3">
+                  <label className="form-label">Email</label>
                   <input
                     type="email"
-                    className={`form-control ${
-                      errors.email ? "is-invalid" : ""
-                    }`}
-                    id="email"
-                    placeholder="Nhập địa chỉ email"
+                    className="form-control"
+                    placeholder="Nhập email"
                     {...register("email", {
-                      required: "Vui lòng nhập email",
+                      required: "Email là bắt buộc",
                       pattern: {
-                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                        message: "Địa chỉ email không hợp lệ",
+                        value: /^\S+@\S+$/i,
+                        message: "Email không hợp lệ",
                       },
                     })}
                   />
                   {errors.email && (
-                    <div className="invalid-feedback">
+                    <small className="text-danger">
                       {errors.email.message}
-                    </div>
+                    </small>
                   )}
                 </div>
 
-                {/* Phone */}
-                <div className="mb-3 text-start">
-                  <label htmlFor="phone" className="form-label">
-                    Số điện thoại <span className="text-danger">*</span>
-                  </label>
+                {/* Số điện thoại */}
+                <div className="mb-3">
+                  <label className="form-label">Số điện thoại</label>
                   <input
-                    type="tel"
-                    className={`form-control ${
-                      errors.phone ? "is-invalid" : ""
-                    }`}
-                    id="phone"
+                    type="text"
+                    className="form-control"
                     placeholder="Nhập số điện thoại"
                     {...register("phone", {
-                      required: "Vui lòng nhập số điện thoại",
+                      required: "Số điện thoại là bắt buộc",
                       pattern: {
-                        value:
-                          /^(0|\+84)(\s|\.)?((3[2-9])|(5[689])|(7[06-9])|(8[1-689])|(9[0-46-9]))(\d)(\s|\.)?(\d{3})(\s|\.)?(\d{3})$/,
+                        value: /^[0-9]{9,11}$/,
                         message: "Số điện thoại không hợp lệ",
                       },
                     })}
                   />
                   {errors.phone && (
-                    <div className="invalid-feedback">
+                    <small className="text-danger">
                       {errors.phone.message}
-                    </div>
+                    </small>
                   )}
                 </div>
 
-                {/* Password */}
-                <div className="mb-3 text-start">
-                  <label htmlFor="password" className="form-label">
-                    Mật khẩu <span className="text-danger">*</span>
-                  </label>
+                {/* Mật khẩu */}
+                <div className="mb-3">
+                  <label className="form-label">Mật khẩu</label>
                   <input
                     type="password"
-                    className={`form-control ${
-                      errors.password ? "is-invalid" : ""
-                    }`}
-                    id="password"
+                    className="form-control"
                     placeholder="Nhập mật khẩu"
                     {...register("password", {
-                      required: {
-                        value: !queryParams.get("id"),
-                        message: "Vui lòng nhập mật khẩu",
-                      },
+                      required: "Mật khẩu là bắt buộc",
                       minLength: {
                         value: 6,
                         message: "Mật khẩu tối thiểu 6 ký tự",
@@ -292,59 +258,66 @@ const Register = () => {
                     })}
                   />
                   {errors.password && (
-                    <div className="invalid-feedback">
+                    <small className="text-danger">
                       {errors.password.message}
-                    </div>
-                  )}
-                  {queryParams.get("id") && (
-                    <small className="form-text text-muted">
-                      Để trống nếu không muốn thay đổi mật khẩu.
                     </small>
                   )}
                 </div>
 
                 {/* Avatar */}
-                <div className="mb-4">
-                  <label htmlFor="avatar" className="form-label">
-                    Ảnh đại diện
-                  </label>
+                <div className="mb-3">
+                  <label className="form-label">Ảnh đại diện</label>
                   <input
                     type="file"
-                    className={`form-control ${
-                      errors.avatar ? "is-invalid" : ""
-                    }`}
-                    id="avatar"
-                    accept="image/png, image/jpeg, image/jpg, image/webp, image/gif"
-                    {...register("avatar", {
-                      validate: (files) => validateAvatar(files),
-                    })}
+                    className="form-control"
+                    accept="image/*"
+                    {...register("avatar", { validate: validateAvatar })}
                   />
                   {errors.avatar && (
-                    <div className="invalid-feedback">
+                    <small className="text-danger">
                       {errors.avatar.message}
-                    </div>
+                    </small>
                   )}
                 </div>
 
                 {/* Submit */}
-                <button type="submit" className="btn btn-primary w-100 btn-lg">
-                  {queryParams.get("id") ? "Cập nhật" : "Đăng ký"}
+                <button
+                  type="submit"
+                  className="btn btn-primary w-100 btn-lg"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                      ></span>
+                      Đang xử lý...
+                    </span>
+                  ) : queryParams.get("id") ? (
+                    "Cập nhật"
+                  ) : (
+                    "Đăng ký"
+                  )}
                 </button>
               </form>
-              <GoogleOAuthProvider clientId="174189579193-5an9p6b13u20aeut0qdhkrudiflha8gk.apps.googleusercontent.com">
-                <GoogleLogin
-                  onSuccess={handleSuccess}
-                  onError={() => {
-                    console.log("Login Failed");
-                  }}
-                  useOneTap={false}
-                  text="signin_with"
-                  shape="pill"
-                  theme="outline"
-                  size="large"
-                  width="300"
-                />
-              </GoogleOAuthProvider>
+
+              <div className="text-center mt-3">
+                <GoogleOAuthProvider clientId="174189579193-5an9p6b13u20aeut0qdhkrudiflha8gk.apps.googleusercontent.com">
+                  <GoogleLogin
+                    onSuccess={handleSuccess}
+                    onError={() => console.log("Login Failed")}
+                    useOneTap={false}
+                    text="signin_with"
+                    shape="pill"
+                    theme="outline"
+                    size="large"
+                    width="300"
+                  />
+                </GoogleOAuthProvider>
+              </div>
+
               {!queryParams.get("id") && (
                 <p className="mt-3 text-center">
                   Đã có tài khoản? <a href="/login">Đăng nhập ngay</a>

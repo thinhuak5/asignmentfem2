@@ -12,8 +12,11 @@ import {
 } from "react-bootstrap";
 import Constanst from "../../../Constanst";
 import "../../../assets/css/OrderPage.css";
+import { SnackbarProvider } from "notistack";
+import { useSnackbar } from "notistack";
 
 const OrderPage = () => {
+    const { enqueueSnackbar } = useSnackbar();
   const location = useLocation();
   const navigate = useNavigate();
   const { cartItems, userInfo } = location.state || { cartItems: [], userInfo: null };
@@ -313,11 +316,12 @@ const OrderPage = () => {
           body: JSON.stringify({ selectedCartItemIds: cartItemIds }),
         });
         localStorage.removeItem("cart");
-        alert("Đặt hàng thành công!");
+       enqueueSnackbar('Đặt hàng thành công', { variant: 'success' });
         navigate("/order-history?message=success");
       }
     } catch (err) {
       setError(err.message);
+         enqueueSnackbar(err.message, { variant: 'error' });
     } finally {
       setIsSubmitting(false);
     }

@@ -6,7 +6,11 @@ import { jwtDecode } from "jwt-decode";
 import Constanst from "../../../Constanst";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { GoogleLogin } from "@react-oauth/google";
+import { SnackbarProvider } from "notistack";
+import { useSnackbar } from "notistack";
+
 const Login = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const {
     register,
     handleSubmit,
@@ -63,7 +67,8 @@ const Login = () => {
       });
       localStorage.setItem("authToken", res.data.token);
       console.log(res.data.token); // Phải là chuỗi JWT
-      alert(res.data.message || "Đăng nhập Google thành công!");
+      // alert(res.data.message || "Đăng nhập Google thành công!");
+      enqueueSnackbar(res.data.message, { variant: 'success' });
       window.location.href = "/";
     } catch (err) {
       console.error("Lỗi đăng nhập Google:", err);
@@ -71,6 +76,9 @@ const Login = () => {
         err?.response?.data?.message ||
           "Đăng nhập Google thất bại, vui lòng thử lại!"
       );
+      enqueueSnackbar( err?.response?.data?.message ||
+          "Đăng nhập Google thất bại, vui lòng thử lại!", { variant: 'error' });
+
     }
   };
   return (
