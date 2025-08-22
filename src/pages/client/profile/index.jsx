@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import Constanst from "../../../Constanst";
 import { Link } from "react-router-dom";
+import { SnackbarProvider } from "notistack";
+import { useSnackbar } from "notistack";
 
 /* ==========================================================================
    STYLES
@@ -187,9 +189,9 @@ const styles = {
    HELPERS
    ========================================================================== */
 const uuid = () =>
-  (typeof crypto !== "undefined" && crypto.randomUUID
+  typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
-    : `${Date.now()}_${Math.random().toString(16).slice(2)}`);
+    : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
 const dedupeBy = (arr, getKey) => {
   const seen = new Set();
@@ -235,6 +237,8 @@ const normalizeWards = (arr) => {
 
 // Personal info
 const PersonalInfoView = ({ profile, onSave }) => {
+    const { enqueueSnackbar } = useSnackbar();
+
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     name: profile.name,
@@ -549,9 +553,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
 
   const setDefault = (id) => {
     setCurrentDefaultId(id);
-    setAddresses((prev) =>
-      prev.map((a) => ({ ...a, isDefault: a.id === id }))
-    );
+    setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
   };
 
   const handleAdd = (form) => {
@@ -625,7 +627,9 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
       <h3 style={styles.cardHeader}>Địa chỉ của tôi</h3>
 
       <div style={styles.formGroup}>
-        <div style={{ marginBottom: 8, fontWeight: 600 }}>Danh sách địa chỉ</div>
+        <div style={{ marginBottom: 8, fontWeight: 600 }}>
+          Danh sách địa chỉ
+        </div>
         {addresses.length === 0 ? (
           <div style={styles.readOnlyValue}>Chưa có địa chỉ.</div>
         ) : (
@@ -743,8 +747,8 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
 
       {legacyTextAddress && (
         <div style={{ marginTop: 16, color: colors.textGrey, fontSize: 13 }}>
-          * Hệ thống cũ đang dùng 1 chuỗi địa chỉ. Khi bạn thêm địa chỉ mới,
-          dữ liệu sẽ chuyển sang danh sách địa chỉ.
+          * Hệ thống cũ đang dùng 1 chuỗi địa chỉ. Khi bạn thêm địa chỉ mới, dữ
+          liệu sẽ chuyển sang danh sách địa chỉ.
         </div>
       )}
     </div>
@@ -755,6 +759,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
    MAIN PROFILE COMPONENT
    ========================================================================== */
 const Profile = () => {
+    const { enqueueSnackbar } = useSnackbar();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -847,7 +852,7 @@ const Profile = () => {
 
       if (!res.ok) throw new Error("Cập nhật địa chỉ thất bại.");
       await fetchProfile();
-      alert("Đã lưu địa chỉ.");
+enqueueSnackbar('Lưu địa chỉ thành công', { variant: 'success' });
     } catch (err) {
       setError(err.message);
     }
@@ -856,9 +861,7 @@ const Profile = () => {
   const renderContent = () => {
     if (loading) return <div style={styles.card}>Đang tải...</div>;
     if (error)
-      return (
-        <div style={{ ...styles.card, ...styles.errorMsg }}>{error}</div>
-      );
+      return <div style={{ ...styles.card, ...styles.errorMsg }}>{error}</div>;
     if (!profile)
       return <div style={styles.card}>Không tìm thấy dữ liệu hồ sơ.</div>;
 
