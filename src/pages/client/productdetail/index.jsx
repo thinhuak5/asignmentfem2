@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import Constants from "../../../Constanst";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useSnackbar } from "notistack";
+import { useNavigate } from "react-router-dom";
 import {
   faMinus,
   faPlus,
@@ -17,6 +18,7 @@ import { faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
 import "../../../assets/css/product-detail-new.css";
 
 const ProductDetail = () => {
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const { id: productId } = useParams();
   const token = localStorage.getItem("authToken");
@@ -298,7 +300,10 @@ const ProductDetail = () => {
           variant: "success",
         });
       } else {
-        enqueueSnackbar(data.message || "Có lỗi xảy ra!", { variant: "error" });
+        enqueueSnackbar("Vui lòng đăng nhâp!" || "Có lỗi xảy ra!", {
+          variant: "error",
+        });
+        navigate("/login");
       }
 
       console.log(data);
