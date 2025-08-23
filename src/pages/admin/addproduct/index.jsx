@@ -136,7 +136,9 @@ function VariationItem({
                             <button
                                 type="button"
                                 className="btn btn-sm btn-outline-primary"
-                                onClick={() => appendSpec({label: "Thuộc tính mới", value: ""})}
+                                onClick={() =>
+                                    appendSpec({label: "Thuộc tính mới", value: ""})
+                                }
                             >
                                 + Thêm dòng
                             </button>
@@ -160,12 +162,9 @@ function VariationItem({
                                         <div className="col-5">
                                             <input
                                                 className="form-control"
-                                                {...register(
-                                                    `variations.${index}.specs.${j}.value`,
-                                                    {
-                                                        required: "Bắt buộc",
-                                                    }
-                                                )}
+                                                {...register(`variations.${index}.specs.${j}.value`, {
+                                                    required: "Bắt buộc",
+                                                })}
                                             />
                                             {errors.variations?.[index]?.specs?.[j]?.value && (
                                                 <small style={errorStyle}>
@@ -187,7 +186,6 @@ function VariationItem({
                             ))}
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -523,9 +521,7 @@ export default function AddProduct() {
                                 />
                             </div>
                             {errors.description && (
-                                <small style={errorStyle}>
-                                    {errors.description.message}
-                                </small>
+                                <small style={errorStyle}>{errors.description.message}</small>
                             )}
                         </div>
 
@@ -627,7 +623,11 @@ export default function AddProduct() {
                     Thêm biến thể
                 </button>
 
-                <button type="submit" className="btn btn-success me-2" disabled={isSubmitting}>
+                <button
+                    type="submit"
+                    className="btn btn-success me-2"
+                    disabled={isSubmitting}
+                >
                     {isSubmitting ? (
                         <>
               <span

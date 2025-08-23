@@ -4,6 +4,8 @@ import Constanst from "../../../Constanst";
 import { Link } from "react-router-dom";
 import { SnackbarProvider } from "notistack";
 import { useSnackbar } from "notistack";
+// Popup xác nhận đẹp, ở giữa màn hình
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 
 /* ==========================================================================
    STYLES
@@ -231,13 +233,25 @@ const normalizeWards = (arr) => {
   return dedupeBy(list, (x) => x.code);
 };
 
+// --- Helpers cho so sánh/validate địa chỉ ---
+const stripAccents = (s = "") =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+const normalizeForCompare = (s = "") =>
+  stripAccents(String(s).toLowerCase())
+    .replace(/\s+/g, " ")
+    .trim();
+
+// Ký tự hợp lệ cho phần địa chỉ chi tiết
+const ADDRESS_ALLOWED_REGEX = /^[0-9A-Za-zÀ-ỹ\s,./-]+$/u;
+
 /* ==========================================================================
    SUB-COMPONENTS
    ========================================================================== */
 
 // Personal info
 const PersonalInfoView = ({ profile, onSave }) => {
-    const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
@@ -245,18 +259,82 @@ const PersonalInfoView = ({ profile, onSave }) => {
     phone: profile.phone,
   });
   const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSaveClick = () => {
-    onSave(editedProfile, selectedAvatar).then(() => {
+  // Regex SĐT VN: bắt đầu bằng 0, tổng 9–11 số
+  const PHONE_REGEX = /^0\d{8,10}$/;
+
+  const handleAvatarPick = (file) => {
+    setErrorMsg("");
+    if (!file) return;
+
+    const allowed = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+    if (!allowed.includes(file.type)) {
+      setSelectedAvatar(null);
+      setErrorMsg("Định dạng ảnh không hợp lệ (chỉ JPG/PNG/WEBP/GIF).");
+      enqueueSnackbar("Ảnh không hợp lệ", { variant: "error" });
+      return;
+    }
+    const MAX = 5 * 1024 * 1024;
+    if (file.size > MAX) {
+      setSelectedAvatar(null);
+      setErrorMsg("Ảnh quá lớn (tối đa 5MB).");
+      enqueueSnackbar("Ảnh quá lớn", { variant: "error" });
+      return;
+    }
+    setSelectedAvatar(file); // preview ngay
+  };
+
+  const noChanges =
+    (editedProfile.name || "") === (profile.name || "") &&
+    (editedProfile.phone || "") === (profile.phone || "") &&
+    !selectedAvatar;
+
+  const validateBeforeSave = () => {
+    if (!editedProfile.name || !editedProfile.name.trim()) {
+      setErrorMsg("Tên hiển thị là bắt buộc.");
+      return false;
+    }
+    if (!editedProfile.phone || !PHONE_REGEX.test(editedProfile.phone.trim())) {
+      setErrorMsg(
+        "Số điện thoại không hợp lệ. Vui lòng nhập số bắt đầu bằng 0 và dài 9–11 chữ số."
+      );
+      return false;
+    }
+    setErrorMsg("");
+    return true;
+  };
+
+  const handleSaveClick = async () => {
+    if (noChanges) {
+      enqueueSnackbar("Không có thay đổi nào để lưu.", { variant: "info" });
       setIsEditing(false);
       setSelectedAvatar(null);
-    });
+      return;
+    }
+    if (!validateBeforeSave()) return;
+
+    try {
+      await onSave(editedProfile, selectedAvatar);
+      enqueueSnackbar("Cập nhật hồ sơ thành công", { variant: "success" });
+      setIsEditing(false);
+      setSelectedAvatar(null);
+    } catch (e) {
+      enqueueSnackbar("Cập nhật thất bại", { variant: "error" });
+    }
   };
 
   const handleCancelClick = () => {
     setIsEditing(false);
     setEditedProfile({ name: profile.name, phone: profile.phone });
     setSelectedAvatar(null);
+    setErrorMsg("");
   };
 
   return (
@@ -283,7 +361,7 @@ const PersonalInfoView = ({ profile, onSave }) => {
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => setSelectedAvatar(e.target.files[0])}
+            onChange={(e) => handleAvatarPick(e.target.files[0])}
             style={{
               marginTop: 15,
               display: "block",
@@ -314,9 +392,7 @@ const PersonalInfoView = ({ profile, onSave }) => {
 
       <div style={styles.formGroup}>
         <label style={styles.label}>Email:</label>
-        <div style={styles.readOnlyValue}>
-          {profile.email} (Không thể thay đổi)
-        </div>
+        <div style={styles.readOnlyValue}>{profile.email}</div>
       </div>
 
       <div style={styles.formGroup}>
@@ -336,6 +412,8 @@ const PersonalInfoView = ({ profile, onSave }) => {
           </div>
         )}
       </div>
+
+      {errorMsg && <div style={styles.errorMsg}>{errorMsg}</div>}
 
       <div style={styles.buttonContainer}>
         {isEditing ? (
@@ -367,22 +445,16 @@ const PersonalInfoView = ({ profile, onSave }) => {
 };
 
 // Orders (placeholder)
-const OrderHistoryView = () => (
-  <div style={styles.card}>
-    <h3 style={styles.cardHeader}>Lịch sử đơn hàng</h3>
-    <p>Chức năng này đang được phát triển.</p>
-    <p>
-      Bạn có thể xem lịch sử đơn hàng chi tiết tại{" "}
-      <Link to="/order-history" style={{ color: colors.blueLink }}>
-        trang này
-      </Link>
-      .
-    </p>
-  </div>
-);
+
 
 // Address form
-const AddressForm = ({ initialValue, onSubmit, onCancel }) => {
+const AddressForm = ({
+  initialValue,
+  onSubmit,
+  onCancel,
+  existingAddresses = [],
+  excludeId = null,
+}) => {
   const [houseNumber, setHouseNumber] = useState(
     initialValue?.houseNumber || ""
   );
@@ -441,17 +513,49 @@ const AddressForm = ({ initialValue, onSubmit, onCancel }) => {
 
   const submit = () => {
     setErr("");
+
     if (!houseNumber || !provinceCode || !wardCode) {
       setErr("Vui lòng nhập Số nhà/địa chỉ, chọn Tỉnh/Thành và Phường/Xã.");
       return;
     }
+
+    if (!ADDRESS_ALLOWED_REGEX.test(houseNumber)) {
+      setErr("Địa chỉ chỉ được dùng chữ, số, khoảng trắng và , . / -");
+      return;
+    }
+
+    const willFullAddress = [houseNumber, wardName, provinceName]
+      .filter(Boolean)
+      .join(", ");
+    if (willFullAddress.length > 500) {
+      setErr("Địa chỉ quá dài (tối đa 500 ký tự).");
+      return;
+    }
+
+    const candidateKey = normalizeForCompare(
+      `${houseNumber} | ${wardName} | ${provinceName}`
+    );
+    const isDup = (existingAddresses || [])
+      .filter((a) => a && a.id !== excludeId)
+      .some((a) => {
+        const k = normalizeForCompare(
+          `${a.houseNumber} | ${a.wardName} | ${a.provinceName}`
+        );
+        return k === candidateKey;
+      });
+
+    if (isDup) {
+      setErr("Địa chỉ đã tồn tại (trùng 100%).");
+      return;
+    }
+
     onSubmit({
       houseNumber,
       provinceCode,
       provinceName,
       wardCode,
       wardName,
-      fullAddress,
+      fullAddress: willFullAddress,
     });
   };
 
@@ -538,6 +642,8 @@ const AddressForm = ({ initialValue, onSubmit, onCancel }) => {
 
 // Address list & manage
 const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
+  const { enqueueSnackbar } = useSnackbar();
+
   const [addresses, setAddresses] = useState(
     Array.isArray(initialAddresses) ? initialAddresses : []
   );
@@ -548,6 +654,10 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
+
+  // popup confirm state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   const legacyTextAddress = useMemo(() => null, []);
 
@@ -572,6 +682,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
     setAddresses(next);
     if (next.length === 1) setCurrentDefaultId(id);
     setIsAdding(false);
+    enqueueSnackbar("Thêm địa chỉ thành công", { variant: "success" });
   };
 
   const handleEdit = (id, form) => {
@@ -591,9 +702,25 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
       )
     );
     setEditingId(null);
+    enqueueSnackbar("Cập nhật địa chỉ thành công", { variant: "success" });
   };
 
+  // MỞ POPUP XÁC NHẬN (ở giữa màn hình, to hơn)
   const handleDelete = (id) => {
+    if (addresses.length <= 1) {
+      setError("Không thể xóa: bạn phải có ít nhất một địa chỉ.");
+      enqueueSnackbar("Không thể xóa: bạn phải có ít nhất một địa chỉ.", {
+        variant: "warning",
+      });
+      return;
+    }
+    setDeleteId(id);
+    setConfirmOpen(true);
+  };
+
+  // XÁC NHẬN XÓA TRONG POPUP
+  const confirmDelete = () => {
+    const id = deleteId;
     const next = addresses.filter((a) => a.id !== id);
     let nextDefault = currentDefaultId;
     if (id === currentDefaultId) nextDefault = next[0]?.id || null;
@@ -606,6 +733,9 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
       }))
     );
     setCurrentDefaultId(nextDefault);
+    enqueueSnackbar("Xóa địa chỉ thành công", { variant: "success" });
+    setConfirmOpen(false);
+    setDeleteId(null);
   };
 
   const handleSaveAll = () => {
@@ -705,6 +835,8 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
                       initialValue={a}
                       onCancel={() => setEditingId(null)}
                       onSubmit={(form) => handleEdit(a.id, form)}
+                      existingAddresses={addresses}
+                      excludeId={a.id}
                     />
                   </div>
                 )}
@@ -730,6 +862,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
             initialValue={null}
             onCancel={() => setIsAdding(false)}
             onSubmit={handleAdd}
+            existingAddresses={addresses}
           />
         </div>
       )}
@@ -751,6 +884,33 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
           liệu sẽ chuyển sang danh sách địa chỉ.
         </div>
       )}
+
+      {/* ==== Popup Confirm Xóa (ở giữa màn hình, to hơn) ==== */}
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        maxWidth="sm"   // có thể đổi "md" nếu muốn to hơn nữa
+        fullWidth
+      >
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <p style={{ fontSize: "16px", margin: "10px 0" }}>
+            Bạn có chắc chắn muốn xóa địa chỉ này không?
+          </p>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setConfirmOpen(false)}
+            variant="outlined"
+            color="inherit"
+          >
+            Hủy
+          </Button>
+          <Button onClick={confirmDelete} variant="contained" color="error">
+            Đồng ý
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };
@@ -759,7 +919,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
    MAIN PROFILE COMPONENT
    ========================================================================== */
 const Profile = () => {
-    const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useSnackbar();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -828,7 +988,8 @@ const Profile = () => {
       if (!res.ok) throw new Error("Cập nhật thất bại.");
       await fetchProfile();
     } catch (err) {
-      setError(err.message);
+      // ném lỗi lên để view hiển thị toast thất bại
+      throw err;
     }
   };
 
@@ -852,9 +1013,9 @@ const Profile = () => {
 
       if (!res.ok) throw new Error("Cập nhật địa chỉ thất bại.");
       await fetchProfile();
-enqueueSnackbar('Lưu địa chỉ thành công', { variant: 'success' });
+      enqueueSnackbar("Lưu địa chỉ thành công", { variant: "success" });
     } catch (err) {
-      setError(err.message);
+      enqueueSnackbar("Lưu địa chỉ thất bại", { variant: "error" });
     }
   };
 
@@ -874,7 +1035,6 @@ enqueueSnackbar('Lưu địa chỉ thành công', { variant: 'success' });
         {activeView === "info" && (
           <PersonalInfoView profile={profile} onSave={handleSaveProfile} />
         )}
-        {activeView === "orders" && <OrderHistoryView />}
         {activeView === "address" && (
           <AddressView
             initialAddresses={initialAddresses}
@@ -915,18 +1075,7 @@ enqueueSnackbar('Lưu địa chỉ thành công', { variant: 'success' });
           >
             <span style={styles.sidebarNavIcon}>👤</span> Thông tin tài khoản
           </li>
-          <li
-            style={{
-              ...styles.sidebarNavItem,
-              ...(activeView === "orders" && styles.sidebarNavItemActive),
-            }}
-            onClick={() => setActiveView("orders")}
-          >
-            <span style={styles.sidebarNavIcon}>🛒</span>
-            <Link to="/order-history" style={styles.link}>
-              Lịch sử đơn hàng
-            </Link>
-          </li>
+  
           <li
             style={{
               ...styles.sidebarNavItem,
@@ -945,4 +1094,12 @@ enqueueSnackbar('Lưu địa chỉ thành công', { variant: 'success' });
   );
 };
 
-export default Profile;
+// Nếu app đã có SnackbarProvider ở cấp trên, export Profile;
+// nếu chưa có thì dùng WrappedProfile bên dưới.
+const WrappedProfile = () => (
+  <SnackbarProvider maxSnack={3} autoHideDuration={2500}>
+    <Profile />
+  </SnackbarProvider>
+);
+
+export default WrappedProfile;
