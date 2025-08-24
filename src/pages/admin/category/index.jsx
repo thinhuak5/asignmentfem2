@@ -11,29 +11,23 @@ const CategoryList = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [filterParentId, setFilterParentId] = useState("");
 
-    // Modal state
     const [showModal, setShowModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
 
-    // Toast state
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [toastType, setToastType] = useState("success");
 
     useEffect(() => {
         fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line
     }, []);
 
     const fetchData = async () => {
         try {
             const res = await adminApi.get("/categories/list");
             const raw = res?.data;
-            const list = Array.isArray(raw)
-                ? raw
-                : Array.isArray(raw?.data)
-                    ? raw.data
-                    : [];
+            const list = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
             setCategories(list);
         } catch (error) {
             const status = error?.response?.status;
@@ -45,7 +39,6 @@ const CategoryList = () => {
         }
     };
 
-    // Toast function
     const showToastMessage = (msg, type = "success") => {
         setToastType(type);
         setToastMessage(msg);
@@ -53,13 +46,11 @@ const CategoryList = () => {
         setTimeout(() => setShowToast(false), 2500);
     };
 
-    // Hiện modal xác nhận xóa
     const openDeleteModal = (id) => {
         setDeleteId(id);
         setShowModal(true);
     };
 
-    // Xác nhận xóa
     const confirmDelete = async () => {
         setShowModal(false);
         try {
@@ -76,21 +67,18 @@ const CategoryList = () => {
         }
     };
 
-    // Lấy tên danh mục cha theo parent_id từ mảng categories
     const getParentName = (parent_id) => {
-        if (!parent_id && parent_id !== 0) return "Không có";
+        if (parent_id === null || parent_id === undefined) return "Không có";
         const parent = (Array.isArray(categories) ? categories : []).find(
             (cat) => String(cat.id) === String(parent_id)
         );
         return parent ? parent.name : "Không có";
     };
 
-    // Các danh mục cha cho dropdown lọc (an toàn)
     const parentCategories = (Array.isArray(categories) ? categories : []).filter(
         (cat) => cat?.parent_id === null || cat?.parent_id === undefined
     );
 
-    // Lọc theo tên và theo danh mục cha nếu có
     const filteredCategories = (Array.isArray(categories) ? categories : []).filter((category) => {
         const matchesSearch = String(category.name || "")
             .toLowerCase()
@@ -176,6 +164,8 @@ const CategoryList = () => {
                     <th>Tên danh mục</th>
                     <th>Ảnh</th>
                     <th>Trạng thái</th>
+                    <th>Hiển thị Home</th>
+                    {/* NEW */}
                     <th>Danh mục cha</th>
                     <th>Hành động</th>
                 </tr>
@@ -200,6 +190,8 @@ const CategoryList = () => {
                                 )}
                             </td>
                             <td>{category.status === 1 ? "Hiển thị" : "Ẩn"}</td>
+                            <td>{category.show_home === 1 ? "Có" : "Không"}</td>
+                            {/* NEW */}
                             <td>{getParentName(category.parent_id)}</td>
                             <td>
                                 <Link
@@ -208,10 +200,7 @@ const CategoryList = () => {
                                 >
                                     Sửa
                                 </Link>
-                                <button
-                                    className="btn btn-danger btn-sm"
-                                    onClick={() => openDeleteModal(category.id)}
-                                >
+                                <button className="btn btn-danger btn-sm" onClick={() => openDeleteModal(category.id)}>
                                     Xóa
                                 </button>
                             </td>
@@ -219,7 +208,7 @@ const CategoryList = () => {
                     ))
                 ) : (
                     <tr>
-                        <td colSpan="6" className="text-center">
+                        <td colSpan="7" className="text-center">
                             Không tìm thấy danh mục phù hợp
                         </td>
                     </tr>
@@ -232,10 +221,7 @@ const CategoryList = () => {
                 <>
                     <div
                         className="modal fade show"
-                        style={{
-                            display: "block",
-                            background: "rgba(0,0,0,0.15)",
-                        }}
+                        style={{display: "block", background: "rgba(0,0,0,0.15)"}}
                         tabIndex={-1}
                         aria-modal="true"
                         role="dialog"
@@ -244,11 +230,7 @@ const CategoryList = () => {
                             <div className="modal-content">
                                 <div className="modal-header border-0 pb-0">
                                     <h5 className="modal-title">Xác nhận xóa</h5>
-                                    <button
-                                        type="button"
-                                        className="btn-close"
-                                        onClick={() => setShowModal(false)}
-                                    />
+                                    <button type="button" className="btn-close" onClick={() => setShowModal(false)}/>
                                 </div>
                                 <div className="modal-body">
                                     <p>Bạn chắc chắn muốn xóa danh mục này?</p>
@@ -257,12 +239,7 @@ const CategoryList = () => {
                                     <button
                                         type="button"
                                         className="btn"
-                                        style={{
-                                            background: "#FFD600",
-                                            color: "#333",
-                                            minWidth: 70,
-                                            fontWeight: 500,
-                                        }}
+                                        style={{background: "#FFD600", color: "#333", minWidth: 70, fontWeight: 500}}
                                         onClick={() => setShowModal(false)}
                                     >
                                         Hủy
@@ -270,12 +247,7 @@ const CategoryList = () => {
                                     <button
                                         type="button"
                                         className="btn"
-                                        style={{
-                                            background: "#f44e4e",
-                                            color: "#fff",
-                                            minWidth: 70,
-                                            fontWeight: 500,
-                                        }}
+                                        style={{background: "#f44e4e", color: "#fff", minWidth: 70, fontWeight: 500}}
                                         onClick={confirmDelete}
                                     >
                                         Xóa

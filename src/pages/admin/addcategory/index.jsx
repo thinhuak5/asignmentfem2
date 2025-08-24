@@ -1,4 +1,3 @@
-// src/pages/admin/category/AddCategory.jsx
 import React, {useEffect, useState} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {FaCheckCircle, FaRegFileAlt, FaTimesCircle} from "react-icons/fa";
@@ -10,6 +9,7 @@ const AddCategory = () => {
     const [category, setCategory] = useState({
         name: "",
         status: "Hiển thị",
+        show_home: 0,      // chỉ áp dụng cho CHA (không có parent_id)
         parent_id: "",
         image: null,
     });
@@ -17,13 +17,11 @@ const AddCategory = () => {
     const [allCategories, setAllCategories] = useState([]);
     const [errors, setErrors] = useState({});
 
-    // Toast state
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [toastType, setToastType] = useState("success");
 
     useEffect(() => {
-        // load dữ liệu ban đầu: tất cả danh mục (để check trùng) + danh mục cha
         const loadInitial = async () => {
             try {
                 const [allRes, parentsRes] = await Promise.all([
@@ -42,10 +40,9 @@ const AddCategory = () => {
             }
         };
         loadInitial();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line
     }, []);
 
-    // Toast helper
     const showToastMessage = (msg, type = "info") => {
         setToastType(type);
         setToastMessage(msg);
@@ -54,8 +51,16 @@ const AddCategory = () => {
     };
 
     const handleChange = (e) => {
-        const {name, value} = e.target;
-        setCategory((prev) => ({...prev, [name]: value}));
+        const {name, value, type, checked} = e.target;
+        setCategory((prev) => {
+            const next = {
+                ...prev,
+                [name]: type === "checkbox" ? (checked ? 1 : 0) : value,
+            };
+            // nếu chọn parent_id (thành CON) → ép tắt show_home
+            if (name === "parent_id" && value) next.show_home = 0;
+            return next;
+        });
         setErrors((prev) => ({...prev, [name]: ""}));
     };
 
@@ -66,7 +71,6 @@ const AddCategory = () => {
         }
     };
 
-    // tên trùng (không phân biệt hoa/thường, normalize space)
     const isDuplicateName = (name) => {
         const normalize = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
         return allCategories.some((cat) => normalize(cat.name) === normalize(name));
@@ -79,7 +83,6 @@ const AddCategory = () => {
         } else if (isDuplicateName(category.name)) {
             errs.name = "Tên danh mục đã tồn tại!";
         }
-
         if (!category.image) {
             errs.image = "Phải chọn ảnh cho danh mục!";
         } else {
@@ -90,35 +93,23 @@ const AddCategory = () => {
                 errs.image = "Ảnh phải nhỏ hơn 2MB!";
             }
         }
-
-        if (
-            category.parent_id &&
-            !categoryParents.some((item) => String(item.id) === String(category.parent_id))
-        ) {
-            errs.parent_id = "Danh mục cha không hợp lệ!";
-        }
-
+        // KHÔNG còn validate show_home cho CON vì đã ẩn checkbox
         setErrors(errs);
         return Object.keys(errs).length === 0;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!validateForm()) {
-            if (errors.name) {
-                showToastMessage(errors.name, "info");
-            } else if (!category.image) {
-                showToastMessage("Phải chọn ảnh cho danh mục!", "info");
-            } else {
-                showToastMessage("Vui lòng kiểm tra lại thông tin!", "info");
-            }
+            showToastMessage("Vui lòng kiểm tra lại thông tin!", "info");
             return;
         }
 
         const formData = new FormData();
         formData.append("name", category.name);
         formData.append("status", category.status === "Hiển thị" ? 1 : 0);
+        // chỉ gửi 1 nếu là CHA; nếu có parent_id thì luôn 0
+        formData.append("show_home", category.parent_id ? 0 : category.show_home ? 1 : 0);
         if (category.image) formData.append("images", category.image);
         if (category.parent_id) formData.append("parent_id", category.parent_id);
 
@@ -146,12 +137,8 @@ const AddCategory = () => {
     return (
         <div className="container position-relative">
             {/* Toast */}
-            <div
-                aria-live="polite"
-                aria-atomic="true"
-                className="position-fixed top-0 end-0 p-3"
-                style={{zIndex: 1060}}
-            >
+            <div aria-live="polite" aria-atomic="true" className="position-fixed top-0 end-0 p-3"
+                 style={{zIndex: 1060}}>
                 {showToast && (
                     <div
                         className={`toast show align-items-center ${
@@ -174,23 +161,16 @@ const AddCategory = () => {
                                 <FaRegFileAlt className="me-2 fs-4"/>
                             )}
                             <div className="toast-body">{toastMessage}</div>
-                            <button
-                                type="button"
-                                className="btn-close btn-close-white ms-auto me-2"
-                                onClick={() => setShowToast(false)}
-                            ></button>
+                            <button type="button" className="btn-close btn-close-white ms-auto me-2"
+                                    onClick={() => setShowToast(false)}></button>
                         </div>
                     </div>
                 )}
             </div>
 
             <h2>Thêm danh mục</h2>
-            <form
-                onSubmit={handleSubmit}
-                className="border p-4 bg-light rounded"
-                encType="multipart/form-data"
-                noValidate
-            >
+            <form onSubmit={handleSubmit} className="border p-4 bg-light rounded" encType="multipart/form-data"
+                  noValidate>
                 <div className="mb-3">
                     <label className="form-label">Tên danh mục</label>
                     <input
@@ -220,16 +200,31 @@ const AddCategory = () => {
 
                 <div className="mb-3">
                     <label className="form-label">Trạng thái</label>
-                    <select
-                        className="form-select"
-                        name="status"
-                        value={category.status}
-                        onChange={handleChange}
-                    >
+                    <select className="form-select" name="status" value={category.status} onChange={handleChange}>
                         <option value="Hiển thị">Hiển thị</option>
                         <option value="Ẩn">Ẩn</option>
                     </select>
                 </div>
+
+                {/* 🔒 Chỉ render checkbox khi là DANH MỤC CHA */}
+                {!category.parent_id && (
+                    <div className="mb-3">
+                        <label className="form-label">Hiển thị ở Trang chủ</label>
+                        <div className="form-check">
+                            <input
+                                type="checkbox"
+                                id="show_home"
+                                className="form-check-input"
+                                name="show_home"
+                                checked={!!category.show_home}
+                                onChange={handleChange}
+                            />
+                            <label className="form-check-label" htmlFor="show_home">
+                                Bật để hiển thị <strong>Danh mục CHA</strong> ngoài trang Home
+                            </label>
+                        </div>
+                    </div>
+                )}
 
                 <div className="mb-3">
                     <label className="form-label">Danh mục cha</label>
@@ -246,9 +241,7 @@ const AddCategory = () => {
                             </option>
                         ))}
                     </select>
-                    {errors.parent_id && (
-                        <div className="invalid-feedback">{errors.parent_id}</div>
-                    )}
+                    {errors.parent_id && <div className="invalid-feedback">{errors.parent_id}</div>}
                 </div>
 
                 <button type="submit" className="btn btn-success me-2">

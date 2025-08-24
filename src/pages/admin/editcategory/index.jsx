@@ -1,9 +1,13 @@
-// src/pages/admin/category/EditCategory.jsx
 import React, {useEffect, useState} from "react";
 import {Link, useNavigate, useParams} from "react-router-dom";
-// ⚠️ điều chỉnh path cho phù hợp dự án của bạn
 import adminApi from "../../../api/adminApi";
 import {FaCheckCircle, FaRegFileAlt, FaTimesCircle} from "react-icons/fa";
+import Constanst from "../../../Constanst";
+
+const absUrl = (u) => {
+    if (!u) return "";
+    return /^https?:\/\//i.test(u) ? u : `${Constanst.DOMAIN_API}/${String(u).replace(/^\/+/, "")}`;
+};
 
 const EditCategory = () => {
     const {id} = useParams();
@@ -12,14 +16,14 @@ const EditCategory = () => {
     const [category, setCategory] = useState({
         name: "",
         status: "Hiển thị",
-        images: null,        // URL ảnh hiện tại (string)
+        show_home: 0,   // chỉ áp dụng cho CHA
+        images: null,
         parent_id: "",
     });
     const [newImage, setNewImage] = useState(null);
     const [categoryParents, setCategoryParents] = useState([]);
     const [errors, setErrors] = useState({});
 
-    // Toast
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [toastType, setToastType] = useState("success");
@@ -34,7 +38,6 @@ const EditCategory = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Lấy chi tiết danh mục (ADMIN)
                 const res = await adminApi.get(`/categories/${id}`);
                 const data = res.data?.data || res.data;
                 if (!data) throw new Error("Không có dữ liệu danh mục");
@@ -42,11 +45,11 @@ const EditCategory = () => {
                 setCategory({
                     name: data.name || "",
                     status: data.status === 1 ? "Hiển thị" : "Ẩn",
+                    show_home: data.show_home ? 1 : 0,
                     images: data.images || null,
                     parent_id: data.parent_id || "",
                 });
 
-                // Lấy danh mục cha (ADMIN)
                 const resParents = await adminApi.get(`/categories/parents`);
                 const parentData = resParents.data?.data || resParents.data || [];
                 setCategoryParents(Array.isArray(parentData) ? parentData : []);
@@ -65,8 +68,16 @@ const EditCategory = () => {
     }, [id, navigate]);
 
     const handleChange = (e) => {
-        const {name, value} = e.target;
-        setCategory((prev) => ({...prev, [name]: value}));
+        const {name, value, type, checked} = e.target;
+        setCategory((prev) => {
+            const next = {
+                ...prev,
+                [name]: type === "checkbox" ? (checked ? 1 : 0) : value,
+            };
+            // nếu chuyển sang CON → ép tắt show_home
+            if (name === "parent_id" && value) next.show_home = 0;
+            return next;
+        });
         setErrors((prev) => ({...prev, [name]: ""}));
     };
 
@@ -77,13 +88,11 @@ const EditCategory = () => {
         }
     };
 
-    // Validate dưới từng trường
     const validateForm = () => {
         const errs = {};
         if (!category.name.trim()) {
             errs.name = "Tên danh mục không được để trống.";
         }
-        // Không cho phép chọn chính nó làm danh mục cha
         if (category.parent_id && String(category.parent_id) === String(id)) {
             errs.parent_id = "Không thể chọn chính nó làm danh mục cha!";
         } else if (
@@ -92,7 +101,6 @@ const EditCategory = () => {
         ) {
             errs.parent_id = "Danh mục cha không hợp lệ!";
         }
-        // Nếu chọn ảnh mới thì phải đúng loại
         if (newImage) {
             const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
             if (!allowedTypes.includes(newImage.type)) {
@@ -101,6 +109,7 @@ const EditCategory = () => {
                 errs.newImage = "Ảnh phải nhỏ hơn 2MB!";
             }
         }
+        // KHÔNG còn validate show_home cho CON vì đã ẩn checkbox
         setErrors(errs);
         return Object.keys(errs).length === 0;
     };
@@ -117,13 +126,13 @@ const EditCategory = () => {
         const formData = new FormData();
         formData.append("name", category.name);
         formData.append("status", status);
-        // backend có thể không dùng old_image, nhưng để phòng trường hợp controller cần
+        // chỉ gửi 1 nếu là CHA; nếu có parent_id thì luôn 0
+        formData.append("show_home", category.parent_id ? 0 : category.show_home ? 1 : 0);
         formData.append("old_image", category.images || "");
         if (newImage) formData.append("images", newImage);
         if (category.parent_id) formData.append("parent_id", category.parent_id);
 
         try {
-            // PUT /api/admin/categories/:id
             await adminApi.put(`/categories/${id}`, formData, {
                 headers: {"Content-Type": "multipart/form-data"},
             });
@@ -136,7 +145,11 @@ const EditCategory = () => {
                 navigate("/admin-login", {replace: true});
                 return;
             }
-            const msg = err?.response?.data?.error || err?.response?.data?.message || err.message || "Cập nhật thất bại";
+            const msg =
+                err?.response?.data?.error ||
+                err?.response?.data?.message ||
+                err.message ||
+                "Cập nhật thất bại";
             showToastMessage("Lỗi khi cập nhật danh mục: " + msg, "error");
         }
     };
@@ -144,12 +157,8 @@ const EditCategory = () => {
     return (
         <div className="container position-relative">
             {/* Toast */}
-            <div
-                aria-live="polite"
-                aria-atomic="true"
-                className="position-fixed top-0 end-0 p-3"
-                style={{zIndex: 1060}}
-            >
+            <div aria-live="polite" aria-atomic="true" className="position-fixed top-0 end-0 p-3"
+                 style={{zIndex: 1060}}>
                 {showToast && (
                     <div
                         className={`toast show align-items-center ${
@@ -172,11 +181,8 @@ const EditCategory = () => {
                                 <FaRegFileAlt className="me-2 fs-4"/>
                             )}
                             <div className="toast-body">{toastMessage}</div>
-                            <button
-                                type="button"
-                                className="btn-close btn-close-white ms-auto me-2"
-                                onClick={() => setShowToast(false)}
-                            ></button>
+                            <button type="button" className="btn-close btn-close-white ms-auto me-2"
+                                    onClick={() => setShowToast(false)}></button>
                         </div>
                     </div>
                 )}
@@ -184,12 +190,8 @@ const EditCategory = () => {
 
             <h2>Sửa danh mục</h2>
 
-            <form
-                onSubmit={handleSubmit}
-                className="border p-4 bg-light rounded"
-                encType="multipart/form-data"
-                noValidate
-            >
+            <form onSubmit={handleSubmit} className="border p-4 bg-light rounded" encType="multipart/form-data"
+                  noValidate>
                 <div className="mb-3">
                     <label className="form-label">Tên danh mục</label>
                     <input
@@ -205,16 +207,31 @@ const EditCategory = () => {
 
                 <div className="mb-3">
                     <label className="form-label">Trạng thái</label>
-                    <select
-                        className="form-select"
-                        name="status"
-                        value={category.status}
-                        onChange={handleChange}
-                    >
+                    <select className="form-select" name="status" value={category.status} onChange={handleChange}>
                         <option value="Hiển thị">Hiển thị</option>
                         <option value="Ẩn">Ẩn</option>
                     </select>
                 </div>
+
+                {/* 🔒 Chỉ render checkbox khi là DANH MỤC CHA */}
+                {!category.parent_id && (
+                    <div className="mb-3">
+                        <label className="form-label">Hiển thị ở Trang chủ</label>
+                        <div className="form-check">
+                            <input
+                                type="checkbox"
+                                id="show_home"
+                                className="form-check-input"
+                                name="show_home"
+                                checked={!!category.show_home}
+                                onChange={handleChange}
+                            />
+                            <label className="form-check-label" htmlFor="show_home">
+                                Bật để hiển thị <strong>Danh mục CHA</strong> ngoài trang Home
+                            </label>
+                        </div>
+                    </div>
+                )}
 
                 <div className="mb-3">
                     <label className="form-label">Danh mục cha</label>
@@ -233,9 +250,7 @@ const EditCategory = () => {
                                 </option>
                             ))}
                     </select>
-                    {errors.parent_id && (
-                        <div className="invalid-feedback">{errors.parent_id}</div>
-                    )}
+                    {errors.parent_id && <div className="invalid-feedback">{errors.parent_id}</div>}
                 </div>
 
                 <div className="mb-3">
@@ -243,7 +258,7 @@ const EditCategory = () => {
                     <div>
                         {category.images ? (
                             <img
-                                src={category.images}
+                                src={absUrl(category.images)}
                                 alt="Ảnh danh mục"
                                 width="100"
                                 height="100"
@@ -264,9 +279,7 @@ const EditCategory = () => {
                         accept="image/*"
                         onChange={handleImageChange}
                     />
-                    {errors.newImage && (
-                        <div className="invalid-feedback">{errors.newImage}</div>
-                    )}
+                    {errors.newImage && <div className="invalid-feedback">{errors.newImage}</div>}
                 </div>
 
                 <button type="submit" className="btn btn-success me-2">
