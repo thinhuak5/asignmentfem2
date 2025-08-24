@@ -1,12 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Alert,
-  Button,
-  Form,
-  Modal,
-  Spinner,
-  Table,
-} from "react-bootstrap";
+import { Alert, Button, Form, Modal, Spinner, Table } from "react-bootstrap";
 import {
   FaCheckCircle,
   FaEdit,
@@ -88,6 +81,18 @@ const paymentBadge = (payment_id, payment_status) => {
     return <span className="badge bg-success">Đã thanh toán</span>;
   }
   return <span className="badge bg-warning text-dark">Chưa thanh toán</span>;
+};
+
+/* ===================== transition rules ===================== */
+/** Kiểm tra hợp lệ khi chuyển trạng thái */
+const canTransition = (from, to) => {
+  if (from === to) return true;
+  // Hủy chỉ từ 1 hoặc 2
+  if (to === 0) return from === 1 || from === 2;
+  // Không lùi trạng thái
+  if (to < from) return false;
+  // Cho phép tiến thẳng (1→3, 2→4...) tùy nghiệp vụ, ở đây cho phép
+  return true;
 };
 
 /* ===================== component ===================== */
@@ -222,11 +227,62 @@ const OrderList = () => {
     });
 
   const handleSave = async (id) => {
-    const payment_status = updatedPaymentStatus[id];
-    const status = updatedOrderStatus[id];
+    const current = orders.find((o) => o.id === id);
+    if (!current) return;
+
+    const toStatus = updatedOrderStatus[id];
+    const newPaymentStatus =
+      updatedPaymentStatus[id] ?? current.payment_status;
+
+    /* ==== VALIDATIONS ==== */
+    // 1) Rule chuyển trạng thái tổng quát
+    if (!canTransition(current.status, toStatus)) {
+      setToastType("danger");
+      setShowToast(true);
+      setToastMessage(
+        <>
+          <FaTimesCircle className="me-1" />
+          Chuyển trạng thái không hợp lệ.
+        </>
+      );
+      setTimeout(() => setShowToast(false), 3200);
+      return;
+    }
+
+    // 2) Ràng buộc thanh toán theo phương thức
+    // 2a) Nếu là Chuyển khoản, luôn phải "Đã thanh toán"
+    if (current.payment_id === 2 && newPaymentStatus !== 1) {
+      setToastType("danger");
+      setShowToast(true);
+      setToastMessage(
+        <>
+          <FaTimesCircle className="me-1" />
+          Đơn chuyển khoản phải ở trạng thái "Đã thanh toán".
+        </>
+      );
+      setTimeout(() => setShowToast(false), 3200);
+      return;
+    }
+
+    // 2b) Nếu là COD và chuyển sang "Đã giao", yêu cầu đã thanh toán
+    if (toStatus === 4 && current.payment_id === 1 && newPaymentStatus !== 1) {
+      setToastType("danger");
+      setShowToast(true);
+      setToastMessage(
+        <>
+          <FaTimesCircle className="me-1" />
+          Đơn COD phải "Đã thanh toán" trước khi kết thúc (Đã giao).
+        </>
+      );
+      setTimeout(() => setShowToast(false), 3200);
+      return;
+    }
 
     try {
-      await adminApi.put(`/orders/${id}`, { payment_status, status });
+      await adminApi.put(`/orders/${id}`, {
+        payment_status: newPaymentStatus,
+        status: toStatus,
+      });
       setShowToast(true);
       setToastType("success");
       setToastMessage(
@@ -389,7 +445,13 @@ const OrderList = () => {
 
       {!loading && !error && (
         <>
-          <Table striped bordered hover responsive className="text-center align-middle">
+          <Table
+            striped
+            bordered
+            hover
+            responsive
+            className="text-center align-middle"
+          >
             <thead className="table-dark">
               <tr>
                 <th>STT</th>
@@ -453,10 +515,16 @@ const OrderList = () => {
                               order.payment_status
                             }
                             onChange={(e) =>
-                              handlePaymentStatusChange(order.id, e.target.value)
+                              handlePaymentStatusChange(
+                                order.id,
+                                e.target.value
+                              )
                             }
                           >
-                            <option value={0} disabled={order.payment_status === 1}>
+                            <option
+                              value={0}
+                              disabled={order.payment_status === 1}
+                            >
                               Chưa thanh toán
                             </option>
                             <option value={1}>Đã thanh toán</option>
@@ -470,19 +538,23 @@ const OrderList = () => {
                     <td>
                       {editingOrderId === order.id ? (
                         <Form.Select
-                          style={selectNoArrowStyle} // ẨN MŨI TÊN Ở CHẾ ĐỘ SỬA
+                          style={selectNoArrowStyle}
                           value={updatedOrderStatus[order.id]}
                           onChange={(e) =>
                             handleOrderStatusChange(order.id, e.target.value)
                           }
                         >
                           {orderStatusOptions
-                            .filter(
-                              (opt) =>
+                            .filter((opt) => {
+                              // "Đã hủy" (0) chỉ hiện khi từ 1 hoặc 2
+                              if (opt.value === "0") return order.status <= 2;
+
+                              // Các option khác: chỉ tiến, không lùi
+                              return (
                                 opt.value === "" ||
-                                opt.value === "0" ||
                                 parseInt(opt.value || "0", 10) >= order.status
-                            )
+                              );
+                            })
                             .map((option) => (
                               <option key={option.value} value={option.value}>
                                 {option.label}
@@ -522,6 +594,8 @@ const OrderList = () => {
                           size="sm"
                           onClick={() => handleEdit(order.id)}
                           className="d-flex align-items-center justify-content-center"
+                          disabled={[0, 4].includes(order.status)} // khóa sửa khi Đã hủy/Đã giao
+                          title={[0, 4].includes(order.status) ? "Trạng thái đã kết thúc, không thể sửa" : "Sửa"}
                         >
                           <FaEdit className="me-1" /> Sửa
                         </Button>
@@ -578,21 +652,18 @@ const OrderList = () => {
                     <strong>Khách hàng:</strong> {detailOrder.name} <br />
                     <strong>SĐT:</strong> {detailOrder.phone} <br />
                     <strong>Địa chỉ:</strong> {detailOrder.address} <br />
-                    <strong>Thời gian tạo:</strong> {fmtDT(detailOrder.createdAt)}{" "}
-                    <br />
+                    <strong>Thời gian tạo:</strong> {fmtDT(detailOrder.createdAt)} <br />
                     <strong>Thanh toán:</strong>{" "}
                     {paymentBadge(
                       detailOrder.payment_id,
                       detailOrder.payment_status
                     )}{" "}
                     <br />
-                    <strong>Trạng thái:</strong>{" "}
-                    {statusBadge(detailOrder.status)}
+                    <strong>Trạng thái:</strong> {statusBadge(detailOrder.status)}
                   </div>
                   <hr />
                   <h5 className="mt-3">Danh sách sản phẩm</h5>
-                  {Array.isArray(detailOrder.items) &&
-                  detailOrder.items.length > 0 ? (
+                  {Array.isArray(detailOrder.items) && detailOrder.items.length > 0 ? (
                     <Table size="sm" bordered hover>
                       <thead className="table-light">
                         <tr>
@@ -628,34 +699,22 @@ const OrderList = () => {
                               )}
                             </td>
                             <td>{item.variation?.name || "--"}</td>
-                            <td>
-                              {fmtMoney(item.variation?.price ?? item.price)}đ
-                            </td>
+                            <td>{fmtMoney(item.variation?.price ?? item.price)}đ</td>
                             <td>{item.quantity}</td>
                             <td className="fw-bold">
-                              {fmtMoney(
-                                n(item.variation?.price ?? item.price) *
-                                  n(item.quantity)
-                              )}
-                              đ
+                              {fmtMoney(n(item.variation?.price ?? item.price) * n(item.quantity))}đ
                             </td>
                           </tr>
                         ))}
                         {(() => {
-                          const { discount, totalForDisplay } =
-                            calcTotals(detailOrder);
+                          const { discount, totalForDisplay } = calcTotals(detailOrder);
                           return (
                             <tr>
-                              <td colSpan={5} className="text-end fw-bold">
-                                Tổng cộng
-                              </td>
+                              <td colSpan={5} className="text-end fw-bold">Tổng cộng</td>
                               <td className="fw-bold text-danger">
                                 {fmtMoney(totalForDisplay)} đ
                                 {discount > 0 && (
-                                  <span className="text-muted">
-                                    {" "}
-                                    (-{fmtMoney(discount)} đ)
-                                  </span>
+                                  <span className="text-muted"> (-{fmtMoney(discount)} đ)</span>
                                 )}
                               </td>
                             </tr>

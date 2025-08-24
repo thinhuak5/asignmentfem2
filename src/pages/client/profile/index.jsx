@@ -1,19 +1,46 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import Constanst from "../../../Constanst";
-import { Link } from "react-router-dom";
-import { SnackbarProvider } from "notistack";
-import { useSnackbar } from "notistack";
-// Popup xác nhận đẹp, ở giữa màn hình
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+import { SnackbarProvider, useSnackbar } from "notistack";
+import { Modal as RBModal, Button as RBButton } from "react-bootstrap";
 
-/* ==========================================================================
-   STYLES
-   ========================================================================== */
-const globalStyles = {
-  fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-  color: "#333",
-};
+const SoftBlueCSS = () => (
+  <style>{`
+    .modal-soft-blue .modal-content{
+      background:#ffffff;
+      border:1px solid #cfe3ff;
+      box-shadow:0 10px 30px rgba(20,60,120,.15);
+      border-radius:14px;
+    }
+    .modal-soft-blue .modal-header{
+      background:#eaf3ff;
+      color:#0b3d91;
+      border-bottom:1px solid #cfe3ff;
+      border-top-left-radius:14px;
+      border-top-right-radius:14px;
+    }
+    .modal-soft-blue .modal-title{ font-weight:600; }
+    .modal-soft-blue .modal-body{ color:#193b6a; }
+   .modal-soft-blue .btn-primary{
+  background:#E74C3C;  /* đỏ */
+  border-color:#E74C3C;
+}
+.modal-soft-blue .btn-primary:hover{
+  background:#C0392B;  /* đỏ đậm khi hover */
+  border-color:#C0392B;
+}
+
+    .modal-soft-blue .btn-secondary{
+      background:#e9f2ff; color:#0b3d91; border-color:#cfe3ff;
+    }
+    .modal-soft-blue .btn-secondary:hover{
+      background:#dbeaff; color:#0b3d91; border-color:#bed7ff;
+    }
+    .modal-soft-blue .btn-close{
+      filter: invert(24%) sepia(16%) saturate(1783%) hue-rotate(189deg) brightness(90%) contrast(88%);
+    }
+  `}</style>
+);
 
 const colors = {
   primaryRed: "#E74C3C",
@@ -25,13 +52,7 @@ const colors = {
   blueLink: "#007bff",
 };
 
-const commonCardStyles = {
-  backgroundColor: colors.white,
-  borderRadius: "8px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-  padding: "24px",
-  marginBottom: "20px",
-};
+const cardShadow = "0 2px 8px rgba(0,0,0,0.05)";
 
 const styles = {
   pageContainer: {
@@ -39,7 +60,8 @@ const styles = {
     backgroundColor: colors.lightGreyBackground,
     minHeight: "calc(100vh - 70px)",
     padding: "20px",
-    ...globalStyles,
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    color: "#333",
   },
   sidebar: {
     width: "280px",
@@ -47,8 +69,8 @@ const styles = {
     marginRight: "20px",
     backgroundColor: colors.white,
     borderRadius: "8px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-    padding: "0",
+    boxShadow: cardShadow,
+    padding: 0,
   },
   sidebarHeader: {
     display: "flex",
@@ -63,22 +85,13 @@ const styles = {
     marginRight: "15px",
     objectFit: "cover",
   },
-  sidebarUserName: {
-    fontWeight: "600",
-    fontSize: "16px",
-    color: colors.darkText,
-  },
+  sidebarUserName: { fontWeight: 600, fontSize: 16, color: colors.darkText },
   sidebarUserEmail: {
-    fontSize: "13px",
+    fontSize: 13,
     color: colors.textGrey,
-    marginTop: "2px",
     wordBreak: "break-all",
   },
-  sidebarNav: {
-    padding: "10px 0",
-    listStyle: "none",
-    margin: 0,
-  },
+  sidebarNav: { padding: "10px 0", listStyle: "none", margin: 0 },
   sidebarNavItem: {
     display: "flex",
     alignItems: "center",
@@ -86,66 +99,68 @@ const styles = {
     cursor: "pointer",
     color: colors.textGrey,
     fontSize: "15px",
-    transition: "all 0.2s ease",
+    transition: "all .2s ease",
     borderLeft: "3px solid transparent",
   },
   sidebarNavItemActive: {
     backgroundColor: "#E9F5FF",
     color: colors.blueLink,
-    fontWeight: "600",
+    fontWeight: 600,
     borderLeft: `3px solid ${colors.blueLink}`,
   },
   sidebarNavIcon: {
-    marginRight: "15px",
-    fontSize: "18px",
-    width: "20px",
+    marginRight: 15,
+    fontSize: 18,
+    width: 20,
     textAlign: "center",
   },
   mainContent: { flexGrow: 1 },
-  card: { ...commonCardStyles },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    boxShadow: cardShadow,
+    padding: 24,
+    marginBottom: 20,
+  },
   cardHeader: {
-    fontSize: "20px",
-    fontWeight: "600",
-    marginBottom: "20px",
-    paddingBottom: "15px",
+    fontSize: 20,
+    fontWeight: 600,
+    marginBottom: 20,
+    paddingBottom: 15,
     borderBottom: `1px solid ${colors.borderColor}`,
     color: colors.darkText,
   },
-  formGroup: { marginBottom: "20px" },
+  formGroup: { marginBottom: 20 },
   label: {
-    fontWeight: "600",
+    fontWeight: 600,
     display: "block",
-    marginBottom: "8px",
+    marginBottom: 8,
     color: colors.darkText,
-    fontSize: "14px",
+    fontSize: 14,
   },
   input: {
     width: "100%",
     padding: "10px 12px",
-    fontSize: "15px",
-    borderRadius: "6px",
+    fontSize: 15,
+    borderRadius: 6,
     border: `1px solid ${colors.borderColor}`,
     boxSizing: "border-box",
   },
-  readOnlyValue: {
-    fontSize: "15px",
-    padding: "10px 0",
-    color: colors.textGrey,
-  },
+  readOnlyValue: { fontSize: 15, padding: "10px 0", color: colors.textGrey },
   buttonContainer: {
     display: "flex",
     justifyContent: "flex-end",
-    marginTop: "25px",
-    gap: "10px",
+    marginTop: 25,
+    gap: 10,
   },
   button: {
     border: "none",
     padding: "10px 25px",
-    borderRadius: "6px",
+    borderRadius: 6,
     cursor: "pointer",
-    fontWeight: "600",
-    fontSize: "15px",
-    transition: "all 0.2s",
+    fontWeight: 600,
+    fontSize: 15,
+    transition: "all .2s",
   },
   saveButton: { backgroundColor: colors.primaryRed, color: colors.white },
   editButton: { backgroundColor: "#30A1F6", color: colors.white },
@@ -154,42 +169,32 @@ const styles = {
     color: colors.textGrey,
     border: `1px solid ${colors.borderColor}`,
   },
-  errorMsg: {
-    color: "red",
-    textAlign: "center",
-    marginBottom: "15px",
-    fontWeight: "600",
-    fontSize: "14px",
-  },
-  link: { textDecoration: "none", color: "inherit" },
-
+  errorMsg: { color: "red", textAlign: "left", marginTop: 6, fontSize: 14 },
   // Address
-  addrList: { display: "flex", flexDirection: "column", gap: "12px" },
+  addrList: { display: "flex", flexDirection: "column", gap: 12 },
   addrItem: {
     border: `1px solid ${colors.borderColor}`,
-    borderRadius: "8px",
-    padding: "12px",
+    borderRadius: 8,
+    padding: 12,
     display: "grid",
     gridTemplateColumns: "auto 1fr auto",
-    gap: "12px",
+    gap: 12,
     alignItems: "center",
   },
-  addrActions: { display: "flex", gap: "8px" },
+  addrActions: { display: "flex", gap: 8 },
   pillDefault: {
     display: "inline-block",
-    fontSize: "12px",
+    fontSize: 12,
     padding: "2px 8px",
-    borderRadius: "999px",
+    borderRadius: 999,
     background: "#E9F5FF",
     color: colors.blueLink,
-    marginLeft: "8px",
+    marginLeft: 8,
   },
   divider: { height: 1, background: colors.borderColor, margin: "16px 0" },
 };
 
-/* ==========================================================================
-   HELPERS
-   ========================================================================== */
+/* ======================= Helpers ======================= */
 const uuid = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
@@ -205,7 +210,7 @@ const dedupeBy = (arr, getKey) => {
   });
 };
 
-// Provinces
+// Normalize provinces & wards
 const normalizeProvinces = (arr) => {
   const list = (Array.isArray(arr) ? arr : [])
     .map((p) => ({
@@ -222,7 +227,6 @@ const normalizeProvinces = (arr) => {
   return dedupeBy(list, (x) => x.code);
 };
 
-// Wards
 const normalizeWards = (arr) => {
   const list = (Array.isArray(arr) ? arr : [])
     .map((w) => ({
@@ -233,26 +237,11 @@ const normalizeWards = (arr) => {
   return dedupeBy(list, (x) => x.code);
 };
 
-// --- Helpers cho so sánh/validate địa chỉ ---
-const stripAccents = (s = "") =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-const normalizeForCompare = (s = "") =>
-  stripAccents(String(s).toLowerCase())
-    .replace(/\s+/g, " ")
-    .trim();
-
-// Ký tự hợp lệ cho phần địa chỉ chi tiết
 const ADDRESS_ALLOWED_REGEX = /^[0-9A-Za-zÀ-ỹ\s,./-]+$/u;
 
-/* ==========================================================================
-   SUB-COMPONENTS
-   ========================================================================== */
-
-// Personal info
+/* ======================= Personal Info ======================= */
 const PersonalInfoView = ({ profile, onSave }) => {
   const { enqueueSnackbar } = useSnackbar();
-
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState({
     name: profile.name,
@@ -261,13 +250,15 @@ const PersonalInfoView = ({ profile, onSave }) => {
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Regex SĐT VN: bắt đầu bằng 0, tổng 9–11 số
+  useEffect(() => {
+    setEditedProfile({ name: profile.name, phone: profile.phone });
+  }, [profile]);
+
   const PHONE_REGEX = /^0\d{8,10}$/;
 
   const handleAvatarPick = (file) => {
     setErrorMsg("");
     if (!file) return;
-
     const allowed = [
       "image/jpeg",
       "image/jpg",
@@ -277,7 +268,7 @@ const PersonalInfoView = ({ profile, onSave }) => {
     ];
     if (!allowed.includes(file.type)) {
       setSelectedAvatar(null);
-      setErrorMsg("Định dạng ảnh không hợp lệ (chỉ JPG/PNG/WEBP/GIF).");
+      setErrorMsg("Định dạng ảnh không hợp lệ (JPG/PNG/WEBP/GIF).");
       enqueueSnackbar("Ảnh không hợp lệ", { variant: "error" });
       return;
     }
@@ -288,7 +279,7 @@ const PersonalInfoView = ({ profile, onSave }) => {
       enqueueSnackbar("Ảnh quá lớn", { variant: "error" });
       return;
     }
-    setSelectedAvatar(file); // preview ngay
+    setSelectedAvatar(file);
   };
 
   const noChanges =
@@ -296,45 +287,35 @@ const PersonalInfoView = ({ profile, onSave }) => {
     (editedProfile.phone || "") === (profile.phone || "") &&
     !selectedAvatar;
 
-  const validateBeforeSave = () => {
+  const validate = () => {
     if (!editedProfile.name || !editedProfile.name.trim()) {
       setErrorMsg("Tên hiển thị là bắt buộc.");
       return false;
     }
     if (!editedProfile.phone || !PHONE_REGEX.test(editedProfile.phone.trim())) {
-      setErrorMsg(
-        "Số điện thoại không hợp lệ. Vui lòng nhập số bắt đầu bằng 0 và dài 9–11 chữ số."
-      );
+      setErrorMsg("Số điện thoại phải bắt đầu bằng 0 và dài 9–11 chữ số.");
       return false;
     }
     setErrorMsg("");
     return true;
   };
 
-  const handleSaveClick = async () => {
+  const handleSave = async () => {
     if (noChanges) {
       enqueueSnackbar("Không có thay đổi nào để lưu.", { variant: "info" });
       setIsEditing(false);
       setSelectedAvatar(null);
       return;
     }
-    if (!validateBeforeSave()) return;
-
+    if (!validate()) return;
     try {
       await onSave(editedProfile, selectedAvatar);
       enqueueSnackbar("Cập nhật hồ sơ thành công", { variant: "success" });
       setIsEditing(false);
       setSelectedAvatar(null);
-    } catch (e) {
+    } catch {
       enqueueSnackbar("Cập nhật thất bại", { variant: "error" });
     }
-  };
-
-  const handleCancelClick = () => {
-    setIsEditing(false);
-    setEditedProfile({ name: profile.name, phone: profile.phone });
-    setSelectedAvatar(null);
-    setErrorMsg("");
   };
 
   return (
@@ -350,8 +331,8 @@ const PersonalInfoView = ({ profile, onSave }) => {
           }
           alt="Avatar"
           style={{
-            width: "100px",
-            height: "100px",
+            width: 100,
+            height: 100,
             borderRadius: "50%",
             objectFit: "cover",
             border: `3px solid ${colors.borderColor}`,
@@ -373,7 +354,7 @@ const PersonalInfoView = ({ profile, onSave }) => {
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>Tên hiển thị:</label>
+        <label style={styles.label}>Tên hiển thị</label>
         {isEditing ? (
           <input
             type="text"
@@ -391,12 +372,12 @@ const PersonalInfoView = ({ profile, onSave }) => {
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>Email:</label>
+        <label style={styles.label}>Email</label>
         <div style={styles.readOnlyValue}>{profile.email}</div>
       </div>
 
       <div style={styles.formGroup}>
-        <label style={styles.label}>Số điện thoại:</label>
+        <label style={styles.label}>Số điện thoại</label>
         {isEditing ? (
           <input
             type="text"
@@ -419,13 +400,17 @@ const PersonalInfoView = ({ profile, onSave }) => {
         {isEditing ? (
           <>
             <button
-              onClick={handleCancelClick}
+              onClick={() => {
+                setIsEditing(false);
+                setSelectedAvatar(null);
+                setEditedProfile({ name: profile.name, phone: profile.phone });
+              }}
               style={{ ...styles.button, ...styles.cancelButton }}
             >
               Hủy
             </button>
             <button
-              onClick={handleSaveClick}
+              onClick={handleSave}
               style={{ ...styles.button, ...styles.saveButton }}
             >
               Lưu thay đổi
@@ -444,38 +429,23 @@ const PersonalInfoView = ({ profile, onSave }) => {
   );
 };
 
-// Orders (placeholder)
-
-
-// Address form
-const AddressForm = ({
-  initialValue,
-  onSubmit,
-  onCancel,
-  existingAddresses = [],
-  excludeId = null,
-}) => {
-  const [houseNumber, setHouseNumber] = useState(
-    initialValue?.houseNumber || ""
-  );
-  const [provinceCode, setProvinceCode] = useState(
-    initialValue?.provinceCode || ""
-  );
-  const [wardCode, setWardCode] = useState(initialValue?.wardCode || "");
-
+/* ======================= Address Form (không có nút Lưu riêng) ======================= */
+const AddressForm = ({ value, onChange, onCancel }) => {
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingWards, setLoadingWards] = useState(false);
   const [err, setErr] = useState("");
 
+  // value: { houseNumber, provinceCode, provinceName, wardCode, wardName }
+  const provinceCode = value?.provinceCode || "";
+  const wardCode = value?.wardCode || "";
+  const houseNumber = value?.houseNumber || "";
+
   useEffect(() => {
     setLoadingProvinces(true);
     fetch("https://34tinhthanh.com/api/provinces")
-      .then((r) => {
-        if (!r.ok) throw new Error("FETCH_PROVINCES_FAILED");
-        return r.json();
-      })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => setProvinces(normalizeProvinces(data)))
       .catch(() => setErr("Không tải được danh sách Tỉnh/Thành."))
       .finally(() => setLoadingProvinces(false));
@@ -484,7 +454,7 @@ const AddressForm = ({
   useEffect(() => {
     if (!provinceCode) {
       setWards([]);
-      setWardCode("");
+      onChange?.({ ...value, wardCode: "", wardName: "" });
       return;
     }
     setLoadingWards(true);
@@ -493,97 +463,51 @@ const AddressForm = ({
         provinceCode
       )}`
     )
-      .then((r) => {
-        if (!r.ok) throw new Error("FETCH_WARDS_FAILED");
-        return r.json();
-      })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((data) => setWards(normalizeWards(data)))
       .catch(() => setErr("Không tải được danh sách Phường/Xã."))
       .finally(() => setLoadingWards(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provinceCode]);
 
-  const provinceName =
-    provinces.find((p) => String(p.code) === String(provinceCode))?.name || "";
-  const wardName =
-    wards.find((w) => String(w.code) === String(wardCode))?.name || "";
+  const onProvinceChange = (code) => {
+    const name =
+      provinces.find((p) => String(p.code) === String(code))?.name || "";
+    onChange?.({
+      ...value,
+      provinceCode: code,
+      provinceName: name,
+      wardCode: "",
+      wardName: "",
+    });
+  };
+  const onWardChange = (code) => {
+    const name = wards.find((w) => String(w.code) === String(code))?.name || "";
+    onChange?.({ ...value, wardCode: code, wardName: name });
+  };
+  const onHouseChange = (text) => {
+    onChange?.({ ...value, houseNumber: text });
+  };
 
-  const fullAddress = [houseNumber, wardName, provinceName]
+  const fullAddress = [houseNumber, value?.wardName, value?.provinceName]
     .filter(Boolean)
     .join(", ");
 
-  const submit = () => {
-    setErr("");
-
-    if (!houseNumber || !provinceCode || !wardCode) {
-      setErr("Vui lòng nhập Số nhà/địa chỉ, chọn Tỉnh/Thành và Phường/Xã.");
-      return;
-    }
-
-    if (!ADDRESS_ALLOWED_REGEX.test(houseNumber)) {
-      setErr("Địa chỉ chỉ được dùng chữ, số, khoảng trắng và , . / -");
-      return;
-    }
-
-    const willFullAddress = [houseNumber, wardName, provinceName]
-      .filter(Boolean)
-      .join(", ");
-    if (willFullAddress.length > 500) {
-      setErr("Địa chỉ quá dài (tối đa 500 ký tự).");
-      return;
-    }
-
-    const candidateKey = normalizeForCompare(
-      `${houseNumber} | ${wardName} | ${provinceName}`
-    );
-    const isDup = (existingAddresses || [])
-      .filter((a) => a && a.id !== excludeId)
-      .some((a) => {
-        const k = normalizeForCompare(
-          `${a.houseNumber} | ${a.wardName} | ${a.provinceName}`
-        );
-        return k === candidateKey;
-      });
-
-    if (isDup) {
-      setErr("Địa chỉ đã tồn tại (trùng 100%).");
-      return;
-    }
-
-    onSubmit({
-      houseNumber,
-      provinceCode,
-      provinceName,
-      wardCode,
-      wardName,
-      fullAddress: willFullAddress,
-    });
-  };
-
   return (
     <div style={{ marginTop: 8 }}>
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Số nhà / Địa chỉ chi tiết</label>
-        <input
-          type="text"
-          value={houseNumber}
-          onChange={(e) => setHouseNumber(e.target.value)}
-          placeholder="VD: 123, ngõ 45, đường ABC"
-          style={styles.input}
-        />
-      </div>
-
+      {/* Thứ tự: Tỉnh/Thành -> Phường/Xã -> Số nhà/địa chỉ */}
       <div style={styles.formGroup}>
         <label style={styles.label}>Tỉnh / Thành phố</label>
         <select
           value={provinceCode}
-          onChange={(e) => setProvinceCode(e.target.value)}
+          onChange={(e) => onProvinceChange(e.target.value)}
           style={styles.input}
         >
           <option value="">
-            {loadingProvinces ? "Đang tải..." : "— Chọn Tỉnh/Thành —"}
+            {loadingProvinces ? "Đang tải..." : "Chọn Tỉnh/Thành"}
           </option>
-          {provinces.map((p, idx) => (
-            <option key={`${p.code}-${idx}`} value={p.code}>
+          {provinces.map((p) => (
+            <option key={p.code} value={p.code}>
               {p.name}
             </option>
           ))}
@@ -594,7 +518,7 @@ const AddressForm = ({
         <label style={styles.label}>Phường / Xã</label>
         <select
           value={wardCode}
-          onChange={(e) => setWardCode(e.target.value)}
+          onChange={(e) => onWardChange(e.target.value)}
           disabled={!provinceCode || loadingWards}
           style={styles.input}
         >
@@ -602,11 +526,11 @@ const AddressForm = ({
             {provinceCode
               ? loadingWards
                 ? "Đang tải..."
-                : "— Chọn Phường/Xã —"
-              : "— Chọn Tỉnh trước —"}
+                : "Chọn Phường/Xã"
+              : "Chọn Tỉnh trước"}
           </option>
-          {wards.map((w, idx) => (
-            <option key={`${w.code}-${idx}`} value={w.code}>
+          {wards.map((w) => (
+            <option key={w.code} value={w.code}>
               {w.name}
             </option>
           ))}
@@ -614,33 +538,46 @@ const AddressForm = ({
       </div>
 
       <div style={styles.formGroup}>
+        <label style={styles.label}>Số nhà / Địa chỉ chi tiết</label>
+        <input
+          type="text"
+          value={houseNumber}
+          onChange={(e) => onHouseChange(e.target.value)}
+          placeholder="VD: 123, ngõ 45, đường ABC"
+          style={styles.input}
+        />
+        {houseNumber && !ADDRESS_ALLOWED_REGEX.test(houseNumber) && (
+          <div style={styles.errorMsg}>
+            Địa chỉ chỉ được dùng chữ, số, khoảng trắng và , . / -
+          </div>
+        )}
+      </div>
+
+      <div style={styles.formGroup}>
         <label style={styles.label}>Xem trước địa chỉ</label>
         <div style={styles.readOnlyValue}>
-          {fullAddress || "— Chưa đủ thông tin —"}
+          {fullAddress || "Chưa đủ thông tin"}
         </div>
       </div>
 
       {err && <div style={styles.errorMsg}>{err}</div>}
 
-      <div style={styles.buttonContainer}>
-        <button
-          onClick={onCancel}
-          style={{ ...styles.button, ...styles.cancelButton }}
-        >
-          Hủy
-        </button>
-        <button
-          onClick={submit}
-          style={{ ...styles.button, ...styles.saveButton }}
-        >
-          Lưu
-        </button>
-      </div>
+      {/* Không có nút Lưu riêng, chỉ có Hủy bản nháp (nếu cần) */}
+      {onCancel && (
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            onClick={onCancel}
+            style={{ ...styles.button, ...styles.cancelButton }}
+          >
+            Hủy thêm mới
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
-// Address list & manage
+/* ======================= Address View ======================= */
 const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
   const { enqueueSnackbar } = useSnackbar();
 
@@ -651,74 +588,43 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
     defaultAddressId || null
   );
 
-  const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [newDraft, setNewDraft] = useState(null); // bản nháp địa chỉ mới
   const [error, setError] = useState("");
 
-  // popup confirm state
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Xóa địa chỉ (modal)
   const [deleteId, setDeleteId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const legacyTextAddress = useMemo(() => null, []);
+  // render dòng mô tả ngắn
+  const partsLine = (a) =>
+    [a.houseNumber, a.wardName, a.provinceName].filter(Boolean).join(" • ") ||
+    "Chưa đủ thông tin";
 
   const setDefault = (id) => {
     setCurrentDefaultId(id);
     setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
   };
 
-  const handleAdd = (form) => {
-    const id = uuid();
-    const newAddr = {
-      id,
-      houseNumber: form.houseNumber,
-      wardCode: form.wardCode,
-      wardName: form.wardName,
-      provinceCode: form.provinceCode,
-      provinceName: form.provinceName,
-      fullAddress: form.fullAddress,
-      isDefault: addresses.length === 0,
-    };
-    const next = [...addresses, newAddr];
-    setAddresses(next);
-    if (next.length === 1) setCurrentDefaultId(id);
-    setIsAdding(false);
-    enqueueSnackbar("Thêm địa chỉ thành công", { variant: "success" });
-  };
+  const toggleEdit = (id) => setEditingId((cur) => (cur === id ? null : id));
 
-  const handleEdit = (id, form) => {
+  const updateAddress = (id, next) =>
     setAddresses((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              houseNumber: form.houseNumber,
-              wardCode: form.wardCode,
-              wardName: form.wardName,
-              provinceCode: form.provinceCode,
-              provinceName: form.provinceName,
-              fullAddress: form.fullAddress,
-            }
-          : a
-      )
+      prev.map((a) => (a.id === id ? { ...a, ...next } : a))
     );
-    setEditingId(null);
-    enqueueSnackbar("Cập nhật địa chỉ thành công", { variant: "success" });
-  };
 
-  // MỞ POPUP XÁC NHẬN (ở giữa màn hình, to hơn)
   const handleDelete = (id) => {
     if (addresses.length <= 1) {
-      setError("Không thể xóa: bạn phải có ít nhất một địa chỉ.");
-      enqueueSnackbar("Không thể xóa: bạn phải có ít nhất một địa chỉ.", {
+      setError("Không thể xóa: cần có ít nhất một địa chỉ.");
+      enqueueSnackbar("Không thể xóa: cần có ít nhất một địa chỉ.", {
         variant: "warning",
       });
       return;
     }
     setDeleteId(id);
-    setConfirmOpen(true);
+    setShowDeleteModal(true);
   };
 
-  // XÁC NHẬN XÓA TRONG POPUP
   const confirmDelete = () => {
     const id = deleteId;
     const next = addresses.filter((a) => a.id !== id);
@@ -733,42 +639,103 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
       }))
     );
     setCurrentDefaultId(nextDefault);
-    enqueueSnackbar("Xóa địa chỉ thành công", { variant: "success" });
-    setConfirmOpen(false);
+    setShowDeleteModal(false);
     setDeleteId(null);
+    setEditingId((cur) => (cur === id ? null : cur));
+    enqueueSnackbar("Xóa địa chỉ thành công", { variant: "success" });
   };
 
   const handleSaveAll = () => {
     setError("");
-    if (!addresses.length) {
+
+    // Gom danh sách cuối cùng (bao gồm draft nếu có)
+    const combined = [...addresses];
+    let draftId = null;
+
+    if (newDraft) {
+      // Validate draft trước khi thêm vào combined
+      if (
+        !newDraft.houseNumber ||
+        !newDraft.provinceCode ||
+        !newDraft.wardCode
+      ) {
+        setError("Địa chỉ mới cần đủ Tỉnh/Thành, Phường/Xã và Số nhà/địa chỉ.");
+        return;
+      }
+      if (!ADDRESS_ALLOWED_REGEX.test(newDraft.houseNumber)) {
+        setError("Địa chỉ chỉ được dùng chữ, số, khoảng trắng và , . / -");
+        return;
+      }
+      const full = [
+        newDraft.houseNumber,
+        newDraft.wardName,
+        newDraft.provinceName,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      if (full.length > 500) {
+        setError("Địa chỉ mới quá dài (tối đa 500 ký tự).");
+        return;
+      }
+      draftId = uuid();
+      combined.push({ id: draftId, ...newDraft });
+    }
+
+    if (!combined.length) {
       setError("Vui lòng thêm ít nhất một địa chỉ.");
       return;
     }
-    const defaultId = currentDefaultId || addresses[0].id;
-    const normalized = addresses.map((a) => ({
+
+    // Validate toàn bộ trước khi gửi
+    for (const a of combined) {
+      if (!a.houseNumber || !a.provinceCode || !a.wardCode) {
+        setError("Mỗi địa chỉ cần đủ Tỉnh/Thành, Phường/Xã và Số nhà/địa chỉ.");
+        return;
+      }
+      if (!ADDRESS_ALLOWED_REGEX.test(a.houseNumber)) {
+        setError("Một địa chỉ có ký tự không hợp lệ.");
+        return;
+      }
+      const full = [a.houseNumber, a.wardName, a.provinceName]
+        .filter(Boolean)
+        .join(", ");
+      if (full.length > 500) {
+        setError("Một địa chỉ quá dài (tối đa 500 ký tự).");
+        return;
+      }
+    }
+
+    const defaultId = currentDefaultId || draftId || combined[0].id;
+    const normalized = combined.map((a) => ({
       ...a,
       isDefault: a.id === defaultId,
+      fullAddress: [a.houseNumber, a.wardName, a.provinceName]
+        .filter(Boolean)
+        .join(", "),
     }));
+
+    // Chỉ parent hiển thị snackbar cho thao tác lưu để tránh trùng 2 thông báo
     onSave(normalized, defaultId);
+    setNewDraft(null);
+    setEditingId(null);
   };
 
   return (
     <div style={styles.card}>
+      <SoftBlueCSS />
       <h3 style={styles.cardHeader}>Địa chỉ của tôi</h3>
 
       <div style={styles.formGroup}>
         <div style={{ marginBottom: 8, fontWeight: 600 }}>
           Danh sách địa chỉ
         </div>
+
         {addresses.length === 0 ? (
           <div style={styles.readOnlyValue}>Chưa có địa chỉ.</div>
         ) : (
           <div style={styles.addrList}>
-            {addresses.map((a, idx) => (
-              <div
-                key={`${a.id}-${a.wardCode}-${a.provinceCode}-${idx}`}
-                style={styles.addrItem}
-              >
+            {addresses.map((a) => (
+              <div key={a.id} style={styles.addrItem}>
                 <input
                   type="radio"
                   name="defaultAddress"
@@ -779,7 +746,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
 
                 <div>
                   <div style={{ fontWeight: 600 }}>
-                    {a.fullAddress}
+                    {a.fullAddress || "Chưa đủ thông tin"}
                     {a.id === currentDefaultId && (
                       <span style={styles.pillDefault}>Mặc định</span>
                     )}
@@ -791,30 +758,20 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
                       marginTop: 4,
                     }}
                   >
-                    {a.houseNumber} • {a.wardName} • {a.provinceName}
+                    {partsLine(a)}
                   </div>
                 </div>
 
                 <div style={styles.addrActions}>
                   <button
-                    onClick={() => setDefault(a.id)}
-                    style={{
-                      ...styles.button,
-                      ...styles.editButton,
-                      padding: "8px 12px",
-                    }}
-                  >
-                    Đặt mặc định
-                  </button>
-                  <button
-                    onClick={() => setEditingId(a.id)}
+                    onClick={() => toggleEdit(a.id)}
                     style={{
                       ...styles.button,
                       ...styles.cancelButton,
                       padding: "8px 12px",
                     }}
                   >
-                    Sửa
+                    {editingId === a.id ? "Đóng chỉnh sửa" : "Sửa"}
                   </button>
                   <button
                     onClick={() => handleDelete(a.id)}
@@ -832,11 +789,8 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
                   <div style={{ gridColumn: "1 / -1" }}>
                     <div style={styles.divider} />
                     <AddressForm
-                      initialValue={a}
-                      onCancel={() => setEditingId(null)}
-                      onSubmit={(form) => handleEdit(a.id, form)}
-                      existingAddresses={addresses}
-                      excludeId={a.id}
+                      value={a}
+                      onChange={(next) => updateAddress(a.id, next)}
                     />
                   </div>
                 )}
@@ -846,23 +800,30 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
         )}
       </div>
 
-      {!isAdding ? (
-        <div className="add-address">
-          <button
-            onClick={() => setIsAdding(true)}
-            style={{ ...styles.button, ...styles.editButton }}
-          >
-            Thêm địa chỉ
-          </button>
-        </div>
+      {!newDraft ? (
+        <button
+          onClick={() =>
+            setNewDraft({
+              id: uuid(),
+              houseNumber: "",
+              wardCode: "",
+              wardName: "",
+              provinceCode: "",
+              provinceName: "",
+              fullAddress: "",
+            })
+          }
+          style={{ ...styles.button, ...styles.editButton }}
+        >
+          Thêm địa chỉ
+        </button>
       ) : (
         <div style={{ marginTop: 12 }}>
           <div style={styles.divider} />
           <AddressForm
-            initialValue={null}
-            onCancel={() => setIsAdding(false)}
-            onSubmit={handleAdd}
-            existingAddresses={addresses}
+            value={newDraft}
+            onChange={setNewDraft}
+            onCancel={() => setNewDraft(null)}
           />
         </div>
       )}
@@ -874,74 +835,63 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
           onClick={handleSaveAll}
           style={{ ...styles.button, ...styles.saveButton }}
         >
-          Lưu thay đổi
+          Lưu
         </button>
       </div>
 
-      {legacyTextAddress && (
-        <div style={{ marginTop: 16, color: colors.textGrey, fontSize: 13 }}>
-          * Hệ thống cũ đang dùng 1 chuỗi địa chỉ. Khi bạn thêm địa chỉ mới, dữ
-          liệu sẽ chuyển sang danh sách địa chỉ.
-        </div>
-      )}
-
-      {/* ==== Popup Confirm Xóa (ở giữa màn hình, to hơn) ==== */}
-      <Dialog
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        maxWidth="sm"   // có thể đổi "md" nếu muốn to hơn nữa
-        fullWidth
+      {/* Modal XÓA (Soft Blue) */}
+      <RBModal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        centered
+        dialogClassName="modal-soft-blue"
+        backdrop="static"
+        keyboard={false}
       >
-        <DialogTitle>Xác nhận xóa</DialogTitle>
-        <DialogContent>
-          <p style={{ fontSize: "16px", margin: "10px 0" }}>
-            Bạn có chắc chắn muốn xóa địa chỉ này không?
-          </p>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setConfirmOpen(false)}
-            variant="outlined"
-            color="inherit"
+        <RBModal.Header closeButton>
+          <RBModal.Title>Xác nhận xóa</RBModal.Title>
+        </RBModal.Header>
+        <RBModal.Body>
+          <p>Bạn có chắc chắn muốn xóa địa chỉ này không?</p>
+        </RBModal.Body>
+        <RBModal.Footer>
+          <RBButton
+            variant="secondary"
+            onClick={() => setShowDeleteModal(false)}
           >
-            Hủy
-          </Button>
-          <Button onClick={confirmDelete} variant="contained" color="error">
-            Đồng ý
-          </Button>
-        </DialogActions>
-      </Dialog>
+            Đóng
+          </RBButton>
+          <RBButton variant="primary" onClick={confirmDelete}>
+            Đồng ý xóa
+          </RBButton>
+        </RBModal.Footer>
+      </RBModal>
     </div>
   );
 };
 
-/* ==========================================================================
-   MAIN PROFILE COMPONENT
-   ========================================================================== */
+/* ======================= Main Profile ======================= */
 const Profile = () => {
   const { enqueueSnackbar } = useSnackbar();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState("info"); // 'info', 'orders', 'address'
+  const [activeView, setActiveView] = useState("info"); // 'info' | 'address'
 
   const fetchProfile = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("authToken");
       if (!token) throw new Error("Vui lòng đăng nhập.");
+      const decoded = jwtDecode(token);
 
-      const decodedToken = jwtDecode(token);
-
-      // Lấy user + địa chỉ từ user_addresses
       const [userRes, addrRes] = await Promise.all([
-        fetch(`${Constanst.DOMAIN_API}/api/users/${decodedToken.id}`, {
+        fetch(`${Constanst.DOMAIN_API}/api/users/${decoded.id}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(
-          `${Constanst.DOMAIN_API}/api/users/${decodedToken.id}/addresses`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        ),
+        fetch(`${Constanst.DOMAIN_API}/api/users/${decoded.id}/addresses`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
 
       if (!userRes.ok) throw new Error("Không thể tải hồ sơ.");
@@ -955,8 +905,9 @@ const Profile = () => {
         addresses: addrPayload.addresses || [],
         defaultAddressId: addrPayload.defaultAddressId || null,
       });
+      setError("");
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Lỗi tải dữ liệu.");
     } finally {
       setLoading(false);
     }
@@ -967,40 +918,28 @@ const Profile = () => {
   }, []);
 
   const handleSaveProfile = async (editedData, avatarFile) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const decodedToken = jwtDecode(token);
+    const token = localStorage.getItem("authToken");
+    const decoded = jwtDecode(token);
+    const formData = new FormData();
+    formData.append("name", editedData.name);
+    formData.append("phone", editedData.phone);
+    if (avatarFile) formData.append("avatar", avatarFile);
 
-      const formData = new FormData();
-      formData.append("name", editedData.name);
-      formData.append("phone", editedData.phone);
-      if (avatarFile) formData.append("avatar", avatarFile);
-
-      const res = await fetch(
-        `${Constanst.DOMAIN_API}/api/users/${decodedToken.id}`,
-        {
-          method: "PUT",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        }
-      );
-
-      if (!res.ok) throw new Error("Cập nhật thất bại.");
-      await fetchProfile();
-    } catch (err) {
-      // ném lỗi lên để view hiển thị toast thất bại
-      throw err;
-    }
+    const res = await fetch(`${Constanst.DOMAIN_API}/api/users/${decoded.id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Cập nhật thất bại.");
+    await fetchProfile();
   };
 
-  // Lưu vào bảng user_addresses
   const handleSaveAddresses = async (addresses, defaultAddressId) => {
     try {
       const token = localStorage.getItem("authToken");
-      const decodedToken = jwtDecode(token);
-
+      const decoded = jwtDecode(token);
       const res = await fetch(
-        `${Constanst.DOMAIN_API}/api/users/${decodedToken.id}/addresses-bulk`,
+        `${Constanst.DOMAIN_API}/api/users/${decoded.id}/addresses-bulk`,
         {
           method: "PUT",
           headers: {
@@ -1010,12 +949,13 @@ const Profile = () => {
           body: JSON.stringify({ addresses, defaultAddressId }),
         }
       );
-
       if (!res.ok) throw new Error("Cập nhật địa chỉ thất bại.");
       await fetchProfile();
       enqueueSnackbar("Lưu địa chỉ thành công", { variant: "success" });
     } catch (err) {
-      enqueueSnackbar("Lưu địa chỉ thất bại", { variant: "error" });
+      enqueueSnackbar(err.message || "Lưu địa chỉ thất bại", {
+        variant: "error",
+      });
     }
   };
 
@@ -1025,7 +965,6 @@ const Profile = () => {
       return <div style={{ ...styles.card, ...styles.errorMsg }}>{error}</div>;
     if (!profile)
       return <div style={styles.card}>Không tìm thấy dữ liệu hồ sơ.</div>;
-
     const initialAddresses = Array.isArray(profile.addresses)
       ? profile.addresses
       : [];
@@ -1075,7 +1014,6 @@ const Profile = () => {
           >
             <span style={styles.sidebarNavIcon}>👤</span> Thông tin tài khoản
           </li>
-  
           <li
             style={{
               ...styles.sidebarNavItem,
@@ -1088,16 +1026,19 @@ const Profile = () => {
         </ul>
       </div>
 
-      {/* Main Content */}
+      {/* Main */}
       <div style={styles.mainContent}>{renderContent()}</div>
     </div>
   );
 };
 
-// Nếu app đã có SnackbarProvider ở cấp trên, export Profile;
-// nếu chưa có thì dùng WrappedProfile bên dưới.
+/* ======================= Wrapped (Snackbar top-right) ======================= */
 const WrappedProfile = () => (
-  <SnackbarProvider maxSnack={3} autoHideDuration={2500}>
+  <SnackbarProvider
+    maxSnack={3}
+    autoHideDuration={2500}
+    anchorOrigin={{ vertical: "top", horizontal: "right" }}
+  >
     <Profile />
   </SnackbarProvider>
 );
