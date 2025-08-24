@@ -12,29 +12,50 @@ import {
 } from "react-bootstrap";
 import Constanst from "../../../Constanst";
 import "../../../assets/css/OrderPage.css";
-import { SnackbarProvider } from "notistack";
 import { useSnackbar } from "notistack";
 
+/* ===== Helpers for VN phone ===== */
+const onlyDigits = (s) => String(s || "").replace(/\D+/g, "");
+const vnLocalFromAny = (raw) => {
+  let d = onlyDigits(raw);
+  if (d.startsWith("84")) d = d.slice(2);
+  if (d.startsWith("0")) d = d.slice(1);
+  return d; // 8–10 số tuỳ mạng, FE hiển thị 3-3-3 nếu 9 số
+};
+const toE164VN = (raw) => {
+  const local = vnLocalFromAny(raw);
+  if (!local) return "";
+  return `+84${local}`;
+};
+const space3x3 = (local) =>
+  local.length === 9
+    ? local.replace(/(\d{3})(\d{3})(\d{3})$/, "$1 $2 $3")
+    : local; // nếu 10 số thì để nguyên
+
+const viewPhoneFromAny = (raw) => {
+  const local = vnLocalFromAny(raw);
+  return local ? `(+84) ${space3x3(local)}` : "";
+};
+
 const OrderPage = () => {
-    const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar } = useSnackbar();
   const location = useLocation();
   const navigate = useNavigate();
   const { cartItems, userInfo } = location.state || { cartItems: [], userInfo: null };
 
-  // User info
+  // Tên & SĐT lấy theo địa chỉ (readOnly)
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(""); // lưu E.164 +84... để gửi BE
 
-  // Address list from user_addresses
+  // Address
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
 
-  // Payments / discounts / ui
+  // Payments / discount / ui
   const [paymentMethod, setPaymentMethod] = useState(1);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(true);
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(null);
   const [isCheckingDiscount, setIsCheckingDiscount] = useState(false);
@@ -60,33 +81,7 @@ const OrderPage = () => {
     return Math.min(Math.max(0, discountAmount), subtotal);
   }, []);
 
-  // 1) Load user basic info (name/phone)
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      const token = localStorage.getItem("authToken");
-      if (!token || !userInfo?.id) {
-        setIsLoadingUserInfo(false);
-        return;
-      }
-      try {
-        const res = await fetch(`${Constanst.DOMAIN_API}/api/users/${userInfo.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setName(data.name || "");
-          setPhone(data.phone || "");
-        }
-      } catch (err) {
-        console.error("Lỗi khi lấy thông tin người dùng:", err);
-      } finally {
-        setIsLoadingUserInfo(false);
-      }
-    };
-    fetchUserInfo();
-  }, [userInfo]);
-
-  // 2) Load address list from user_addresses and preselect default
+  // Load addresses
   useEffect(() => {
     const fetchAddresses = async () => {
       setIsLoadingAddresses(true);
@@ -101,11 +96,10 @@ const OrderPage = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!res.ok) throw new Error("Không thể tải địa chỉ.");
-        const payload = await res.json(); // { addresses: [...], defaultAddressId }
+        const payload = await res.json();
         const list = Array.isArray(payload.addresses) ? payload.addresses : [];
         setAddresses(list);
 
-        // chọn mặc định: defaultAddressId -> nếu không có thì chọn phần tử đầu tiên
         const preselect =
           payload.defaultAddressId ||
           (list.length > 0 ? list.find((a) => a.isDefault)?.id || list[0].id : null);
@@ -119,7 +113,16 @@ const OrderPage = () => {
     fetchAddresses();
   }, [userInfo]);
 
-  // 3) Tính tiền
+  // Khi đổi địa chỉ -> cập nhật tên & SĐT
+  useEffect(() => {
+    const a = addresses.find((x) => x.id === selectedAddressId);
+    const recName = a?.recipientName ?? a?.recipient_name ?? "";
+    const recPhone = a?.recipientPhone ?? a?.recipient_phone ?? "";
+    setName(recName || "");
+    setPhone(toE164VN(recPhone)); // chuẩn hóa để gửi
+  }, [selectedAddressId, addresses]);
+
+  // Tính tiền
   useEffect(() => {
     if (cartItems && cartItems.length > 0) {
       const subtotal = cartItems.reduce(
@@ -136,7 +139,7 @@ const OrderPage = () => {
     }
   }, [cartItems, appliedDiscount, calculateDiscount]);
 
-  // Discount handlers
+  // Giảm giá
   const handleApplyDiscount = async () => {
     setDiscountError("");
     setDiscountSuccess("");
@@ -185,27 +188,34 @@ const OrderPage = () => {
     setDiscountError("");
   };
 
-  // Place order (use selected address)
+  // Đặt hàng
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     setError("");
     setIsSubmitting(true);
 
-    if (!name || !phone) {
-      setError("Vui lòng nhập đầy đủ họ tên và số điện thoại.");
-      setIsSubmitting(false);
-      return;
-    }
-    if (!selectedAddressId) {
+    const selected = addresses.find((a) => a.id === selectedAddressId);
+    if (!selected) {
       setError("Vui lòng chọn địa chỉ giao hàng.");
       setIsSubmitting(false);
       return;
     }
+
+    const recName = selected.recipientName ?? selected.recipient_name ?? "";
+    const recPhone = toE164VN(selected.recipientPhone ?? selected.recipient_phone ?? "");
+
+    if (!recName || !recPhone) {
+      setError("Địa chỉ được chọn chưa có Tên người nhận hoặc SĐT hợp lệ.");
+      setIsSubmitting(false);
+      return;
+    }
+
     if (!cartItems || cartItems.length === 0) {
       setError("Giỏ hàng trống.");
       setIsSubmitting(false);
       return;
     }
+
     const token = localStorage.getItem("authToken");
     if (!token || !userInfo?.id) {
       setError("Phiên đăng nhập không hợp lệ.");
@@ -223,10 +233,9 @@ const OrderPage = () => {
       return;
     }
 
-    const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
     const fullAddress =
-      selectedAddress?.fullAddress ||
-      [selectedAddress?.houseNumber, selectedAddress?.wardName, selectedAddress?.provinceName]
+      selected.fullAddress ||
+      [selected.houseNumber, selected.wardName, selected.provinceName]
         .filter(Boolean)
         .join(", ");
 
@@ -237,9 +246,9 @@ const OrderPage = () => {
         quantity: item.quantity,
         price: item.variation.price,
       })),
-      name,
-      phone,
-      address: fullAddress, // <-- dùng địa chỉ chọn từ bảng user_addresses
+      name: recName,
+      phone: recPhone, // E.164
+      address: fullAddress,
       payment_id: parseInt(paymentMethod),
       payment_status: parseInt(paymentMethod) === 1 ? 0 : 1,
       status: 1,
@@ -301,34 +310,31 @@ const OrderPage = () => {
         redirectUrl = responseData.payUrl;
       }
 
-      // Store cart item IDs for later clearing when payment is confirmed
       const cartItemIds = validItems.map((item) => item.id);
-      
+
       if (redirectUrl) {
-        // For online payment methods (VNPay, MoMo), store cart info for later clearing
         sessionStorage.setItem("pending_cart_item_ids", JSON.stringify(cartItemIds));
         window.location.href = redirectUrl;
       } else {
-        // For COD payment, clear cart immediately since order is confirmed
         await fetch(`${Constanst.DOMAIN_API}/api/cart/clear-selected-items`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify({ selectedCartItemIds: cartItemIds }),
         });
         localStorage.removeItem("cart");
-       enqueueSnackbar('Đặt hàng thành công', { variant: 'success' });
+        enqueueSnackbar("Đặt hàng thành công", { variant: "success" });
         navigate("/order-history?message=success");
       }
     } catch (err) {
       setError(err.message);
-         enqueueSnackbar(err.message, { variant: 'error' });
+      enqueueSnackbar(err.message, { variant: "error" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Loading blocks
-  if (isLoadingUserInfo || isLoadingAddresses) {
+  // Loading
+  if (isLoadingAddresses) {
     return (
       <Container className="text-center mt-5 p-5">
         <Spinner animation="border" /> <p className="mt-2">Đang tải thông tin...</p>
@@ -346,7 +352,9 @@ const OrderPage = () => {
     );
   }
 
-  // --- RENDER ---
+  const selected = addresses.find((a) => a.id === selectedAddressId);
+  const viewPhone = viewPhoneFromAny(selected?.recipientPhone ?? selected?.recipient_phone ?? phone);
+
   return (
     <div className="order-page-wrapper">
       <Container>
@@ -359,7 +367,7 @@ const OrderPage = () => {
 
         <Form onSubmit={handlePlaceOrder}>
           <Row>
-            {/* LEFT: Shipping & Payment */}
+            {/* LEFT */}
             <Col lg={7} className="info-column">
               <div className="info-section">
                 <h3 className="section-title">Thông tin giao hàng</h3>
@@ -367,27 +375,24 @@ const OrderPage = () => {
                   <Col md={12}>
                     <Form.Group className="mb-3">
                       <Form.Label>Tên người nhận</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={12}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Số điện thoại</Form.Label>
-                      <Form.Control
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        required
-                      />
+                      <Form.Control type="text" value={name} readOnly />
+                      <Form.Text muted>
+                        Tên & SĐT lấy theo địa chỉ đã chọn. Muốn thay đổi, hãy cập nhật trong “Quản lý địa chỉ”.
+                      </Form.Text>
                     </Form.Group>
                   </Col>
 
-                  {/* Address from user_addresses (read-only choose) */}
+                  <Col md={12}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Số điện thoại</Form.Label>
+                      <InputGroup>
+                        <InputGroup.Text>+84</InputGroup.Text>
+                        <Form.Control type="text" value={space3x3(vnLocalFromAny(phone))} readOnly />
+                      </InputGroup>
+                    </Form.Group>
+                  </Col>
+
+                  {/* Chọn địa chỉ */}
                   <Col md={12}>
                     <Form.Group className="mb-2">
                       <Form.Label>Chọn địa chỉ giao hàng</Form.Label>
@@ -405,58 +410,67 @@ const OrderPage = () => {
                         </Alert>
                       ) : (
                         <div className="address-radio-list">
-                          {addresses.map((addr) => (
-                            <div
-                              key={addr.id}
-                              className={`address-radio-item ${
-                                selectedAddressId === addr.id ? "active" : ""
-                              }`}
-                              style={{
-                                border: "1px solid #e0e0e0",
-                                borderRadius: 8,
-                                padding: 12,
-                                marginBottom: 8,
-                                display: "flex",
-                                alignItems: "flex-start",
-                                gap: 10,
-                                cursor: "pointer",
-                              }}
-                              onClick={() => setSelectedAddressId(addr.id)}
-                            >
-                              <Form.Check
-                                type="radio"
-                                name="address"
-                                checked={selectedAddressId === addr.id}
-                                onChange={() => setSelectedAddressId(addr.id)}
-                                style={{ marginTop: 4 }}
-                              />
-                              <div>
-                                <div style={{ fontWeight: 600 }}>
-                                  {addr.fullAddress ||
-                                    [addr.houseNumber, addr.wardName, addr.provinceName]
-                                      .filter(Boolean)
-                                      .join(", ")}
-                                  {addr.isDefault && (
-                                    <span
-                                      style={{
-                                        marginLeft: 8,
-                                        fontSize: 12,
-                                        background: "#E9F5FF",
-                                        color: "#007bff",
-                                        padding: "2px 8px",
-                                        borderRadius: 999,
-                                      }}
-                                    >
-                                      Mặc định
-                                    </span>
-                                  )}
-                                </div>
-                                <div style={{ color: "#666", fontSize: 13, marginTop: 2 }}>
-                                  {addr.houseNumber} • {addr.wardName} • {addr.provinceName}
+                          {addresses.map((addr) => {
+                            const person = addr.recipientName ?? addr.recipient_name ?? "";
+                            const phoneView = viewPhoneFromAny(
+                              addr.recipientPhone ?? addr.recipient_phone
+                            );
+                            return (
+                              <div
+                                key={addr.id}
+                                className={`address-radio-item ${selectedAddressId === addr.id ? "active" : ""}`}
+                                style={{
+                                  border: "1px solid #e0e0e0",
+                                  borderRadius: 8,
+                                  padding: 12,
+                                  marginBottom: 8,
+                                  display: "flex",
+                                  alignItems: "flex-start",
+                                  gap: 10,
+                                  cursor: "pointer",
+                                }}
+                                onClick={() => setSelectedAddressId(addr.id)}
+                              >
+                                <Form.Check
+                                  type="radio"
+                                  name="address"
+                                  checked={selectedAddressId === addr.id}
+                                  onChange={() => setSelectedAddressId(addr.id)}
+                                  style={{ marginTop: 4 }}
+                                />
+                                <div>
+                                  <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                                    {person || "—"}
+                                    {phoneView && (
+                                      <span style={{ color: "#666", fontWeight: 400 }}>
+                                        &nbsp;|&nbsp;{phoneView}
+                                      </span>
+                                    )}
+                                    {addr.isDefault && (
+                                      <span
+                                        style={{
+                                          marginLeft: 8,
+                                          fontSize: 12,
+                                          background: "#E9F5FF",
+                                          color: "#007bff",
+                                          padding: "2px 8px",
+                                          borderRadius: 999,
+                                        }}
+                                      >
+                                        Mặc định
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ color: "#666", fontSize: 13 }}>
+                                    {addr.fullAddress ||
+                                      [addr.houseNumber, addr.wardName, addr.provinceName]
+                                        .filter(Boolean)
+                                        .join(", ")}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                           <div className="mt-2">
                             <Button
                               variant="outline-primary"
@@ -476,54 +490,33 @@ const OrderPage = () => {
               <div className="info-section">
                 <h3 className="section-title">Phương thức thanh toán</h3>
                 <div className="payment-options">
-                  {/* COD */}
                   <div
                     className={`payment-option ${paymentMethod === 1 ? "active" : ""}`}
                     onClick={() => setPaymentMethod(1)}
                   >
-                    <Form.Check
-                      type="radio"
-                      id="cod"
-                      name="paymentMethod"
-                      checked={paymentMethod === 1}
-                      readOnly
-                    />
+                    <Form.Check type="radio" id="cod" name="paymentMethod" checked={paymentMethod === 1} readOnly />
                     <div className="payment-option-label">
                       <strong>Thanh toán khi nhận hàng (COD)</strong>
                       <small>Trả tiền mặt trực tiếp cho shipper khi nhận hàng.</small>
                     </div>
                   </div>
 
-                  {/* VNPay */}
                   <div
                     className={`payment-option ${paymentMethod === 2 ? "active" : ""}`}
                     onClick={() => setPaymentMethod(2)}
                   >
-                    <Form.Check
-                      type="radio"
-                      id="vnpay"
-                      name="paymentMethod"
-                      checked={paymentMethod === 2}
-                      readOnly
-                    />
+                    <Form.Check type="radio" id="vnpay" name="paymentMethod" checked={paymentMethod === 2} readOnly />
                     <div className="payment-option-label">
                       <strong>Ví điện tử VNPay</strong>
                       <small>Thanh toán bằng QR Code, thẻ ATM nội địa, thẻ quốc tế.</small>
                     </div>
                   </div>
 
-                  {/* MoMo */}
                   <div
                     className={`payment-option ${paymentMethod === 3 ? "active" : ""}`}
                     onClick={() => setPaymentMethod(3)}
                   >
-                    <Form.Check
-                      type="radio"
-                      id="momo"
-                      name="paymentMethod"
-                      checked={paymentMethod === 3}
-                      readOnly
-                    />
+                    <Form.Check type="radio" id="momo" name="paymentMethod" checked={paymentMethod === 3} readOnly />
                     <div className="payment-option-label">
                       <strong>Ví điện tử MoMo</strong>
                       <small>Quét mã QR để thanh toán bằng ứng dụng MoMo.</small>
@@ -546,12 +539,8 @@ const OrderPage = () => {
                         className="product-summary-image"
                       />
                       <div className="product-summary-details">
-                        <p className="product-summary-name mb-0">
-                          {item.variation?.name || "Sản phẩm"}
-                        </p>
-                        <small className="product-summary-meta">
-                          Số lượng: {item.quantity}
-                        </small>
+                        <p className="product-summary-name mb-0">{item.variation?.name || "Sản phẩm"}</p>
+                        <small className="product-summary-meta">Số lượng: {item.quantity}</small>
                       </div>
                       <p className="product-summary-price mb-0">
                         {(item.variation.price * item.quantity).toLocaleString()}đ
@@ -571,11 +560,7 @@ const OrderPage = () => {
                         onChange={(e) => setDiscountCode(e.target.value)}
                         disabled={isCheckingDiscount}
                       />
-                      <Button
-                        variant="outline-primary"
-                        onClick={handleApplyDiscount}
-                        disabled={isCheckingDiscount}
-                      >
+                      <Button variant="outline-primary" onClick={handleApplyDiscount} disabled={isCheckingDiscount}>
                         {isCheckingDiscount ? <Spinner size="sm" /> : "Áp dụng"}
                       </Button>
                     </InputGroup>
@@ -604,9 +589,7 @@ const OrderPage = () => {
                   )}
                   <div className="order-totals-row final-total">
                     <span>Tổng cộng</span>
-                    <span className="final-price">
-                      {orderSummary.total.toLocaleString()}đ
-                    </span>
+                    <span className="final-price">{orderSummary.total.toLocaleString()}đ</span>
                   </div>
                 </div>
 

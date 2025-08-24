@@ -4,6 +4,7 @@ import Constanst from "../../../Constanst";
 import { SnackbarProvider, useSnackbar } from "notistack";
 import { Modal as RBModal, Button as RBButton } from "react-bootstrap";
 
+/* ======================= THEME CSS (Modal) ======================= */
 const SoftBlueCSS = () => (
   <style>{`
     .modal-soft-blue .modal-content{
@@ -21,15 +22,12 @@ const SoftBlueCSS = () => (
     }
     .modal-soft-blue .modal-title{ font-weight:600; }
     .modal-soft-blue .modal-body{ color:#193b6a; }
-   .modal-soft-blue .btn-primary{
-  background:#E74C3C;  /* đỏ */
-  border-color:#E74C3C;
-}
-.modal-soft-blue .btn-primary:hover{
-  background:#C0392B;  /* đỏ đậm khi hover */
-  border-color:#C0392B;
-}
-
+    .modal-soft-blue .btn-primary{
+      background:#E74C3C; border-color:#E74C3C;
+    }
+    .modal-soft-blue .btn-primary:hover{
+      background:#C0392B; border-color:#C0392B;
+    }
     .modal-soft-blue .btn-secondary{
       background:#e9f2ff; color:#0b3d91; border-color:#cfe3ff;
     }
@@ -42,6 +40,7 @@ const SoftBlueCSS = () => (
   `}</style>
 );
 
+/* ======================= THEME ======================= */
 const colors = {
   primaryRed: "#E74C3C",
   lightGreyBackground: "#F0F2F5",
@@ -51,38 +50,48 @@ const colors = {
   darkText: "#333",
   blueLink: "#007bff",
 };
-
 const cardShadow = "0 2px 8px rgba(0,0,0,0.05)";
 
+/* ======================= STYLES ======================= */
 const styles = {
+  // thêm vào object styles
+  phoneGroup: { display: "flex", gap: 8, alignItems: "center" },
+  phonePrefix: {
+    padding: "10px 12px",
+    border: `1px solid ${colors.borderColor}`,
+    borderRadius: 6,
+    background: "#f8f9fa",
+    fontWeight: 600,
+    userSelect: "none",
+  },
+
   pageContainer: {
     display: "flex",
     backgroundColor: colors.lightGreyBackground,
     minHeight: "calc(100vh - 70px)",
-    padding: "20px",
+    padding: 20,
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     color: "#333",
   },
   sidebar: {
-    width: "280px",
+    width: 280,
     flexShrink: 0,
-    marginRight: "20px",
+    marginRight: 20,
     backgroundColor: colors.white,
-    borderRadius: "8px",
+    borderRadius: 8,
     boxShadow: cardShadow,
-    padding: 0,
   },
   sidebarHeader: {
     display: "flex",
     alignItems: "center",
-    padding: "20px",
+    padding: 20,
     borderBottom: `1px solid ${colors.borderColor}`,
   },
   sidebarAvatar: {
-    width: "50px",
-    height: "50px",
+    width: 50,
+    height: 50,
     borderRadius: "50%",
-    marginRight: "15px",
+    marginRight: 15,
     objectFit: "cover",
   },
   sidebarUserName: { fontWeight: 600, fontSize: 16, color: colors.darkText },
@@ -98,7 +107,7 @@ const styles = {
     padding: "14px 20px",
     cursor: "pointer",
     color: colors.textGrey,
-    fontSize: "15px",
+    fontSize: 15,
     transition: "all .2s ease",
     borderLeft: "3px solid transparent",
   },
@@ -114,6 +123,7 @@ const styles = {
     width: 20,
     textAlign: "center",
   },
+
   mainContent: { flexGrow: 1 },
   card: {
     backgroundColor: colors.white,
@@ -130,7 +140,7 @@ const styles = {
     borderBottom: `1px solid ${colors.borderColor}`,
     color: colors.darkText,
   },
-  formGroup: { marginBottom: 20 },
+  formGroup: { marginBottom: 16 },
   label: {
     fontWeight: 600,
     display: "block",
@@ -150,12 +160,12 @@ const styles = {
   buttonContainer: {
     display: "flex",
     justifyContent: "flex-end",
-    marginTop: 25,
+    marginTop: 20,
     gap: 10,
   },
   button: {
     border: "none",
-    padding: "10px 25px",
+    padding: "10px 22px",
     borderRadius: 6,
     cursor: "pointer",
     fontWeight: 600,
@@ -169,8 +179,9 @@ const styles = {
     color: colors.textGrey,
     border: `1px solid ${colors.borderColor}`,
   },
-  errorMsg: { color: "red", textAlign: "left", marginTop: 6, fontSize: 14 },
-  // Address
+  errorMsg: { color: "#d93025", textAlign: "left", marginTop: 6, fontSize: 14 },
+
+  // Address list
   addrList: { display: "flex", flexDirection: "column", gap: 12 },
   addrItem: {
     border: `1px solid ${colors.borderColor}`,
@@ -179,7 +190,7 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "auto 1fr auto",
     gap: 12,
-    alignItems: "center",
+    alignItems: "start",
   },
   addrActions: { display: "flex", gap: 8 },
   pillDefault: {
@@ -191,7 +202,19 @@ const styles = {
     color: colors.blueLink,
     marginLeft: 8,
   },
-  divider: { height: 1, background: colors.borderColor, margin: "16px 0" },
+  divider: { height: 1, background: colors.borderColor, margin: "12px 0" },
+
+  // Display layout for address
+  addrNameRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    fontSize: 16,
+    color: colors.darkText,
+    fontWeight: 600,
+  },
+  addrPhone: { color: colors.textGrey, fontWeight: 500 },
+  addrLine: { color: colors.textGrey, marginTop: 2 },
 };
 
 /* ======================= Helpers ======================= */
@@ -210,7 +233,7 @@ const dedupeBy = (arr, getKey) => {
   });
 };
 
-// Normalize provinces & wards
+// Provinces & wards
 const normalizeProvinces = (arr) => {
   const list = (Array.isArray(arr) ? arr : [])
     .map((p) => ({
@@ -239,7 +262,27 @@ const normalizeWards = (arr) => {
 
 const ADDRESS_ALLOWED_REGEX = /^[0-9A-Za-zÀ-ỹ\s,./-]+$/u;
 
-/* ======================= Personal Info ======================= */
+/* ========= Phone utils: cho phép nhập 0, LƯU thành +84 ========= */
+// Chuẩn hoá về E.164 +84xxxxxxxxx (bỏ các ký tự khác, cắt 0/84 đầu)
+const toE164VN = (raw) => {
+  if (!raw) return "";
+  let d = String(raw).replace(/\D+/g, "");
+  if (d.startsWith("84")) d = d.slice(2);
+  if (d.startsWith("0")) d = d.slice(1);
+  if (!d) return "";
+  return `+84${d}`;
+};
+// Hợp lệ: +84 + 9 số (di động VN)
+const isValidE164VNMobile = (e164) => /^\+84[1-9]\d{8}$/.test(e164);
+// Hiển thị: "(+84) 375 113 284"
+const formatE164VNForView = (rawOrE164) => {
+  const e164 = rawOrE164?.startsWith("+84") ? rawOrE164 : toE164VN(rawOrE164);
+  const m = e164.match(/^\+84(\d{9})$/);
+  if (!m) return rawOrE164 || "";
+  const s = m[1]; // 9 số
+  return `(+84) ${s.slice(0, 3)} ${s.slice(3, 6)} ${s.slice(6)}`;
+};
+
 const PersonalInfoView = ({ profile, onSave }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [isEditing, setIsEditing] = useState(false);
@@ -386,6 +429,7 @@ const PersonalInfoView = ({ profile, onSave }) => {
               setEditedProfile({ ...editedProfile, phone: e.target.value })
             }
             style={styles.input}
+            placeholder="Ví dụ: 09xxxxxxxx"
           />
         ) : (
           <div style={styles.readOnlyValue}>
@@ -429,7 +473,7 @@ const PersonalInfoView = ({ profile, onSave }) => {
   );
 };
 
-/* ======================= Address Form (không có nút Lưu riêng) ======================= */
+/* ======================= Address Form ======================= */
 const AddressForm = ({ value, onChange, onCancel }) => {
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
@@ -437,10 +481,10 @@ const AddressForm = ({ value, onChange, onCancel }) => {
   const [loadingWards, setLoadingWards] = useState(false);
   const [err, setErr] = useState("");
 
-  // value: { houseNumber, provinceCode, provinceName, wardCode, wardName }
   const provinceCode = value?.provinceCode || "";
   const wardCode = value?.wardCode || "";
   const houseNumber = value?.houseNumber || "";
+  const recipientName = value?.recipientName || "";
 
   useEffect(() => {
     setLoadingProvinces(true);
@@ -485,9 +529,6 @@ const AddressForm = ({ value, onChange, onCancel }) => {
     const name = wards.find((w) => String(w.code) === String(code))?.name || "";
     onChange?.({ ...value, wardCode: code, wardName: name });
   };
-  const onHouseChange = (text) => {
-    onChange?.({ ...value, houseNumber: text });
-  };
 
   const fullAddress = [houseNumber, value?.wardName, value?.provinceName]
     .filter(Boolean)
@@ -495,7 +536,46 @@ const AddressForm = ({ value, onChange, onCancel }) => {
 
   return (
     <div style={{ marginTop: 8 }}>
-      {/* Thứ tự: Tỉnh/Thành -> Phường/Xã -> Số nhà/địa chỉ */}
+      <div style={styles.formGroup}>
+        <label style={styles.label}>Tên người nhận</label>
+        <input
+          type="text"
+          value={recipientName}
+          onChange={(e) =>
+            onChange?.({ ...value, recipientName: e.target.value })
+          }
+          style={styles.input}
+          placeholder="VD: Nguyễn Văn A"
+        />
+      </div>
+
+<div style={styles.formGroup}>
+  <label style={styles.label}>Số điện thoại người nhận</label>
+  <div style={styles.phoneGroup}>
+    <div style={styles.phonePrefix}>+84</div>
+    <input
+      type="tel"
+      inputMode="numeric"
+      // LƯU Ý: lưu "raw" người gõ (có thể bắt đầu bằng 0), tối đa 10 số
+      value={String(value?.recipientPhone || "")}
+      onChange={(e) => {
+        let d = e.target.value.replace(/\D+/g, "");
+        if (d.length > 10) d = d.slice(0, 10); // 0xxxxxxxxx (10) hoặc xxxxxxxxx (9)
+        onChange?.({ ...value, recipientPhone: d });
+      }}
+      onBlur={() => {
+        // khi rời ô => chuẩn hoá về +84xxxxxxxxx (bỏ 0 nếu có)
+        const e164 = toE164VN(value?.recipientPhone || "");
+        onChange?.({ ...value, recipientPhone: e164 ? e164.replace(/^\+84/, "") : "" }); 
+ 
+      }}
+      placeholder="Số Điện Thoại"
+      style={{ ...styles.input, flex: 1 }}
+    />
+  </div>
+  
+</div>
+
       <div style={styles.formGroup}>
         <label style={styles.label}>Tỉnh / Thành phố</label>
         <select
@@ -542,8 +622,10 @@ const AddressForm = ({ value, onChange, onCancel }) => {
         <input
           type="text"
           value={houseNumber}
-          onChange={(e) => onHouseChange(e.target.value)}
-          placeholder="VD: 123, ngõ 45, đường ABC"
+          onChange={(e) =>
+            onChange?.({ ...value, houseNumber: e.target.value })
+          }
+          placeholder="VD: Số 139, Tổ 5, Ấp ..."
           style={styles.input}
         />
         {houseNumber && !ADDRESS_ALLOWED_REGEX.test(houseNumber) && (
@@ -562,7 +644,6 @@ const AddressForm = ({ value, onChange, onCancel }) => {
 
       {err && <div style={styles.errorMsg}>{err}</div>}
 
-      {/* Không có nút Lưu riêng, chỉ có Hủy bản nháp (nếu cần) */}
       {onCancel && (
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
@@ -573,6 +654,10 @@ const AddressForm = ({ value, onChange, onCancel }) => {
           </button>
         </div>
       )}
+      <div style={{ color: "#d93025", fontSize: 12, marginTop: 6 }}>
+        Mỗi địa chỉ cần: Tên người nhận, SĐT hợp lệ (+84...), Tỉnh/Thành,
+        Phường/Xã và Số nhà/địa chỉ.
+      </div>
     </div>
   );
 };
@@ -589,17 +674,15 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
   );
 
   const [editingId, setEditingId] = useState(null);
-  const [newDraft, setNewDraft] = useState(null); // bản nháp địa chỉ mới
+  const [newDraft, setNewDraft] = useState(null);
   const [error, setError] = useState("");
 
-  // Xóa địa chỉ (modal)
   const [deleteId, setDeleteId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // render dòng mô tả ngắn
-  const partsLine = (a) =>
-    [a.houseNumber, a.wardName, a.provinceName].filter(Boolean).join(" • ") ||
-    "Chưa đủ thông tin";
+  // hiển thị 2 dòng địa chỉ
+  const line1 = (a) => a.houseNumber || "Chưa đủ thông tin";
+  const line2 = (a) => [a.wardName, a.provinceName].filter(Boolean).join(", ");
 
   const setDefault = (id) => {
     setCurrentDefaultId(id);
@@ -607,7 +690,6 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
   };
 
   const toggleEdit = (id) => setEditingId((cur) => (cur === id ? null : id));
-
   const updateAddress = (id, next) =>
     setAddresses((prev) =>
       prev.map((a) => (a.id === id ? { ...a, ...next } : a))
@@ -645,57 +727,60 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
     enqueueSnackbar("Xóa địa chỉ thành công", { variant: "success" });
   };
 
+  const validateOne = (a, isDraft = false) => {
+    if (!a.recipientName || !a.recipientName.trim()) {
+      setError(
+        isDraft
+          ? "Địa chỉ mới cần Tên người nhận."
+          : "Một địa chỉ thiếu Tên người nhận."
+      );
+      return false;
+    }
+    const e164 = toE164VN(a.recipientPhone);
+    if (!isValidE164VNMobile(e164)) {
+      setError(
+        isDraft
+          ? "Địa chỉ mới cần SĐT hợp lệ (+84…)."
+          : "Một địa chỉ có SĐT không hợp lệ (+84…)."
+      );
+      return false;
+    }
+    if (!a.houseNumber || !a.provinceCode || !a.wardCode) {
+      setError(
+        isDraft
+          ? "Địa chỉ mới cần đủ Tỉnh/Thành, Phường/Xã và Số nhà/địa chỉ."
+          : "Một địa chỉ thiếu trường bắt buộc."
+      );
+      return false;
+    }
+    if (!ADDRESS_ALLOWED_REGEX.test(a.houseNumber)) {
+      setError("Một địa chỉ có ký tự không hợp lệ.");
+      return false;
+    }
+    return true;
+  };
+
   const handleSaveAll = () => {
     setError("");
 
-    // Gom danh sách cuối cùng (bao gồm draft nếu có)
+    // copy dữ liệu hiện có
     const combined = [...addresses];
     let draftId = null;
 
     if (newDraft) {
-      // Validate draft trước khi thêm vào combined
-      if (
-        !newDraft.houseNumber ||
-        !newDraft.provinceCode ||
-        !newDraft.wardCode
-      ) {
-        setError("Địa chỉ mới cần đủ Tỉnh/Thành, Phường/Xã và Số nhà/địa chỉ.");
-        return;
-      }
-      if (!ADDRESS_ALLOWED_REGEX.test(newDraft.houseNumber)) {
-        setError("Địa chỉ chỉ được dùng chữ, số, khoảng trắng và , . / -");
-        return;
-      }
-      const full = [
-        newDraft.houseNumber,
-        newDraft.wardName,
-        newDraft.provinceName,
-      ]
-        .filter(Boolean)
-        .join(", ");
-      if (full.length > 500) {
-        setError("Địa chỉ mới quá dài (tối đa 500 ký tự).");
-        return;
-      }
+      if (!validateOne(newDraft, true)) return;
       draftId = uuid();
       combined.push({ id: draftId, ...newDraft });
     }
-
     if (!combined.length) {
       setError("Vui lòng thêm ít nhất một địa chỉ.");
       return;
     }
 
-    // Validate toàn bộ trước khi gửi
+    // chuẩn hoá cho tất cả & validate lần cuối
+    const normalized = [];
     for (const a of combined) {
-      if (!a.houseNumber || !a.provinceCode || !a.wardCode) {
-        setError("Mỗi địa chỉ cần đủ Tỉnh/Thành, Phường/Xã và Số nhà/địa chỉ.");
-        return;
-      }
-      if (!ADDRESS_ALLOWED_REGEX.test(a.houseNumber)) {
-        setError("Một địa chỉ có ký tự không hợp lệ.");
-        return;
-      }
+      if (!validateOne(a)) return;
       const full = [a.houseNumber, a.wardName, a.provinceName]
         .filter(Boolean)
         .join(", ");
@@ -703,19 +788,21 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
         setError("Một địa chỉ quá dài (tối đa 500 ký tự).");
         return;
       }
+      const e164 = toE164VN(a.recipientPhone); // <-- CHUẨN HOÁ KHI LƯU (bỏ số 0 nếu có)
+      normalized.push({
+        ...a,
+        recipientPhone: e164,
+        fullAddress: full,
+      });
     }
 
-    const defaultId = currentDefaultId || draftId || combined[0].id;
-    const normalized = combined.map((a) => ({
+    const defaultId = currentDefaultId || draftId || normalized[0].id;
+    const finalList = normalized.map((a) => ({
       ...a,
       isDefault: a.id === defaultId,
-      fullAddress: [a.houseNumber, a.wardName, a.provinceName]
-        .filter(Boolean)
-        .join(", "),
     }));
 
-    // Chỉ parent hiển thị snackbar cho thao tác lưu để tránh trùng 2 thông báo
-    onSave(normalized, defaultId);
+    onSave(finalList, defaultId); // parent gọi API
     setNewDraft(null);
     setEditingId(null);
   };
@@ -726,76 +813,73 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
       <h3 style={styles.cardHeader}>Địa chỉ của tôi</h3>
 
       <div style={styles.formGroup}>
-        <div style={{ marginBottom: 8, fontWeight: 600 }}>
-          Danh sách địa chỉ
-        </div>
-
         {addresses.length === 0 ? (
           <div style={styles.readOnlyValue}>Chưa có địa chỉ.</div>
         ) : (
           <div style={styles.addrList}>
-            {addresses.map((a) => (
-              <div key={a.id} style={styles.addrItem}>
-                <input
-                  type="radio"
-                  name="defaultAddress"
-                  checked={currentDefaultId === a.id}
-                  onChange={() => setDefault(a.id)}
-                  title="Chọn làm mặc định"
-                />
+            {addresses.map((a) => {
+              const phoneView = formatE164VNForView(a.recipientPhone);
+              return (
+                <div key={a.id} style={styles.addrItem}>
+                  <input
+                    type="radio"
+                    name="defaultAddress"
+                    checked={currentDefaultId === a.id}
+                    onChange={() => setDefault(a.id)}
+                    title="Chọn làm mặc định"
+                    style={{ marginTop: 4 }}
+                  />
 
-                <div>
-                  <div style={{ fontWeight: 600 }}>
-                    {a.fullAddress || "Chưa đủ thông tin"}
-                    {a.id === currentDefaultId && (
-                      <span style={styles.pillDefault}>Mặc định</span>
-                    )}
+                  <div>
+                    <div style={styles.addrNameRow}>
+                      <span>{a.recipientName || "—"}</span>
+                      {phoneView && <span style={{ color: "#c4c4c4" }}>|</span>}
+                      {phoneView && (
+                        <span style={styles.addrPhone}>{phoneView}</span>
+                      )}
+                      {a.id === currentDefaultId && (
+                        <span style={styles.pillDefault}>Mặc định</span>
+                      )}
+                    </div>
+                    <div style={styles.addrLine}>{line1(a)}</div>
+                    <div style={styles.addrLine}>{line2(a)}</div>
                   </div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: colors.textGrey,
-                      marginTop: 4,
-                    }}
-                  >
-                    {partsLine(a)}
+
+                  <div style={styles.addrActions}>
+                    <button
+                      onClick={() => toggleEdit(a.id)}
+                      style={{
+                        ...styles.button,
+                        ...styles.cancelButton,
+                        padding: "8px 12px",
+                      }}
+                    >
+                      {editingId === a.id ? "Đóng chỉnh sửa" : "Sửa"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(a.id)}
+                      style={{
+                        ...styles.button,
+                        ...styles.cancelButton,
+                        padding: "8px 12px",
+                      }}
+                    >
+                      Xóa
+                    </button>
                   </div>
+
+                  {editingId === a.id && (
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <div style={styles.divider} />
+                      <AddressForm
+                        value={a}
+                        onChange={(next) => updateAddress(a.id, next)}
+                      />
+                    </div>
+                  )}
                 </div>
-
-                <div style={styles.addrActions}>
-                  <button
-                    onClick={() => toggleEdit(a.id)}
-                    style={{
-                      ...styles.button,
-                      ...styles.cancelButton,
-                      padding: "8px 12px",
-                    }}
-                  >
-                    {editingId === a.id ? "Đóng chỉnh sửa" : "Sửa"}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(a.id)}
-                    style={{
-                      ...styles.button,
-                      ...styles.cancelButton,
-                      padding: "8px 12px",
-                    }}
-                  >
-                    Xóa
-                  </button>
-                </div>
-
-                {editingId === a.id && (
-                  <div style={{ gridColumn: "1 / -1" }}>
-                    <div style={styles.divider} />
-                    <AddressForm
-                      value={a}
-                      onChange={(next) => updateAddress(a.id, next)}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -805,6 +889,8 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
           onClick={() =>
             setNewDraft({
               id: uuid(),
+              recipientName: "",
+              recipientPhone: "", // gõ 0... vẫn được
               houseNumber: "",
               wardCode: "",
               wardName: "",
@@ -828,7 +914,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
         </div>
       )}
 
-      {error && <div style={styles.errorMsg}>{error}</div>}
+      {error && <div style={{ ...styles.errorMsg, marginTop: 8 }}>{error}</div>}
 
       <div style={styles.buttonContainer}>
         <button
@@ -902,7 +988,11 @@ const Profile = () => {
 
       setProfile({
         ...user,
-        addresses: addrPayload.addresses || [],
+        addresses: (addrPayload.addresses || []).map((a) => ({
+          ...a,
+          recipientName: a.recipientName || a.recipient_name || "", // fallback nếu BE trả snake_case
+          recipientPhone: a.recipientPhone || a.recipient_phone || "",
+        })),
         defaultAddressId: addrPayload.defaultAddressId || null,
       });
       setError("");
@@ -938,6 +1028,8 @@ const Profile = () => {
     try {
       const token = localStorage.getItem("authToken");
       const decoded = jwtDecode(token);
+
+      // gửi đúng camelCase như controller mới yêu cầu; nếu BE dùng snake_case, map lại tại server
       const res = await fetch(
         `${Constanst.DOMAIN_API}/api/users/${decoded.id}/addresses-bulk`,
         {
@@ -965,6 +1057,7 @@ const Profile = () => {
       return <div style={{ ...styles.card, ...styles.errorMsg }}>{error}</div>;
     if (!profile)
       return <div style={styles.card}>Không tìm thấy dữ liệu hồ sơ.</div>;
+
     const initialAddresses = Array.isArray(profile.addresses)
       ? profile.addresses
       : [];
