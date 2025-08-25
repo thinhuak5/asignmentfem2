@@ -97,26 +97,7 @@ const Sidebar = () => {
                   </div>
                 </Link>
               </li>
-              <li className="sidebar-item">
-                <Link className="sidebar-link" to="/about">
-                  <div className="d-flex align-items-center gap-3">
-                    <div className="round-16 d-flex align-items-center justify-content-center">
-                      <i className="ti ti-info-circle"></i>
-                    </div>
-                    <span className="hide-menu">Giới thiệu</span>
-                  </div>
-                </Link>
-              </li>
-              <li className="sidebar-item">
-                <Link className="sidebar-link" to="/contact">
-                  <div className="d-flex align-items-center gap-3">
-                    <div className="round-16 d-flex align-items-center justify-content-center">
-                      <i className="ti ti-mail"></i>
-                    </div>
-                    <span className="hide-menu">Liên hệ</span>
-                  </div>
-                </Link>
-              </li>
+
             </ul>
           </li>
 
@@ -150,7 +131,7 @@ const Sidebar = () => {
           <li className="sidebar-item">
             <Link className="sidebar-link" to="/admin/user">
               <i className="ti ti-users fs-6"></i>
-              <span className="hide-menu">Khách hàng</span>
+                <span className="hide-menu">Tài khoản</span>
             </Link>
           </li>
 
@@ -175,33 +156,9 @@ const Sidebar = () => {
             </Link>
           </li>
 
-          {/* HỆ THỐNG */}
-          <li className="nav-small-cap">
-            <iconify-icon icon="solar:menu-dots-linear" className="nav-small-cap-icon fs-4"/>
-            <span className="hide-menu">Hệ thống</span>
-          </li>
 
-          <li className="sidebar-item">
-            <Link className="sidebar-link" to="/admin/settings">
-              <i className="ti ti-settings fs-6"></i>
-              <span className="hide-menu">Cài đặt</span>
-            </Link>
-          </li>
 
-          <li className="sidebar-item">
-            <Link className="sidebar-link" to="/admin/reports">
-              <i className="ti ti-chart-bar fs-6"></i>
-              <span className="hide-menu">Báo cáo</span>
-            </Link>
-          </li>
 
-          {/* Đăng xuất – bám đáy */}
-          <li className="sidebar-item sidebar-logout">
-            <Link className="sidebar-link" to="/logout">
-              <i className="ti ti-logout fs-6"></i>
-              <span className="hide-menu">Đăng xuất</span>
-            </Link>
-          </li>
         </ul>
       </nav>
     </aside>

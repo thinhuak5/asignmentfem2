@@ -13,6 +13,7 @@ const CategoryList = () => {
 
     const [showModal, setShowModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
@@ -46,13 +47,184 @@ const CategoryList = () => {
         setTimeout(() => setShowToast(false), 2500);
     };
 
+    // ---- Helpers ----
+    const findCategoryById = (id) => {
+        const list = Array.isArray(categories) ? categories : [];
+        return list.find((c) => c && c.id == id) || null;
+    };
+
+    // FE: kiểm tra nhanh danh mục có danh mục con hay không (dùng == để bắt cả string/number)
+    const hasChildCategory = (id) => {
+        const list = Array.isArray(categories) ? categories : [];
+        return list.some((c) => c && c.parent_id != null && c.parent_id == id);
+    };
+
     const openDeleteModal = (id) => {
+        // Nếu đang có danh mục con -> chặn ngay, không gọi API
+        if (hasChildCategory(id)) {
+            showToastMessage("Không thể xóa: danh mục đang chứa danh mục con.", "error");
+            return;
+        }
         setDeleteId(id);
         setShowModal(true);
     };
 
+    /**
+     * Trích xuất code/message từ nhiều format payload phổ biến:
+     *  - { code, message }
+     *  - { error: { code, message } }
+     *  - { errors: [ { code, message } ] }
+     *  - string
+     */
+    const extractErrorPayload = (data) => {
+        if (!data) return {code: undefined, message: ""};
+
+        // string thẳng
+        if (typeof data === "string") return {code: undefined, message: String(data)};
+
+        // { error: {...} }
+        if (data?.error && typeof data.error === "object") {
+            return {
+                code: data.error.code || data.error.errorCode || data.error.name || data.error.error_code,
+                message:
+                    data.error.message || data.error.msg || data.error.error || data.error.description || "",
+            };
+        }
+
+        // { errors: [...] }
+        if (Array.isArray(data?.errors) && data.errors.length > 0) {
+            const e0 = data.errors[0];
+            if (typeof e0 === "string") return {code: undefined, message: e0};
+            if (typeof e0 === "object") {
+                return {
+                    code: e0.code || e0.errorCode || e0.name || e0.error_code,
+                    message: e0.message || e0.msg || e0.error || e0.description || "",
+                };
+            }
+        }
+
+        // { code, message } ngay trên data
+        return {
+            code: data.code || data.errorCode || data.error_code || data.name,
+            message: data.message || data.msg || data.error || data.description || "",
+        };
+    };
+
+    /**
+     * Phân loại lý do bị chặn xóa:
+     *  - 'children'       : danh mục có danh mục con
+     *  - 'childProducts'  : danh mục con còn sản phẩm
+     *  - 'products'       : chính danh mục này còn sản phẩm
+     *  - null             : không xác định
+     *
+     * ctx.isChild: boolean (đang xóa danh mục con?)
+     */
+    const getDeleteBlockReason = (error, ctx = {}) => {
+        const status = error?.response?.status;
+        const data = error?.response?.data;
+        const {code, message} = extractErrorPayload(data);
+        const msg = String(message || "").toLowerCase();
+        const isChild = !!ctx.isChild;
+
+        // Ưu tiên code/backend chuẩn
+        if (status === 422) {
+            if (code === "CATEGORY_HAS_CHILDREN") return "children";
+            if (code === "SUBCATEGORY_HAS_PRODUCTS" || code === "CHILD_CATEGORY_HAS_PRODUCTS") {
+                return "childProducts";
+            }
+            if (code === "CATEGORY_HAS_PRODUCTS" || code === "CATEGORY_NOT_EMPTY") {
+                // Nếu đang xóa danh mục con nhưng backend dùng code chung → quy về childProducts
+                return isChild ? "childProducts" : "products";
+            }
+        }
+
+        // Lỗi FK/ORM phổ biến (khó phân biệt): soi nội dung
+        const isFK =
+            code === "SequelizeForeignKeyConstraintError" ||
+            /foreign key/.test(msg) ||
+            msg.includes("violates foreign key constraint") ||
+            msg.includes("constraint failed") ||
+            msg.includes("referenced row") ||
+            msg.includes("is referenced");
+
+        if (isFK) {
+            // Nếu có từ khóa về subcategory + product -> childProducts
+            if (
+                /(sub[- ]?category|child).*(product|products)/.test(msg) ||
+                /(product|products).*(sub[- ]?category|child)/.test(msg)
+            ) {
+                return "childProducts";
+            }
+            if (/(child|sub[- ]?category|descendant)/.test(msg)) return "children";
+            // Mơ hồ: nếu đang xóa danh mục con thì coi như con còn sản phẩm
+            return isChild ? "childProducts" : "products";
+        }
+
+        // EN: child category has products
+        if (
+            /(sub[- ]?category|child).*(has|have|contains|contain|with).*(product|products)/.test(msg) ||
+            /(product|products).*(in|under).*(sub[- ]?category|child)/.test(msg)
+        ) {
+            return "childProducts";
+        }
+        // EN: category itself has products
+        if (
+            (/has|have|contains|contain/.test(msg) && /product|products/.test(msg) && /category/.test(msg)) ||
+            /product.*in (this|the) category/.test(msg) ||
+            /still.*product/.test(msg)
+        ) {
+            return isChild ? "childProducts" : "products";
+        }
+        // EN: has children
+        if (
+            /(has|have|contains|contain).*(child|sub[- ]?category|descendant)/.test(msg) ||
+            /(child|sub[- ]?category|descendant).*exists?/.test(msg)
+        ) {
+            return "children";
+        }
+
+        // VI: danh mục con còn sản phẩm
+        if (
+            /(danh mục con|danh mục phụ).*(còn|vẫn|đang).*(sản phẩm)/.test(msg) ||
+            /(sản phẩm).*(thuộc|trong).*(danh mục con|danh mục phụ)/.test(msg)
+        ) {
+            return "childProducts";
+        }
+        // VI: chính danh mục còn sản phẩm
+        if (
+            /(còn|vẫn|đang).*(sản phẩm).*danh mục(?! con)/.test(msg) ||
+            /(danh mục).*(còn|chứa|có).*(sản phẩm)/.test(msg)
+        ) {
+            return isChild ? "childProducts" : "products";
+        }
+        // VI: có danh mục con
+        if (/(có|chứa).*(danh mục con)/.test(msg) || /danh mục con.*(tồn tại|đang có)/.test(msg)) {
+            return "children";
+        }
+
+        // Mã lỗi DB phổ biến
+        if (data?.code === "23503") return isChild ? "childProducts" : "products"; // Postgres: FK
+        if (data?.code === "ER_ROW_IS_REFERENCED" || data?.code === "ER_ROW_IS_REFERENCED_2")
+            return isChild ? "childProducts" : "products"; // MySQL
+        if (data?.code === "SQLITE_CONSTRAINT_FOREIGNKEY") return isChild ? "childProducts" : "products"; // SQLite
+
+        // 409: xung đột → suy luận
+        if (status === 409) {
+            if (
+                /(sub[- ]?category|child).*(product|products)/.test(msg) ||
+                /(product|products).*(sub[- ]?category|child)/.test(msg)
+            ) {
+                return "childProducts";
+            }
+            if (/(child|sub[- ]?category)/.test(msg)) return "children";
+            if (/product|products/.test(msg)) return isChild ? "childProducts" : "products";
+        }
+
+        return null;
+    };
+
     const confirmDelete = async () => {
-        setShowModal(false);
+        setIsDeleting(true);
         try {
             await adminApi.delete(`/categories/${deleteId}`);
             setCategories((prev) => prev.filter((category) => category.id !== deleteId));
@@ -63,40 +235,67 @@ const CategoryList = () => {
                 navigate("/admin-login", {replace: true});
                 return;
             }
-            showToastMessage("Có lỗi xảy ra khi xóa danh mục.", "error");
+
+            const cat = findCategoryById(deleteId);
+            const isChild = !!(cat && cat.parent_id != null);
+            const reason = getDeleteBlockReason(error, {isChild});
+
+            if (reason === "children") {
+                showToastMessage("Không thể xóa: danh mục đang chứa danh mục con.", "error");
+            } else if (reason === "childProducts") {
+                showToastMessage("Không thể xóa: danh mục con vẫn còn sản phẩm.", "error");
+            } else if (reason === "products") {
+                showToastMessage("Không thể xóa: danh mục này vẫn còn sản phẩm.", "error");
+            } else {
+                // fallback cuối cùng: nếu đang xóa danh mục con và lỗi mơ hồ → coi như con còn sản phẩm
+                if (isChild && (status === 409 || status === 422)) {
+                    showToastMessage("Không thể xóa: danh mục con vẫn còn sản phẩm.", "error");
+                } else {
+                    const backendMsg =
+                        typeof error?.response?.data === "string"
+                            ? error.response.data
+                            : error?.response?.data?.message || "";
+                    showToastMessage(
+                        backendMsg ? `Xóa không thành công: ${backendMsg}` : "Có lỗi xảy ra khi xóa danh mục.",
+                        "error"
+                    );
+                }
+            }
+        } finally {
+            setIsDeleting(false);
+            setShowModal(false);
+            setDeleteId(null);
         }
     };
 
     const getParentName = (parent_id) => {
-        if (parent_id === null || parent_id === undefined) return "Không có";
+        if (parent_id == null) return "Không có";
         const parent = (Array.isArray(categories) ? categories : []).find(
-            (cat) => String(cat.id) === String(parent_id)
+            (cat) => cat && cat.id == parent_id
         );
         return parent ? parent.name : "Không có";
     };
 
     const parentCategories = (Array.isArray(categories) ? categories : []).filter(
-        (cat) => cat?.parent_id === null || cat?.parent_id === undefined
+        (cat) => cat?.parent_id == null
     );
 
     const filteredCategories = (Array.isArray(categories) ? categories : []).filter((category) => {
         const matchesSearch = String(category.name || "")
             .toLowerCase()
             .includes(searchTerm.toLowerCase());
-        const matchesParent = filterParentId
-            ? String(category.parent_id) === String(filterParentId)
-            : true;
+        const matchesParent = filterParentId ? category.parent_id == filterParentId : true;
         return matchesSearch && matchesParent;
     });
 
     return (
         <div className="container position-relative">
-            {/* Toast */}
+            {/* Toast (top-right) */}
             <div
                 aria-live="polite"
                 aria-atomic="true"
-                className="position-fixed start-50 translate-middle-x"
-                style={{zIndex: 1070, top: 20, left: "50%", minWidth: 340}}
+                className="position-fixed"
+                style={{zIndex: 1070, top: 20, right: 20, minWidth: 340}}
             >
                 {showToast && (
                     <div
@@ -165,7 +364,6 @@ const CategoryList = () => {
                     <th>Ảnh</th>
                     <th>Trạng thái</th>
                     <th>Hiển thị Home</th>
-                    {/* NEW */}
                     <th>Danh mục cha</th>
                     <th>Hành động</th>
                 </tr>
@@ -191,7 +389,6 @@ const CategoryList = () => {
                             </td>
                             <td>{category.status === 1 ? "Hiển thị" : "Ẩn"}</td>
                             <td>{category.show_home === 1 ? "Có" : "Không"}</td>
-                            {/* NEW */}
                             <td>{getParentName(category.parent_id)}</td>
                             <td>
                                 <Link
@@ -200,8 +397,12 @@ const CategoryList = () => {
                                 >
                                     Sửa
                                 </Link>
-                                <button className="btn btn-danger btn-sm" onClick={() => openDeleteModal(category.id)}>
-                                    Xóa
+                                <button
+                                    className="btn btn-danger btn-sm"
+                                    onClick={() => openDeleteModal(category.id)}
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting && deleteId === category.id ? "Đang xóa..." : "Xóa"}
                                 </button>
                             </td>
                         </tr>
@@ -230,7 +431,12 @@ const CategoryList = () => {
                             <div className="modal-content">
                                 <div className="modal-header border-0 pb-0">
                                     <h5 className="modal-title">Xác nhận xóa</h5>
-                                    <button type="button" className="btn-close" onClick={() => setShowModal(false)}/>
+                                    <button
+                                        type="button"
+                                        className="btn-close"
+                                        onClick={() => !isDeleting && setShowModal(false)}
+                                        disabled={isDeleting}
+                                    />
                                 </div>
                                 <div className="modal-body">
                                     <p>Bạn chắc chắn muốn xóa danh mục này?</p>
@@ -241,6 +447,7 @@ const CategoryList = () => {
                                         className="btn"
                                         style={{background: "#FFD600", color: "#333", minWidth: 70, fontWeight: 500}}
                                         onClick={() => setShowModal(false)}
+                                        disabled={isDeleting}
                                     >
                                         Hủy
                                     </button>
@@ -249,8 +456,9 @@ const CategoryList = () => {
                                         className="btn"
                                         style={{background: "#f44e4e", color: "#fff", minWidth: 70, fontWeight: 500}}
                                         onClick={confirmDelete}
+                                        disabled={isDeleting}
                                     >
-                                        Xóa
+                                        {isDeleting ? "Đang xóa..." : "Xóa"}
                                     </button>
                                 </div>
                             </div>
