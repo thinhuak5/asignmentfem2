@@ -237,9 +237,6 @@ const Home = () => {
   const [homeSections, setHomeSections] = useState([]);
   const [loadingSections, setLoadingSections] = useState(true);
   const [errorSections, setErrorSections] = useState(null);
-
-  const getSectionCover = (images) => absUrl(images);
-
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -509,7 +506,7 @@ const Home = () => {
                             <ProductCard key={`suggest-${product.id}`} product={product}/>
                         ))}
                   </div>
-                  <div className="text-center mt-3">
+                  <div className="text-center mt-3 text-white">
                     <Link to="/product" className="btn btn-secondary" style={NO_UNDERLINE}>
                       Xem thêm
                     </Link>

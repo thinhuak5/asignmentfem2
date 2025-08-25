@@ -54,7 +54,6 @@ const cardShadow = "0 2px 8px rgba(0,0,0,0.05)";
 
 /* ======================= STYLES ======================= */
 const styles = {
-  // thêm vào object styles
   phoneGroup: { display: "flex", gap: 8, alignItems: "center" },
   phonePrefix: {
     padding: "10px 12px",
@@ -181,7 +180,6 @@ const styles = {
   },
   errorMsg: { color: "#d93025", textAlign: "left", marginTop: 6, fontSize: 14 },
 
-  // Address list
   addrList: { display: "flex", flexDirection: "column", gap: 12 },
   addrItem: {
     border: `1px solid ${colors.borderColor}`,
@@ -204,7 +202,6 @@ const styles = {
   },
   divider: { height: 1, background: colors.borderColor, margin: "12px 0" },
 
-  // Display layout for address
   addrNameRow: {
     display: "flex",
     alignItems: "center",
@@ -262,8 +259,7 @@ const normalizeWards = (arr) => {
 
 const ADDRESS_ALLOWED_REGEX = /^[0-9A-Za-zÀ-ỹ\s,./-]+$/u;
 
-/* ========= Phone utils: cho phép nhập 0, LƯU thành +84 ========= */
-// Chuẩn hoá về E.164 +84xxxxxxxxx (bỏ các ký tự khác, cắt 0/84 đầu)
+/* ========= Phone utils ========= */
 const toE164VN = (raw) => {
   if (!raw) return "";
   let d = String(raw).replace(/\D+/g, "");
@@ -272,17 +268,16 @@ const toE164VN = (raw) => {
   if (!d) return "";
   return `+84${d}`;
 };
-// Hợp lệ: +84 + 9 số (di động VN)
 const isValidE164VNMobile = (e164) => /^\+84[1-9]\d{8}$/.test(e164);
-// Hiển thị: "(+84) 375 113 284"
 const formatE164VNForView = (rawOrE164) => {
   const e164 = rawOrE164?.startsWith("+84") ? rawOrE164 : toE164VN(rawOrE164);
   const m = e164.match(/^\+84(\d{9})$/);
   if (!m) return rawOrE164 || "";
-  const s = m[1]; // 9 số
+  const s = m[1];
   return `(+84) ${s.slice(0, 3)} ${s.slice(3, 6)} ${s.slice(6)}`;
 };
 
+/* ======================= Personal Info ======================= */
 const PersonalInfoView = ({ profile, onSave }) => {
   const { enqueueSnackbar } = useSnackbar();
   const [isEditing, setIsEditing] = useState(false);
@@ -473,8 +468,8 @@ const PersonalInfoView = ({ profile, onSave }) => {
   );
 };
 
-/* ======================= Address Form ======================= */
-const AddressForm = ({ value, onChange, onCancel }) => {
+/* ======================= Address Form (reuse trong popup) ======================= */
+const AddressForm = ({ value, onChange }) => {
   const [provinces, setProvinces] = useState([]);
   const [wards, setWards] = useState([]);
   const [loadingProvinces, setLoadingProvinces] = useState(false);
@@ -549,32 +544,31 @@ const AddressForm = ({ value, onChange, onCancel }) => {
         />
       </div>
 
-<div style={styles.formGroup}>
-  <label style={styles.label}>Số điện thoại người nhận</label>
-  <div style={styles.phoneGroup}>
-    <div style={styles.phonePrefix}>+84</div>
-    <input
-      type="tel"
-      inputMode="numeric"
-      // LƯU Ý: lưu "raw" người gõ (có thể bắt đầu bằng 0), tối đa 10 số
-      value={String(value?.recipientPhone || "")}
-      onChange={(e) => {
-        let d = e.target.value.replace(/\D+/g, "");
-        if (d.length > 10) d = d.slice(0, 10); // 0xxxxxxxxx (10) hoặc xxxxxxxxx (9)
-        onChange?.({ ...value, recipientPhone: d });
-      }}
-      onBlur={() => {
-        // khi rời ô => chuẩn hoá về +84xxxxxxxxx (bỏ 0 nếu có)
-        const e164 = toE164VN(value?.recipientPhone || "");
-        onChange?.({ ...value, recipientPhone: e164 ? e164.replace(/^\+84/, "") : "" }); 
- 
-      }}
-      placeholder="Số Điện Thoại"
-      style={{ ...styles.input, flex: 1 }}
-    />
-  </div>
-  
-</div>
+      <div style={styles.formGroup}>
+        <label style={styles.label}>Số điện thoại người nhận</label>
+        <div style={styles.phoneGroup}>
+          <div style={styles.phonePrefix}>+84</div>
+          <input
+            type="tel"
+            inputMode="numeric"
+            value={String(value?.recipientPhone || "")}
+            onChange={(e) => {
+              let d = e.target.value.replace(/\D+/g, "");
+              if (d.length > 10) d = d.slice(0, 10);
+              onChange?.({ ...value, recipientPhone: d });
+            }}
+            onBlur={() => {
+              const e164 = toE164VN(value?.recipientPhone || "");
+              onChange?.({
+                ...value,
+                recipientPhone: e164 ? e164.replace(/^\+84/, "") : "",
+              });
+            }}
+            placeholder="Số Điện Thoại"
+            style={{ ...styles.input, flex: 1 }}
+          />
+        </div>
+      </div>
 
       <div style={styles.formGroup}>
         <label style={styles.label}>Tỉnh / Thành phố</label>
@@ -644,16 +638,6 @@ const AddressForm = ({ value, onChange, onCancel }) => {
 
       {err && <div style={styles.errorMsg}>{err}</div>}
 
-      {onCancel && (
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button
-            onClick={onCancel}
-            style={{ ...styles.button, ...styles.cancelButton }}
-          >
-            Hủy thêm mới
-          </button>
-        </div>
-      )}
       <div style={{ color: "#d93025", fontSize: 12, marginTop: 6 }}>
         Mỗi địa chỉ cần: Tên người nhận, SĐT hợp lệ (+84...), Tỉnh/Thành,
         Phường/Xã và Số nhà/địa chỉ.
@@ -662,7 +646,7 @@ const AddressForm = ({ value, onChange, onCancel }) => {
   );
 };
 
-/* ======================= Address View ======================= */
+/* ======================= Address View (Add/Edit chung 1 popup) ======================= */
 const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
   const { enqueueSnackbar } = useSnackbar();
 
@@ -673,14 +657,18 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
     defaultAddressId || null
   );
 
-  const [editingId, setEditingId] = useState(null);
-  const [newDraft, setNewDraft] = useState(null);
   const [error, setError] = useState("");
 
+  // delete modal
   const [deleteId, setDeleteId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // hiển thị 2 dòng địa chỉ
+  // unified add/edit modal
+  const [showUpsertModal, setShowUpsertModal] = useState(false);
+  const [upsertMode, setUpsertMode] = useState("create"); // 'create' | 'edit'
+  const [editingId, setEditingId] = useState(null); // id khi edit
+  const [formValue, setFormValue] = useState(null);
+
   const line1 = (a) => a.houseNumber || "Chưa đủ thông tin";
   const line2 = (a) => [a.wardName, a.provinceName].filter(Boolean).join(", ");
 
@@ -688,12 +676,6 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
     setCurrentDefaultId(id);
     setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
   };
-
-  const toggleEdit = (id) => setEditingId((cur) => (cur === id ? null : id));
-  const updateAddress = (id, next) =>
-    setAddresses((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, ...next } : a))
-    );
 
   const handleDelete = (id) => {
     if (addresses.length <= 1) {
@@ -723,63 +705,109 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
     setCurrentDefaultId(nextDefault);
     setShowDeleteModal(false);
     setDeleteId(null);
-    setEditingId((cur) => (cur === id ? null : cur));
     enqueueSnackbar("Xóa địa chỉ thành công", { variant: "success" });
   };
 
-  const validateOne = (a, isDraft = false) => {
+  const validateOne = (a) => {
     if (!a.recipientName || !a.recipientName.trim()) {
-      setError(
-        isDraft
-          ? "Địa chỉ mới cần Tên người nhận."
-          : "Một địa chỉ thiếu Tên người nhận."
-      );
+      setError("Tên người nhận là bắt buộc.");
       return false;
     }
     const e164 = toE164VN(a.recipientPhone);
     if (!isValidE164VNMobile(e164)) {
-      setError(
-        isDraft
-          ? "Địa chỉ mới cần SĐT hợp lệ (+84…)."
-          : "Một địa chỉ có SĐT không hợp lệ (+84…)."
-      );
+      setError("SĐT không hợp lệ (+84…).");
       return false;
     }
     if (!a.houseNumber || !a.provinceCode || !a.wardCode) {
-      setError(
-        isDraft
-          ? "Địa chỉ mới cần đủ Tỉnh/Thành, Phường/Xã và Số nhà/địa chỉ."
-          : "Một địa chỉ thiếu trường bắt buộc."
-      );
+      setError("Thiếu Tỉnh/Thành, Phường/Xã hoặc Số nhà/địa chỉ.");
       return false;
     }
     if (!ADDRESS_ALLOWED_REGEX.test(a.houseNumber)) {
-      setError("Một địa chỉ có ký tự không hợp lệ.");
+      setError("Địa chỉ có ký tự không hợp lệ.");
       return false;
     }
     return true;
   };
 
+  const openCreateModal = () => {
+    setUpsertMode("create");
+    setEditingId(null);
+    setFormValue({
+      id: uuid(),
+      recipientName: "",
+      recipientPhone: "",
+      houseNumber: "",
+      wardCode: "",
+      wardName: "",
+      provinceCode: "",
+      provinceName: "",
+      fullAddress: "",
+    });
+    setShowUpsertModal(true);
+    setError("");
+  };
+
+  const openEditModal = (id) => {
+    const target = addresses.find((a) => a.id === id);
+    if (!target) return;
+    setUpsertMode("edit");
+    setEditingId(id);
+    setFormValue({ ...target });
+    setShowUpsertModal(true);
+    setError("");
+  };
+
+  const handleUpsert = () => {
+    if (!formValue) return;
+    const a = formValue;
+
+    if (!validateOne(a)) return;
+
+    const full = [a.houseNumber, a.wardName, a.provinceName]
+      .filter(Boolean)
+      .join(", ");
+    if (full.length > 500) {
+      setError("Một địa chỉ quá dài (tối đa 500 ký tự).");
+      return;
+    }
+    const e164 = toE164VN(a.recipientPhone);
+
+    if (upsertMode === "create") {
+      const newId = a.id || uuid();
+      const nextList = [
+        ...addresses,
+        { ...a, id: newId, recipientPhone: e164, fullAddress: full },
+      ];
+      setAddresses(nextList);
+      if (!currentDefaultId && nextList.length === 1) {
+        setCurrentDefaultId(newId);
+      }
+      enqueueSnackbar("Thêm địa chỉ thành công", { variant: "success" });
+    } else {
+      setAddresses((prev) =>
+        prev.map((x) =>
+          x.id === editingId
+            ? { ...a, id: editingId, recipientPhone: e164, fullAddress: full }
+            : x
+        )
+      );
+      enqueueSnackbar("Cập nhật địa chỉ thành công", { variant: "success" });
+    }
+
+    setShowUpsertModal(false);
+    setFormValue(null);
+    setEditingId(null);
+  };
+
   const handleSaveAll = () => {
     setError("");
-
-    // copy dữ liệu hiện có
-    const combined = [...addresses];
-    let draftId = null;
-
-    if (newDraft) {
-      if (!validateOne(newDraft, true)) return;
-      draftId = uuid();
-      combined.push({ id: draftId, ...newDraft });
-    }
-    if (!combined.length) {
+    if (!addresses.length) {
       setError("Vui lòng thêm ít nhất một địa chỉ.");
       return;
     }
 
-    // chuẩn hoá cho tất cả & validate lần cuối
     const normalized = [];
-    for (const a of combined) {
+    for (const a of addresses) {
       if (!validateOne(a)) return;
       const full = [a.houseNumber, a.wardName, a.provinceName]
         .filter(Boolean)
@@ -788,23 +816,20 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
         setError("Một địa chỉ quá dài (tối đa 500 ký tự).");
         return;
       }
-      const e164 = toE164VN(a.recipientPhone); // <-- CHUẨN HOÁ KHI LƯU (bỏ số 0 nếu có)
       normalized.push({
         ...a,
-        recipientPhone: e164,
+        recipientPhone: toE164VN(a.recipientPhone),
         fullAddress: full,
       });
     }
 
-    const defaultId = currentDefaultId || draftId || normalized[0].id;
+    const defaultId = currentDefaultId || normalized[0].id;
     const finalList = normalized.map((a) => ({
       ...a,
       isDefault: a.id === defaultId,
     }));
 
-    onSave(finalList, defaultId); // parent gọi API
-    setNewDraft(null);
-    setEditingId(null);
+    onSave(finalList, defaultId);
   };
 
   return (
@@ -847,14 +872,14 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
 
                   <div style={styles.addrActions}>
                     <button
-                      onClick={() => toggleEdit(a.id)}
+                      onClick={() => openEditModal(a.id)}
                       style={{
                         ...styles.button,
                         ...styles.cancelButton,
                         padding: "8px 12px",
                       }}
                     >
-                      {editingId === a.id ? "Đóng chỉnh sửa" : "Sửa"}
+                      Sửa
                     </button>
                     <button
                       onClick={() => handleDelete(a.id)}
@@ -867,16 +892,6 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
                       Xóa
                     </button>
                   </div>
-
-                  {editingId === a.id && (
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <div style={styles.divider} />
-                      <AddressForm
-                        value={a}
-                        onChange={(next) => updateAddress(a.id, next)}
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -884,39 +899,14 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
         )}
       </div>
 
-      {!newDraft ? (
+      <div style={{ display: "flex", gap: 10 }}>
         <button
-          onClick={() =>
-            setNewDraft({
-              id: uuid(),
-              recipientName: "",
-              recipientPhone: "", // gõ 0... vẫn được
-              houseNumber: "",
-              wardCode: "",
-              wardName: "",
-              provinceCode: "",
-              provinceName: "",
-              fullAddress: "",
-            })
-          }
+          onClick={openCreateModal}
           style={{ ...styles.button, ...styles.editButton }}
         >
           Thêm địa chỉ
         </button>
-      ) : (
-        <div style={{ marginTop: 12 }}>
-          <div style={styles.divider} />
-          <AddressForm
-            value={newDraft}
-            onChange={setNewDraft}
-            onCancel={() => setNewDraft(null)}
-          />
-        </div>
-      )}
 
-      {error && <div style={{ ...styles.errorMsg, marginTop: 8 }}>{error}</div>}
-
-      <div style={styles.buttonContainer}>
         <button
           onClick={handleSaveAll}
           style={{ ...styles.button, ...styles.saveButton }}
@@ -924,6 +914,8 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
           Lưu
         </button>
       </div>
+
+      {error && <div style={{ ...styles.errorMsg, marginTop: 8 }}>{error}</div>}
 
       {/* Modal XÓA (Soft Blue) */}
       <RBModal
@@ -941,14 +933,53 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
           <p>Bạn có chắc chắn muốn xóa địa chỉ này không?</p>
         </RBModal.Body>
         <RBModal.Footer>
-          <RBButton
-            variant="secondary"
-            onClick={() => setShowDeleteModal(false)}
-          >
+          <RBButton variant="secondary" onClick={() => setShowDeleteModal(false)}>
             Đóng
           </RBButton>
           <RBButton variant="primary" onClick={confirmDelete}>
             Đồng ý xóa
+          </RBButton>
+        </RBModal.Footer>
+      </RBModal>
+
+      {/* Modal THÊM/SỬA (Soft Blue) */}
+      <RBModal
+        show={showUpsertModal}
+        onHide={() => {
+          setShowUpsertModal(false);
+          setFormValue(null);
+          setEditingId(null);
+        }}
+        centered
+        dialogClassName="modal-soft-blue"
+        backdrop="static"
+        keyboard={false}
+        size="lg"
+      >
+        <RBModal.Header closeButton>
+          <RBModal.Title>
+            {upsertMode === "create" ? "Thêm địa chỉ" : "Sửa địa chỉ"}
+          </RBModal.Title>
+        </RBModal.Header>
+        <RBModal.Body>
+          {formValue && (
+            <AddressForm value={formValue} onChange={setFormValue} />
+          )}
+          {error && <div style={{ ...styles.errorMsg, marginTop: 8 }}>{error}</div>}
+        </RBModal.Body>
+        <RBModal.Footer>
+          <RBButton
+            variant="secondary"
+            onClick={() => {
+              setShowUpsertModal(false);
+              setFormValue(null);
+              setEditingId(null);
+            }}
+          >
+            Hủy
+          </RBButton>
+          <RBButton variant="primary" onClick={handleUpsert}>
+            {upsertMode === "create" ? "Thêm" : "Lưu thay đổi"}
           </RBButton>
         </RBModal.Footer>
       </RBModal>
@@ -990,7 +1021,7 @@ const Profile = () => {
         ...user,
         addresses: (addrPayload.addresses || []).map((a) => ({
           ...a,
-          recipientName: a.recipientName || a.recipient_name || "", // fallback nếu BE trả snake_case
+          recipientName: a.recipientName || a.recipient_name || "",
           recipientPhone: a.recipientPhone || a.recipient_phone || "",
         })),
         defaultAddressId: addrPayload.defaultAddressId || null,
@@ -1029,7 +1060,6 @@ const Profile = () => {
       const token = localStorage.getItem("authToken");
       const decoded = jwtDecode(token);
 
-      // gửi đúng camelCase như controller mới yêu cầu; nếu BE dùng snake_case, map lại tại server
       const res = await fetch(
         `${Constanst.DOMAIN_API}/api/users/${decoded.id}/addresses-bulk`,
         {

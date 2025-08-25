@@ -51,6 +51,7 @@ const paymentStatusOptions = [
 ];
 
 const orderStatusOptions = [
+  { value: "", label: "-- Tất cả trạng thái --" },
   { value: "1", label: "Chờ xác nhận" },
   { value: "2", label: "Đã xác nhận" },
   { value: "3", label: "Đang giao hàng" },
@@ -91,9 +92,45 @@ const canTransition = (from, to) => {
   if (to === 0) return from === 1 || from === 2;
   // Không lùi trạng thái
   if (to < from) return false;
-  // Cho phép tiến thẳng (1→3, 2→4...) tùy nghiệp vụ, ở đây cho phép
+  // Cho phép tiến thẳng
   return true;
 };
+
+/* ========= Soft blue CSS cho modal (đồng bộ UI) ========= */
+const SoftBlueCSS = () => (
+  <style>{`
+    .modal-soft-blue .modal-content{
+      background:#ffffff;
+      border:1px solid #cfe3ff;
+      box-shadow:0 10px 30px rgba(20,60,120,.15);
+      border-radius:14px;
+    }
+    .modal-soft-blue .modal-header{
+      background:#eaf3ff;
+      color:#0b3d91;
+      border-bottom:1px solid #cfe3ff;
+      border-top-left-radius:14px;
+      border-top-right-radius:14px;
+    }
+    .modal-soft-blue .modal-title{ font-weight:600; }
+    .modal-soft-blue .modal-body{ color:#193b6a; }
+    .modal-soft-blue .btn-primary{
+      background:#E74C3C; border-color:#E74C3C;
+    }
+    .modal-soft-blue .btn-primary:hover{
+      background:#C0392B; border-color:#C0392B;
+    }
+    .modal-soft-blue .btn-secondary{
+      background:#e9f2ff; color:#0b3d91; border-color:#cfe3ff;
+    }
+    .modal-soft-blue .btn-secondary:hover{
+      background:#dbeaff; color:#0b3d91; border-color:#bed7ff;
+    }
+    .modal-soft-blue .btn-close{
+      filter: invert(24%) sepia(16%) saturate(1783%) hue-rotate(189deg) brightness(90%) contrast(88%);
+    }
+  `}</style>
+);
 
 /* ===================== component ===================== */
 const OrderList = () => {
@@ -125,6 +162,27 @@ const OrderList = () => {
   const [showDetail, setShowDetail] = useState(false);
   const [detailOrder, setDetailOrder] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // ====== Cancel modal (yêu cầu lý do) ======
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [otherReason, setOtherReason] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
+
+const cancellationReasons = [
+  "Hết hàng / hết tồn kho",
+  "Sai giá / lỗi niêm yết",
+  "Thông tin đơn không hợp lệ (địa chỉ/số điện thoại)",
+  "Trùng lặp đơn hàng",
+  "Nghi ngờ gian lận / rủi ro",
+  "Không thể liên hệ khách để xác nhận",
+  "Đơn vượt giới hạn số lượng / chính sách",
+  "Nhà vận chuyển không hỗ trợ tuyến / từ chối nhận",
+  "Lỗi hệ thống / lỗi kỹ thuật",
+  "Khác (ghi rõ lý do)",
+];
+
 
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
@@ -226,6 +284,73 @@ const OrderList = () => {
       [id]: parseInt(value, 10),
     });
 
+  // Mở modal hủy (yêu cầu lý do)
+  const openCancelModalFor = (id) => {
+    setOrderToCancel(id);
+    setCancelReason("");
+    setOtherReason("");
+    setShowCancelModal(true);
+  };
+  const closeCancelModal = () => {
+    setShowCancelModal(false);
+    setOrderToCancel(null);
+    setCancelReason("");
+    setOtherReason("");
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!orderToCancel) return;
+    let finalReason = cancelReason;
+    if (!finalReason) {
+      if (!otherReason.trim()) {
+        setToastType("danger");
+        setToastMessage(
+          <>
+            <FaTimesCircle className="me-1" />
+            Vui lòng chọn hoặc nhập lý do hủy.
+          </>
+        );
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+        return;
+      }
+      finalReason = otherReason.trim();
+    }
+    setIsCancelling(true);
+    try {
+      await adminApi.put(`/orders/${orderToCancel}/cancel`, { reason: finalReason });
+      setToastType("success");
+      setToastMessage(
+        <>
+          <FaCheckCircle className="me-1" />
+          Hủy đơn #{orderToCancel} thành công.
+        </>
+      );
+      setShowToast(true);
+      closeCancelModal();
+      setEditingOrderId(null);
+      await fetchOrders();
+      setTimeout(() => setShowToast(false), 2500);
+    } catch (err) {
+      const http = err?.response?.status;
+      if (http === 401 || http === 403) {
+        navigate("/admin-login", { replace: true });
+        return;
+      }
+      setToastType("danger");
+      setToastMessage(
+        <>
+          <FaTimesCircle className="me-1" />
+          {err?.response?.data?.message || err.message || "Hủy đơn hàng thất bại"}
+        </>
+      );
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3500);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const handleSave = async (id) => {
     const current = orders.find((o) => o.id === id);
     if (!current) return;
@@ -235,7 +360,6 @@ const OrderList = () => {
       updatedPaymentStatus[id] ?? current.payment_status;
 
     /* ==== VALIDATIONS ==== */
-    // 1) Rule chuyển trạng thái tổng quát
     if (!canTransition(current.status, toStatus)) {
       setToastType("danger");
       setShowToast(true);
@@ -249,7 +373,13 @@ const OrderList = () => {
       return;
     }
 
-    // 2) Ràng buộc thanh toán theo phương thức
+    // 👉 Nếu chọn HỦY (0): bật modal yêu cầu LÝ DO rồi return (không update ở đây)
+    if (toStatus === 0) {
+      openCancelModalFor(id);
+      return;
+    }
+
+    // Các ràng buộc thanh toán chỉ áp dụng khi KHÔNG phải hủy
     // 2a) Nếu là Chuyển khoản, luôn phải "Đã thanh toán"
     if (current.payment_id === 2 && newPaymentStatus !== 1) {
       setToastType("danger");
@@ -263,7 +393,6 @@ const OrderList = () => {
       setTimeout(() => setShowToast(false), 3200);
       return;
     }
-
     // 2b) Nếu là COD và chuyển sang "Đã giao", yêu cầu đã thanh toán
     if (toStatus === 4 && current.payment_id === 1 && newPaymentStatus !== 1) {
       setToastType("danger");
@@ -278,6 +407,7 @@ const OrderList = () => {
       return;
     }
 
+    // Update bình thường (không phải hủy)
     try {
       await adminApi.put(`/orders/${id}`, {
         payment_status: newPaymentStatus,
@@ -334,6 +464,8 @@ const OrderList = () => {
   /* ===================== render ===================== */
   return (
     <div className="container py-3 position-relative">
+      <SoftBlueCSS />
+
       {/* Toast */}
       <div
         aria-live="polite"
@@ -548,7 +680,6 @@ const OrderList = () => {
                             .filter((opt) => {
                               // "Đã hủy" (0) chỉ hiện khi từ 1 hoặc 2
                               if (opt.value === "0") return order.status <= 2;
-
                               // Các option khác: chỉ tiến, không lùi
                               return (
                                 opt.value === "" ||
@@ -660,6 +791,12 @@ const OrderList = () => {
                     )}{" "}
                     <br />
                     <strong>Trạng thái:</strong> {statusBadge(detailOrder.status)}
+                    {detailOrder.status === 0 && detailOrder.cancellation_reason && (
+                      <>
+                        <br />
+                        <strong className="text-danger">Lý do hủy:</strong> {detailOrder.cancellation_reason}
+                      </>
+                    )}
                   </div>
                   <hr />
                   <h5 className="mt-3">Danh sách sản phẩm</h5>
@@ -735,6 +872,72 @@ const OrderList = () => {
             <Modal.Footer>
               <Button variant="secondary" onClick={closeDetail}>
                 Đóng
+              </Button>
+            </Modal.Footer>
+          </Modal>
+
+          {/* Modal HỦY ĐƠN (yêu cầu LÝ DO) */}
+          <Modal
+            show={showCancelModal}
+            onHide={closeCancelModal}
+            centered
+            dialogClassName="modal-soft-blue"
+            backdrop="static"
+            keyboard={false}
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>Hủy Đơn Hàng #{orderToCancel}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <p>Vui lòng chọn lý do hủy đơn hàng:</p>
+              <Form>
+                <Form.Group controlId="cancelReasonSelect">
+                  {cancellationReasons.map((reason, idx) => (
+                    <Form.Check
+                      key={idx}
+                      type="radio"
+                      id={`reason-${idx}`}
+                      label={reason}
+                      name="cancelReason"
+                      value={reason}
+                      checked={cancelReason === reason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      className="mb-2"
+                    />
+                  ))}
+                </Form.Group>
+
+                {cancelReason === "Khác (ghi rõ lý do)" && (
+                  <Form.Group controlId="otherReasonTextarea" className="mt-3">
+                    <Form.Label>Lý do khác:</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      value={otherReason}
+                      onChange={(e) => setOtherReason(e.target.value)}
+                      placeholder="Vui lòng mô tả lý do cụ thể..."
+                    />
+                  </Form.Group>
+                )}
+              </Form>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={closeCancelModal} disabled={isCancelling}>
+                Đóng
+              </Button>
+              <Button
+                variant="primary"
+                onClick={confirmCancelOrder}
+                disabled={isCancelling || (!cancelReason && !otherReason)}
+              >
+                {isCancelling ? (
+                  <>
+                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                    Đang hủy...
+                  </>
+                ) : (
+                  "Xác nhận Hủy Đơn Hàng"
+                )}
               </Button>
             </Modal.Footer>
           </Modal>

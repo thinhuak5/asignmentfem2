@@ -351,10 +351,6 @@ const OrderPage = () => {
       </Container>
     );
   }
-
-  const selected = addresses.find((a) => a.id === selectedAddressId);
-  const viewPhone = viewPhoneFromAny(selected?.recipientPhone ?? selected?.recipient_phone ?? phone);
-
   return (
     <div className="order-page-wrapper">
       <Container>

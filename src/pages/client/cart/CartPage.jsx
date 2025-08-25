@@ -1,19 +1,20 @@
-import React, { useCallback, useEffect, useState } from "react";
-import {
-  Alert,
-  Button,
-  Col,
-  Container,
-  Form,
-  Row,
-  Table,
-} from "react-bootstrap";
+import React, {useCallback, useEffect, useState} from "react";
+import {Alert, Button, Col, Container, Form, Row, Table} from "react-bootstrap";
 import Constants from "../../../Constanst";
-import { Link, useNavigate } from "react-router-dom";
-import { FaMinus, FaPlus, FaTrashAlt } from "react-icons/fa";
-import { jwtDecode } from "jwt-decode";
+import {Link, useNavigate} from "react-router-dom";
+import {FaMinus, FaPlus, FaTrashAlt} from "react-icons/fa";
+import {jwtDecode} from "jwt-decode";
 import "../../../assets/css/CartPage.css";
-import { useSnackbar } from "notistack";
+import {useSnackbar} from "notistack";
+
+const formatVND = (value) => {
+    const num = Number(value) || 0;
+    // ví dụ: 17000 -> "17.000đ"
+    return num
+        .toLocaleString("vi-VN", {maximumFractionDigits: 0})
+        .replace(/\u00A0/g, "") + "đ";
+};
+
 const CartPage = () => {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const [cart, setCart] = useState([]);
@@ -23,6 +24,9 @@ const CartPage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const navigate = useNavigate();
+
+    /* ===== Helpers ===== */
+    const getAvailableQty = (item) => Math.max(0, item?.variation?.quantity ?? 0);
 
   const getCartFromAPI = useCallback(async () => {
     const token = localStorage.getItem("authToken");
@@ -38,14 +42,20 @@ const CartPage = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        const err = await res
-          .json()
-          .catch(() => ({ message: "Lỗi không xác định khi tải giỏ hàng." }));
+          const err = await res.json().catch(() => ({message: "Lỗi không xác định khi tải giỏ hàng."}));
         throw new Error(err.message);
       }
       const data = await res.json();
-      setCart(data);
-      setSelectedItems(data.map((item) => item.id)); // Mặc định chọn tất cả
+
+        // Clamp số lượng theo tồn kho hiện tại
+        const normalized = data.map((it) => {
+            const avail = getAvailableQty(it);
+            const safeQty = Math.max(0, Math.min(Number(it.quantity || 1), avail));
+            return {...it, quantity: safeQty};
+        });
+
+        setCart(normalized);
+        setSelectedItems(normalized.map((item) => item.id)); // mặc định chọn tất cả
       setError("");
     } catch (e) {
       console.error(e);
@@ -60,20 +70,20 @@ const CartPage = () => {
       return false;
     }
     try {
-      const res = await fetch(
-        `${Constants.DOMAIN_API}/api/cart/update/${cartItemId}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ quantity: newQty }),
-        }
-      );
+        const res = await fetch(`${Constants.DOMAIN_API}/api/cart/update/${cartItemId}`, {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({quantity: newQty}),
+        });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message);
+          const err = await res.json().catch(() => ({}));
+          if (err?.code === "insufficient_stock") {
+              enqueueSnackbar(err.message || "Vượt quá tồn kho.", {variant: "error"});
+          }
+          throw new Error(err?.message || "Cập nhật giỏ thất bại.");
       }
       setSuccess("Cập nhật số lượng thành công!");
       setTimeout(() => setSuccess(""), 3000);
@@ -92,16 +102,13 @@ const CartPage = () => {
       return false;
     }
     try {
-      const res = await fetch(
-        `${Constants.DOMAIN_API}/api/cart/${cartItemId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+        const res = await fetch(`${Constants.DOMAIN_API}/api/cart/${cartItemId}`, {
+            method: "DELETE",
+            headers: {Authorization: `Bearer ${token}`},
+        });
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message);
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err?.message || "Xóa thất bại.");
       }
       setSuccess("Xóa sản phẩm thành công!");
       setTimeout(() => setSuccess(""), 3000);
@@ -128,8 +135,7 @@ const CartPage = () => {
           });
           return;
         }
-      } catch {
-        /* Bỏ qua lỗi decode */
+      } catch { /* ignore */
       }
       localStorage.removeItem("authToken");
       setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
@@ -147,19 +153,29 @@ const CartPage = () => {
     }
   }, [checkLoginStatus, getCartFromAPI]);
 
-  const getMaxQuantity = (item) => item.variation?.quantity ?? 10;
+    const getMaxQuantity = (item) => getAvailableQty(item);
 
   const handleQuantityChange = async (id, action) => {
     const updated = cart.map((item) => {
-      if (item.id === id) {
-        let qty = item.quantity;
+        if (item.id !== id) return item;
+
         const max = getMaxQuantity(item);
-        if (action === "increase" && qty < max) qty++;
-        if (action === "decrease" && qty > 1) qty--;
-        return { ...item, quantity: qty };
-      }
-      return item;
+        let qty = Number(item.quantity) || 1;
+
+        if (action === "increase") {
+            if (qty >= max) {
+                enqueueSnackbar(`Chỉ còn ${max} sản phẩm trong kho.`, {variant: "warning"});
+                return item; // không tăng nữa
+            }
+            qty++;
+        }
+        if (action === "decrease" && qty > 1) {
+            qty--;
+        }
+
+        return {...item, quantity: qty};
     });
+
     const item = updated.find((i) => i.id === id);
     if (item && (await saveCartToAPI(id, item.quantity))) {
       setCart(updated);
@@ -167,66 +183,58 @@ const CartPage = () => {
   };
 
   const removeFromCart = async (id) => {
-  enqueueSnackbar("Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?", {
-    variant: "warning",
-    autoHideDuration: 3000,
-    action: (key) => (
-      <>
-        <button
-          onClick={async () => {
-            if (await deleteCartToAPI(id)) {
-              setCart((prev) => prev.filter((i) => i.id !== id));
-              setSelectedItems((sel) => sel.filter((x) => x !== id));
-              enqueueSnackbar("Đã xóa sản phẩm khỏi giỏ hàng!", {
-                variant: "success",
-              });
-            } else {
-              enqueueSnackbar("Xóa thất bại, thử lại sau!", {
-                variant: "error",
-              });
-            }
-            closeSnackbar(key);
-          }}
-          style={{
-            background: "#f44336",
-            border: "none",
-            color: "white",
-            padding: "8px 16px",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginLeft: "8px",
-          }}
-        >
-          Có
-        </button>
-        <button
-          onClick={() => closeSnackbar(key)}
-          style={{
-            background: "#9e9e9e",
-            border: "none",
-            color: "white",
-            padding: "8px 16px",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginLeft: "8px",
-          }}
-        >
-          Không
-        </button>
-      </>
-    ),
-  });
-};
-
+      enqueueSnackbar("Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?", {
+          variant: "warning",
+          autoHideDuration: 3000,
+          action: (key) => (
+              <>
+                  <button
+                      onClick={async () => {
+                          if (await deleteCartToAPI(id)) {
+                              setCart((prev) => prev.filter((i) => i.id !== id));
+                              setSelectedItems((sel) => sel.filter((x) => x !== id));
+                              enqueueSnackbar("Đã xóa sản phẩm khỏi giỏ hàng!", {variant: "success"});
+                          } else {
+                              enqueueSnackbar("Xóa thất bại, thử lại sau!", {variant: "error"});
+                          }
+                          closeSnackbar(key);
+                      }}
+                      style={{
+                          background: "#f44336",
+                          border: "none",
+                          color: "white",
+                          padding: "8px 16px",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          marginLeft: "8px",
+                      }}
+                  >
+                      Có
+                  </button>
+                  <button
+                      onClick={() => closeSnackbar(key)}
+                      style={{
+                          background: "#9e9e9e",
+                          border: "none",
+                          color: "white",
+                          padding: "8px 16px",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          marginLeft: "8px",
+                      }}
+                  >
+                      Không
+                  </button>
+              </>
+          ),
+      });
+  };
 
   const toggleSelectItem = (id) =>
-    setSelectedItems((sel) =>
-      sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]
-    );
+      setSelectedItems((sel) => (sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]));
+
   const toggleSelectAll = () =>
-    setSelectedItems((sel) =>
-      sel.length === cart.length ? [] : cart.map((i) => i.id)
-    );
+      setSelectedItems((sel) => (sel.length === cart.length ? [] : cart.map((i) => i.id)));
 
   const calculateTotal = () =>
     cart.reduce((sum, item) => {
@@ -246,10 +254,19 @@ const CartPage = () => {
       return;
     }
     const selected = cart.filter((i) => selectedItems.includes(i.id));
+
+      const violated = selected.filter((i) => i.quantity > getAvailableQty(i));
+      if (violated.length > 0) {
+          const names = violated.map((i) => i.variation?.name || "Sản phẩm").join(", ");
+          setError(`Một số sản phẩm vượt quá tồn kho: ${names}. Vui lòng điều chỉnh.`);
+          enqueueSnackbar("Có sản phẩm vượt quá tồn kho, vui lòng điều chỉnh.", {variant: "warning"});
+          return;
+      }
+
     navigate("/oder", { state: { cartItems: selected, userInfo } });
   };
 
-  // --- PHẦN RENDER GIAO DIỆN MỚI ---
+    /* =============== RENDER =============== */
   const renderCartContent = () => {
     if (!isLoggedIn) {
       return (
@@ -274,14 +291,8 @@ const CartPage = () => {
           <div className="cart-items-container">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h4 className="mb-0">Sản phẩm trong giỏ</h4>
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onClick={toggleSelectAll}
-              >
-                {selectedItems.length === cart.length
-                  ? "Bỏ chọn tất cả"
-                  : "Chọn tất cả"}
+                <Button variant="outline-primary" size="sm" onClick={toggleSelectAll}>
+                    {selectedItems.length === cart.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
               </Button>
             </div>
             <Table responsive hover className="cart-table align-middle">
@@ -289,14 +300,12 @@ const CartPage = () => {
                 <tr>
                   <th>
                     <Form.Check
-                      readOnly
-                      checked={
-                        selectedItems.length === cart.length && cart.length > 0
-                      }
+                        checked={selectedItems.length === cart.length && cart.length > 0}
                       onChange={toggleSelectAll}
                     />
                   </th>
-                  <th colSpan={2}>Sản phẩm</th>
+                    <th>Hình ảnh</th>
+                    <th>Sản phẩm</th>
                   <th>Đơn giá</th>
                   <th className="text-center">Số lượng</th>
                   <th>Thành tiền</th>
@@ -312,77 +321,72 @@ const CartPage = () => {
                         onChange={() => toggleSelectItem(item.id)}
                       />
                     </td>
-                    <td colSpan={2}>
-                      <div className="product-info">
-                        <img
-                          src={
-                            item.variation?.image_url ||
-                            "https://placehold.co/70"
-                          }
-                          alt={item.variation?.name}
-                          className="product-image"
-                        />
-                        <div className="product-name">
+
+                      {/* Cột HÌNH ẢNH */}
+                      <td style={{width: 80}}>
+                          <img
+                              src={item.variation?.image_url || "https://placehold.co/70"}
+                              alt={item.variation?.name || "product"}
+                              className="product-image"
+                              style={{width: 70, height: 70, objectFit: "cover", borderRadius: 8}}
+                          />
+                      </td>
+
+                      {/* Cột TÊN SẢN PHẨM (đã ẩn "Còn X sản phẩm") */}
+                      <td>
                           <Link to={`/product/${item.variation?.product_id}`}>
-                            {item.variation?.name ||
-                              item.variation?.value ||
-                              "Sản phẩm không tên"}
+                              {item.variation?.name || item.variation?.value || "Sản phẩm không tên"}
                           </Link>
-                        </div>
-                      </div>
+                          {/* ẨN: Còn số sản phẩm
+                      <div style={{ fontSize: 12, color: "#6c757d" }}>
+                        Còn {getAvailableQty(item)} sản phẩm
+                      </div> */}
                     </td>
+
                     <td>
-                      <strong>
-                        {(item.variation?.price ?? item.price).toLocaleString()}
-                        đ
-                      </strong>
+                        <strong>{formatVND(item.variation?.price ?? item.price)}</strong>
                     </td>
+
                     <td className="text-center">
                       <div className="quantity-controls">
                         <Button
                           size="sm"
                           variant="outline-danger"
-                          onClick={() =>
-                            handleQuantityChange(item.id, "decrease")
-                          }
+                          onClick={() => handleQuantityChange(item.id, "decrease")}
                           disabled={item.quantity <= 1}
+                          title={item.quantity <= 1 ? "Tối thiểu 1" : "Giảm số lượng"}
                         >
-                          {" "}
-                          <FaMinus />{" "}
+                            <FaMinus/>
                         </Button>
-                        <span className="quantity-display">
-                          {item.quantity}
-                        </span>
+                          <span className="quantity-display">{item.quantity}</span>
                         <Button
                           size="sm"
                           variant="outline-primary"
-                          onClick={() =>
-                            handleQuantityChange(item.id, "increase")
-                          }
+                          onClick={() => handleQuantityChange(item.id, "increase")}
                           disabled={item.quantity >= getMaxQuantity(item)}
+                          title={
+                              item.quantity >= getMaxQuantity(item)
+                                  ? "Đã đạt tối đa tồn kho"
+                                  : "Tăng số lượng"
+                          }
                         >
-                          {" "}
                           <FaPlus />
                         </Button>
                       </div>
                     </td>
+
                     <td>
-                      <strong>
-                        {(
-                          item.variation?.price * item.quantity
-                        ).toLocaleString()}
-                        đ
-                      </strong>
+                        <strong>{formatVND((item.variation?.price || 0) * (item.quantity || 0))}</strong>
                     </td>
-                    <td>
+
+                      <td>
                       <Button
                         size="sm"
                         variant="outline-danger"
                         className="delete-btn"
                         onClick={() => removeFromCart(item.id)}
                       >
-                        {" "}
-                        <FaTrashAlt />{" "}
+                          <FaTrashAlt/>
                       </Button>
                     </td>
                   </tr>
@@ -397,7 +401,7 @@ const CartPage = () => {
             <h3 className="summary-title">Tóm tắt đơn hàng</h3>
             <div className="summary-row">
               <span>Tạm tính ({selectedItems.length} sản phẩm)</span>
-              <span>{calculateTotal().toLocaleString()}đ</span>
+                <span>{formatVND(calculateTotal())}</span>
             </div>
             <div className="summary-row">
               <span>Phí giao hàng</span>
@@ -405,9 +409,7 @@ const CartPage = () => {
             </div>
             <div className="summary-row summary-total">
               <span>Tổng cộng</span>
-              <span className="total-price">
-                {calculateTotal().toLocaleString()}đ
-              </span>
+                <span className="total-price">{formatVND(calculateTotal())}</span>
             </div>
             <Button
               size="lg"

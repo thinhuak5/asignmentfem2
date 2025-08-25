@@ -33,24 +33,13 @@ const OrderHistory = () => {
       .modal-soft-blue .modal-title{ font-weight:600; }
       .modal-soft-blue .modal-body{ color:#193b6a; }
 
-      /* === ĐỎ cho nút xác nhận === */
-      .modal-soft-blue .btn-primary{
-        background:#E74C3C; border-color:#E74C3C;
-      }
-      .modal-soft-blue .btn-primary:hover{
-        background:#C0392B; border-color:#C0392B;
-      }
+      .modal-soft-blue .btn-primary{ background:#E74C3C; border-color:#E74C3C; }
+      .modal-soft-blue .btn-primary:hover{ background:#C0392B; border-color:#C0392B; }
       .modal-soft-blue .btn-primary:disabled,
-      .modal-soft-blue .btn-primary.disabled{
-        background:#E74C3C; border-color:#E74C3C; opacity:.75;
-      }
+      .modal-soft-blue .btn-primary.disabled{ background:#E74C3C; border-color:#E74C3C; opacity:.75; }
 
-      .modal-soft-blue .btn-secondary{
-        background:#e9f2ff; color:#0b3d91; border-color:#cfe3ff;
-      }
-      .modal-soft-blue .btn-secondary:hover{
-        background:#dbeaff; color:#0b3d91; border-color:#bed7ff;
-      }
+      .modal-soft-blue .btn-secondary{ background:#e9f2ff; color:#0b3d91; border-color:#cfe3ff; }
+      .modal-soft-blue .btn-secondary:hover{ background:#dbeaff; color:#0b3d91; border-color:#bed7ff; }
       .modal-soft-blue .btn-close{
         filter: invert(24%) sepia(16%) saturate(1783%) hue-rotate(189deg) brightness(90%) contrast(88%);
       }
@@ -66,6 +55,7 @@ const OrderHistory = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
+
   const [otherReason, setOtherReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -295,10 +285,7 @@ const OrderHistory = () => {
     }, 0);
   };
 
-  /* >>> FIX: tránh trừ giảm giá 2 lần
-     - Nếu backend gửi total_amount (tổng CUỐI), dùng luôn.
-     - Nếu không có, tự tính tổng sản phẩm rồi trừ discount_amount.
-  */
+  // Tổng cuối cùng (phòng khi BE chưa trừ giảm giá)
   const getFinalTotal = (order) => {
     const hasTotal = order.total_amount !== undefined && order.total_amount !== null;
     const totalNum = Number(order.total_amount);
@@ -403,12 +390,12 @@ const OrderHistory = () => {
   // ===== Render
   if (loading) {
     return (
-      <Container className="text-center mt-5">
-        <Spinner animation="border" role="status">
-          <span className="visually-hidden">Đang tải...</span>
-        </Spinner>
-        <p>Đang tải lịch sử đơn hàng...</p>
-      </Container>
+        <Container className="text-center mt-5">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Đang tải...</span>
+          </Spinner>
+          <p>Đang tải lịch sử đơn hàng...</p>
+        </Container>
     );
   }
 
@@ -442,7 +429,6 @@ const OrderHistory = () => {
                     <strong>Trạng thái:</strong> {getOrderStatus(order.status)}
                   </span>
 
-                  {/* >>> Dùng getFinalTotal để không bị trừ giảm giá 2 lần */}
                   <span className="col-12 col-md-3 fw-bold text-md-end">
                     Tổng tiền: {getFinalTotal(order).toLocaleString("vi-VN")} đ
                     {Number(order.discount_amount) > 0 && (
@@ -477,12 +463,17 @@ const OrderHistory = () => {
                         <th>Số lượng</th>
                         <th>Đơn giá</th>
                         <th>Thành tiền</th>
+                        <th>Đánh giá</th> {/* cột mới */}
                       </tr>
                     </thead>
                     <tbody>
                       {order.items.map((item) => {
                         const unit = Number(item?.variation?.price ?? item?.price) || 0;
                         const qty = Number(item?.quantity) || 0;
+
+                        // Dùng product_id từ biến thể
+                        const productId = item?.variation?.product_id ?? item?.product_id;
+
                         return (
                           <tr key={item.id}>
                             <td>
@@ -499,8 +490,11 @@ const OrderHistory = () => {
                               </div>
                             </td>
                             <td>
-                              <Link to={`/product/${item.product_id}`} className="text-decoration-none fw-semibold">
-                                {item.variation?.name || `Sản phẩm ID: ${item.product_id}`}
+                              <Link
+                                to={`/product/${productId}`}
+                                className="text-decoration-none fw-semibold"
+                              >
+                                {item.variation?.name || `Sản phẩm ID: ${productId}`}
                               </Link>
                               {item.selectedVariation && (
                                 <div className="text-muted small">({item.selectedVariation.name})</div>
@@ -509,6 +503,22 @@ const OrderHistory = () => {
                             <td>{qty}</td>
                             <td>{unit.toLocaleString("vi-VN")} đ</td>
                             <td>{(qty * unit).toLocaleString("vi-VN")} đ</td>
+
+                            {/* Nút Đánh giá: chỉ hiện khi đơn đã giao (status === 4) */}
+                            <td className="text-center">
+                              {order.status === 4 ? (
+                                <Button
+                                  as={Link}
+                                  to={`/product/${productId}`}
+                                  size="sm"
+                                  variant="outline-primary"
+                                >
+                                  Đánh giá
+                                </Button>
+                              ) : (
+                                <span className="text-muted">—</span>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
