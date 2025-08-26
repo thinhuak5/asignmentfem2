@@ -1,9 +1,9 @@
 // src/pages/admin/login/index.jsx
-import React, { useState } from "react";
+import React, {useState} from "react";
 import axios from "axios";
-import { useForm } from "react-hook-form";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
+import {useForm} from "react-hook-form";
+import {Link, useLocation, useNavigate} from "react-router-dom";
+import {jwtDecode} from "jwt-decode";
 import Constanst from "../../../Constanst";
 
 export default function AdminLogin() {
@@ -126,9 +126,10 @@ export default function AdminLogin() {
 
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   {/* Dùng chung flow quên mật khẩu của client */}
-                  <Link to="/forgot-password" className="text-decoration-none">
+                    <Link to="/admin/forgot-password" className="text-decoration-none">
                     Quên mật khẩu?
                   </Link>
+
                 </div>
 
                 <button
