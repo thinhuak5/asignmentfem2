@@ -14,7 +14,6 @@ const errorStyle = {
     marginTop: "4px",
 };
 
-// Preset chi tiết cho MỖI biến thể (có thể sửa trước khi lưu)
 const SPEC_PRESET = [
     {label: "Mã hàng", value: "195"},
     {label: "Nhà cung cấp", value: "Fahasa"},
@@ -65,6 +64,20 @@ function VariationItem({
                                 placeholder="Tên biến thể"
                                 {...register(`variations.${index}.name`, {
                                     required: "Bắt buộc",
+                                    // NEW: kiểm tra không trùng tên biến thể (case-insensitive, trim)
+                                    validate: (val) => {
+                                        const cur = String(val || "").trim().toLowerCase();
+                                        if (!cur) return "Bắt buộc";
+                                        const vars = getValues("variations") || [];
+                                        const names = vars.map(v =>
+                                            String(v?.name || "").trim().toLowerCase()
+                                        );
+                                        const firstIdx = names.indexOf(cur);
+                                        if (firstIdx !== -1 && firstIdx !== index) {
+                                            return "Tên biến thể đã tồn tại.";
+                                        }
+                                        return true;
+                                    },
                                 })}
                             />
                             {errors.variations?.[index]?.name && (
@@ -129,16 +142,14 @@ function VariationItem({
                         </div>
                     </div>
 
-                    {/* Thông tin chi tiết (specs) của biến thể – 2 cột */}
+                    {/* Thông tin chi tiết (specs) */}
                     <div className="mt-3">
                         <div className="d-flex justify-content-between align-items-center mb-2">
                             <h6 className="mb-0">Thông tin chi tiết (biến thể)</h6>
                             <button
                                 type="button"
                                 className="btn btn-sm btn-outline-primary"
-                                onClick={() =>
-                                    appendSpec({label: "Thuộc tính mới", value: ""})
-                                }
+                                onClick={() => appendSpec({label: "Thuộc tính mới", value: ""})}
                             >
                                 + Thêm dòng
                             </button>
@@ -229,12 +240,11 @@ export default function AddProduct() {
         remove: removeVariation,
     } = useFieldArray({control, name: "variations"});
 
-    // Register description
     useEffect(() => {
         register("description", {required: "Bắt buộc"});
     }, [register]);
 
-    // ===== Fetch categories (CHUẨN HÓA) =====
+    // ===== Fetch categories =====
     useEffect(() => {
         adminApi
             .get("/categories/list")
@@ -246,7 +256,6 @@ export default function AddProduct() {
                         ? raw.data
                         : [];
 
-                // chuẩn hoá id & parent_id
                 const list = listRaw.map((c) => {
                     const pidRaw = c?.parent_id;
                     const pid =
@@ -288,16 +297,13 @@ export default function AddProduct() {
             .catch(() => setProductNames([]));
     }, []);
 
-    // Cập nhật childCategories theo parent (child KHÔNG bắt buộc)
     useEffect(() => {
         setValue("categoryparent_id", selectedParentId);
-
         const list = Array.isArray(categories) ? categories : [];
         const childsFixed = list.filter((c) => c.parent_id === selectedParentId);
         setChildCategories(childsFixed);
     }, [selectedParentId, categories, setValue]);
 
-    // Clear lỗi biến thể khi có biến thể
     useEffect(() => {
         if (variationFields.length > 0 && variationError) {
             setVariationError("");
@@ -308,7 +314,7 @@ export default function AddProduct() {
     const description = watch("description");
 
     const onSubmit = async (data) => {
-        // 1. Trùng tên
+        // 1. Trùng tên SP
         if (productNames.includes(data.name.trim().toLowerCase())) {
             setError("name", {type: "manual", message: "Tên sản phẩm đã tồn tại!"});
             setToastType("error");
@@ -332,7 +338,34 @@ export default function AddProduct() {
         setVariationError("");
         clearErrors("variations");
 
-        // 3. Validate biến thể
+        // 3a. Kiểm tra TRÙNG TÊN biến thể (đảm bảo lần cuối trước khi gửi)
+        const names = data.variations.map(v =>
+            String(v?.name || "").trim().toLowerCase()
+        );
+        const dupMap = new Map(); // name -> firstIndex
+        let hasDup = false;
+        names.forEach((name, i) => {
+            if (!name) return;
+            if (dupMap.has(name)) {
+                hasDup = true;
+                // set lỗi cho cả biến thể đầu và biến thể trùng
+                const j = dupMap.get(name);
+                setError(`variations.${j}.name`, {type: "manual", message: "Tên biến thể đã tồn tại."});
+                setError(`variations.${i}.name`, {type: "manual", message: "Tên biến thể đã tồn tại."});
+            } else {
+                dupMap.set(name, i);
+            }
+        });
+        if (hasDup) {
+            setToastType("error");
+            setToastMessage("Không được trùng tên biến thể.");
+            setShowToast(true);
+            setIsSubmitting(false);
+            setTimeout(() => setShowToast(false), 3000);
+            return;
+        }
+
+        // 3b. Các validate khác cho biến thể
         for (let i = 0; i < data.variations.length; i++) {
             const v = data.variations[i];
             if (!v.images || v.images.length === 0) {
@@ -369,18 +402,11 @@ export default function AddProduct() {
             formData.append("description", data.description);
             formData.append("status", data.status === "Còn hàng" ? 1 : 0);
 
-            // BẮT BUỘC parent, KHÔNG BẮT BUỘC child
             const parentId = data.categoryparent_id || "";
             const childId = data.category_id || "";
-
-            // luôn gửi categoryparent_id để backend lưu
             formData.append("categoryparent_id", parentId);
-
-            // Nếu có con → category_id = con
-            // Nếu KHÔNG có con → category_id = parent (để ProductList vẫn hiển thị được CHA)
             formData.append("category_id", childId ? childId : parentId);
 
-            // variations JSON (giữ specs, BỎ images)
             const rawVars = data.variations;
             formData.append(
                 "variations",
@@ -401,7 +427,6 @@ export default function AddProduct() {
                 )
             );
 
-            // files + mapping index
             rawVars.forEach((v, idx) => {
                 if (v.images?.length) {
                     Array.from(v.images).forEach((file) => {
@@ -411,7 +436,6 @@ export default function AddProduct() {
                 }
             });
 
-            // ĐỂ AXIOS TỰ SET CONTENT-TYPE + BOUNDARY
             await adminApi.post("/products/add", formData);
 
             setToastType("success");
@@ -554,7 +578,6 @@ export default function AddProduct() {
                                         </option>
                                     ))}
                                 </select>
-                                {/* ràng buộc required cho categoryparent_id */}
                                 <input
                                     type="hidden"
                                     {...register("categoryparent_id", {

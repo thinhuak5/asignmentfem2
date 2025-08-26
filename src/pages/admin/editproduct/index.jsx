@@ -26,7 +26,7 @@ const SPEC_PRESET = [
     {label: "Hình thức", value: "Bìa mềm"},
 ];
 
-/** Component con cho 1 biến thể (useFieldArray lồng nhau cho specs) */
+/** Component con cho 1 biến thể */
 function VariationItem({
                            index,
                            control,
@@ -52,11 +52,27 @@ function VariationItem({
                     </h5>
 
                     <div className="row g-2">
+                        {/* Tên biến thể — thêm validate không trùng */}
                         <div className="col">
                             <input
                                 className="form-control"
                                 placeholder="Tên biến thể"
-                                {...register(`variations.${index}.name`, {required: "Bắt buộc"})}
+                                {...register(`variations.${index}.name`, {
+                                    required: "Bắt buộc",
+                                    validate: (val) => {
+                                        const cur = String(val || "").trim().toLowerCase();
+                                        if (!cur) return "Bắt buộc";
+                                        const vars = getValues("variations") || [];
+                                        const names = vars.map(v =>
+                                            String(v?.name || "").trim().toLowerCase()
+                                        );
+                                        const firstIdx = names.indexOf(cur);
+                                        if (firstIdx !== -1 && firstIdx !== index) {
+                                            return "Tên biến thể đã tồn tại.";
+                                        }
+                                        return true;
+                                    },
+                                })}
                             />
                             {errors.variations?.[index]?.name && (
                                 <small style={errorStyle}>{errors.variations[index].name.message}</small>
@@ -166,8 +182,9 @@ function VariationItem({
                                                 {...register(`variations.${index}.specs.${j}.value`, {required: "Bắt buộc"})}
                                             />
                                             {errors.variations?.[index]?.specs?.[j]?.value && (
-                                                <small
-                                                    style={errorStyle}>{errors.variations[index].specs[j].value.message}</small>
+                                                <small style={errorStyle}>
+                                                    {errors.variations[index].specs[j].value.message}
+                                                </small>
                                             )}
                                         </div>
                                         <div className="col-2 text-end">
@@ -231,12 +248,10 @@ export default function EditProduct() {
         name: "variations",
     });
 
-    // validate description
     useEffect(() => {
         register("description", {required: "Bắt buộc"});
     }, [register]);
 
-    // Fetch & normalize categories
     useEffect(() => {
         adminApi
             .get("/categories/list")
@@ -246,12 +261,8 @@ export default function EditProduct() {
                 const list = listRaw.map((c) => {
                     const pidRaw = c?.parent_id;
                     const pid =
-                        pidRaw === null ||
-                        pidRaw === undefined ||
-                        pidRaw === "" ||
-                        pidRaw === "null" ||
-                        pidRaw === 0 ||
-                        pidRaw === "0"
+                        pidRaw === null || pidRaw === undefined || pidRaw === "" ||
+                        pidRaw === "null" || pidRaw === 0 || pidRaw === "0"
                             ? null
                             : String(pidRaw);
                     return {...c, id: String(c.id), parent_id: pid};
@@ -261,7 +272,6 @@ export default function EditProduct() {
             .catch(() => setCategories([]));
     }, []);
 
-    // Derived lists
     const parentCategories = useMemo(
         () => (Array.isArray(categories) ? categories : []).filter((c) => c.parent_id === null),
         [categories]
@@ -272,7 +282,6 @@ export default function EditProduct() {
         [categories, selectedParentId]
     );
 
-    // Product names
     useEffect(() => {
         adminApi
             .get("/products/list")
@@ -289,7 +298,6 @@ export default function EditProduct() {
             .catch(() => setProductNames([]));
     }, [id]);
 
-    // Fetch product then set parent BEFORE reset
     useEffect(() => {
         if (!Array.isArray(categories) || categories.length === 0) return;
 
@@ -310,10 +318,7 @@ export default function EditProduct() {
                         .map((s) => ({label: s.label, value: s.value})),
                 }));
 
-                // xác định parent/child hiện tại
                 const allCats = Array.isArray(categories) ? categories : [];
-
-                // Ưu tiên từ category_id (backend thường trả)
                 let parentId = "";
                 let childId = "";
 
@@ -321,27 +326,21 @@ export default function EditProduct() {
                     const currentCat = allCats.find((c) => c.id === String(data.category_id));
                     if (currentCat) {
                         if (currentCat.parent_id === null) {
-                            // category_id là CHA
                             parentId = currentCat.id;
                             childId = "";
                         } else {
-                            // category_id là CON
                             parentId = currentCat.parent_id;
                             childId = currentCat.id;
                         }
                     }
                 }
-
-                // Nếu không suy ra được từ category_id, thử từ categoryparent_id
                 if (!parentId && (data?.categoryparent_id != null)) {
                     const pc = allCats.find((c) => c.id === String(data.categoryparent_id));
                     if (pc) parentId = pc.id;
                 }
 
-                // Đặt parent trước để childOptions render đúng
                 setSelectedParentId(parentId);
 
-                // Reset form với childId (nếu có)
                 reset({
                     name: data?.name || "",
                     description: data?.description || "",
@@ -353,7 +352,6 @@ export default function EditProduct() {
 
                 setDescription(data?.description || "");
 
-                // map ảnh đang có
                 const map = {};
                 (Array.isArray(data?.variations) ? data.variations : []).forEach((v, i) => {
                     map[i] = (Array.isArray(v?.productImages) ? v.productImages : []).map((img) => img.image_url);
@@ -365,7 +363,6 @@ export default function EditProduct() {
             });
     }, [categories, id, reset]);
 
-    // Khi đổi danh mục cha, nếu child hiện tại không thuộc nhóm con mới thì clear
     useEffect(() => {
         setValue("categoryparent_id", selectedParentId);
         const currentChild = String(getValues("category_id") || "");
@@ -389,6 +386,7 @@ export default function EditProduct() {
     };
 
     const onSubmit = async (data) => {
+        // 1) Không trùng tên sản phẩm
         if (productNames.includes(data.name.trim().toLowerCase())) {
             setError("name", {type: "manual", message: "Tên sản phẩm đã tồn tại!"});
             setToastType("error");
@@ -399,6 +397,33 @@ export default function EditProduct() {
             return;
         }
 
+        // 2) Không trùng tên biến thể (final gate)
+        const names = (data.variations || []).map(v =>
+            String(v?.name || "").trim().toLowerCase()
+        );
+        const seen = new Map();
+        let dup = false;
+        names.forEach((n, i) => {
+            if (!n) return;
+            if (seen.has(n)) {
+                dup = true;
+                const j = seen.get(n);
+                setError(`variations.${j}.name`, {type: "manual", message: "Tên biến thể đã tồn tại."});
+                setError(`variations.${i}.name`, {type: "manual", message: "Tên biến thể đã tồn tại."});
+            } else {
+                seen.set(n, i);
+            }
+        });
+        if (dup) {
+            setToastType("error");
+            setToastMessage("Không được trùng tên biến thể.");
+            setShowToast(true);
+            setIsSubmitting(false);
+            setTimeout(() => setShowToast(false), 3000);
+            return;
+        }
+
+        // 3) Ít nhất 1 ảnh cho mỗi biến thể (ảnh cũ hoặc mới)
         if (!Array.isArray(data.variations) || !data.variations.length) {
             setVariationError("Phải có ít nhất 1 biến thể!");
             setError("variations", {type: "manual"});
@@ -423,12 +448,9 @@ export default function EditProduct() {
         formData.append("description", data.description);
         formData.append("status", data.status === "Còn hàng" ? 1 : 0);
 
-        // Bắt buộc parent, child không bắt buộc
         const parentId = data.categoryparent_id || "";
         const childId = data.category_id || "";
-
         formData.append("categoryparent_id", parentId);
-        // Nếu có con → category_id = con ; nếu không → category_id = parent
         formData.append("category_id", childId ? childId : parentId);
 
         formData.append("removedVariationImages", JSON.stringify(removedVarImgsMap));
@@ -558,20 +580,14 @@ export default function EditProduct() {
 
                             <div className="col-12 col-md-4">
                                 <label className="form-label">Danh mục cha (bắt buộc)</label>
-                                <select
-                                    className="form-select"
-                                    value={selectedParentId}
-                                    onChange={(e) => setSelectedParentId(e.target.value)}
-                                >
+                                <select className="form-select" value={selectedParentId}
+                                        onChange={(e) => setSelectedParentId(e.target.value)}>
                                     <option value="">-- Chọn --</option>
                                     {parentCategories.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.name}
-                                        </option>
+                                        <option key={p.id} value={p.id}>{p.name}</option>
                                     ))}
                                 </select>
 
-                                {/* hidden để validate required cho parent */}
                                 <input
                                     type="hidden"
                                     {...register("categoryparent_id", {
@@ -592,16 +608,10 @@ export default function EditProduct() {
                                     control={control}
                                     defaultValue=""
                                     render={({field}) => (
-                                        <select
-                                            className="form-select"
-                                            disabled={!selectedParentId}
-                                            {...field}
-                                        >
+                                        <select className="form-select" disabled={!selectedParentId} {...field}>
                                             <option value="">-- Không chọn --</option>
                                             {childOptions.map((c) => (
-                                                <option key={c.id} value={c.id}>
-                                                    {c.name}
-                                                </option>
+                                                <option key={c.id} value={c.id}>{c.name}</option>
                                             ))}
                                         </select>
                                     )}
@@ -654,9 +664,7 @@ export default function EditProduct() {
                     )}
                 </button>
 
-                <Link to="/admin/product" className="btn btn-secondary">
-                    Quay lại
-                </Link>
+                <Link to="/admin/product" className="btn btn-secondary">Quay lại</Link>
             </form>
         </div>
     );
