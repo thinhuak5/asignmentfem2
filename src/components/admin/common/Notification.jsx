@@ -36,7 +36,6 @@ const Notification = () => {
         onClick={toggleDropdown}
         aria-expanded={isOpen}
       >
-        <div className="notification bg-primary rounded-circle"></div>
       </button>
       
       <div className={`dropdown-menu dropdown-menu-animate-up ${isOpen ? 'show' : ''}`}>
