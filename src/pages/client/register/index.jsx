@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 import axios from "axios";
-import { useForm } from "react-hook-form";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import {useForm} from "react-hook-form";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import emailjs from "@emailjs/browser";
 import Constanst from "../../../Constanst";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
-import { useSnackbar } from "notistack";
+import {GoogleLogin, GoogleOAuthProvider} from "@react-oauth/google";
+import {useSnackbar} from "notistack";
 
 const Register = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -74,12 +74,7 @@ const Register = () => {
       formData.append("username", data.username);
       formData.append("name", data.name);
       formData.append("email", data.email);
-      formData.append("phone", data.phone);
       formData.append("password", data.password);
-
-      if (data.avatar && data.avatar.length > 0) {
-        formData.append("avatar", data.avatar[0]);
-      }
 
       if (queryParams.get("id")) {
         alert("Chức năng cập nhật chưa hỗ trợ.");
@@ -220,28 +215,6 @@ const Register = () => {
                   )}
                 </div>
 
-                {/* Số điện thoại */}
-                <div className="mb-3">
-                  <label className="form-label">Số điện thoại</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Nhập số điện thoại"
-                    {...register("phone", {
-                      required: "Số điện thoại là bắt buộc",
-                      pattern: {
-                        value: /^[0-9]{9,11}$/,
-                        message: "Số điện thoại không hợp lệ",
-                      },
-                    })}
-                  />
-                  {errors.phone && (
-                    <small className="text-danger">
-                      {errors.phone.message}
-                    </small>
-                  )}
-                </div>
-
                 {/* Mật khẩu */}
                 <div className="mb-3">
                   <label className="form-label">Mật khẩu</label>
@@ -260,22 +233,6 @@ const Register = () => {
                   {errors.password && (
                     <small className="text-danger">
                       {errors.password.message}
-                    </small>
-                  )}
-                </div>
-
-                {/* Avatar */}
-                <div className="mb-3">
-                  <label className="form-label">Ảnh đại diện</label>
-                  <input
-                    type="file"
-                    className="form-control"
-                    accept="image/*"
-                    {...register("avatar", { validate: validateAvatar })}
-                  />
-                  {errors.avatar && (
-                    <small className="text-danger">
-                      {errors.avatar.message}
                     </small>
                   )}
                 </div>
