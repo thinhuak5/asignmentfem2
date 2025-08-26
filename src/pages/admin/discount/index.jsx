@@ -245,8 +245,8 @@ const DiscountAdmin = () => {
                 </div>
                 <div className="modal-body">
                   <p>
-                    Bạn chắc chắn muốn xóa{" "}
-                    {deleteId ? <strong>mã #{deleteId}</strong> : "mã này"}?
+                    Bạn chắc chắn muốn xóa mã này?
+                    
                   </p>
                 </div>
                 <div className="modal-footer border-0 pt-0">

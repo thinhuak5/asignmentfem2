@@ -339,9 +339,7 @@ const AdminCommentList = () => {
                 </div>
                 <div className="modal-body">
                   <p>
-                    Bạn chắc chắn muốn xóa bình luận{" "}
-                    {deleteTarget ? <strong>#{deleteTarget}</strong> : "này"}
-                    ?
+                    Bạn chắc chắn muốn xóa bình luận này?
                   </p>
                 </div>
                 <div className="modal-footer border-0 pt-0">
