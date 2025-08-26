@@ -1,7 +1,7 @@
 import React from "react";
 
 const SupportFloatingButtons = () => {
-  const phoneNumber = "0795895167";
+  const phoneNumber = "0795-895-167";
   const zaloPhone = "0795895167";
   const facebookShareLink =
     "https://www.facebook.com/share/14FenYdyB3H/?mibextid=wwXIfr";
@@ -111,7 +111,7 @@ const SupportFloatingButtons = () => {
                 style={{
                   position: "absolute",
                   bottom: 0,
-                  left: "-170%",
+                  left: "-200%",
                   transform: showPhone
                     ? "translateX(-50%) scale(1)"
                     : "translateX(-50%) scale(0.8)",
