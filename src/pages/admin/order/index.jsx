@@ -170,19 +170,18 @@ const OrderList = () => {
   const [otherReason, setOtherReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
 
-const cancellationReasons = [
-  "Hết hàng / hết tồn kho",
-  "Sai giá / lỗi niêm yết",
-  "Thông tin đơn không hợp lệ (địa chỉ/số điện thoại)",
-  "Trùng lặp đơn hàng",
-  "Nghi ngờ gian lận / rủi ro",
-  "Không thể liên hệ khách để xác nhận",
-  "Đơn vượt giới hạn số lượng / chính sách",
-  "Nhà vận chuyển không hỗ trợ tuyến / từ chối nhận",
-  "Lỗi hệ thống / lỗi kỹ thuật",
-  "Khác (ghi rõ lý do)",
-];
-
+  const cancellationReasons = [
+    "Hết hàng / hết tồn kho",
+    "Sai giá / lỗi niêm yết",
+    "Thông tin đơn không hợp lệ (địa chỉ/số điện thoại)",
+    "Trùng lặp đơn hàng",
+    "Nghi ngờ gian lận / rủi ro",
+    "Không thể liên hệ khách để xác nhận",
+    "Đơn vượt giới hạn số lượng / chính sách",
+    "Nhà vận chuyển không hỗ trợ tuyến / từ chối nhận",
+    "Lỗi hệ thống / lỗi kỹ thuật",
+    "Khác (ghi rõ lý do)",
+  ];
 
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
@@ -211,7 +210,9 @@ const cancellationReasons = [
         return;
       }
       setError(
-        err?.response?.data?.message || err.message || "Lỗi khi lấy dữ liệu đơn hàng"
+        err?.response?.data?.message ||
+          err.message ||
+          "Lỗi khi lấy dữ liệu đơn hàng"
       );
     } finally {
       setLoading(false);
@@ -256,7 +257,10 @@ const cancellationReasons = [
     return byMethod && byPayment && byStatus && bySearch;
   });
 
-  const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const currentOrders = filteredOrders.slice(
+    indexOfFirstOrder,
+    indexOfLastOrder
+  );
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
 
   /* ===================== inline edit ===================== */
@@ -318,7 +322,9 @@ const cancellationReasons = [
     }
     setIsCancelling(true);
     try {
-      await adminApi.put(`/orders/${orderToCancel}/cancel`, { reason: finalReason });
+      await adminApi.put(`/orders/${orderToCancel}/cancel`, {
+        reason: finalReason,
+      });
       setToastType("success");
       setToastMessage(
         <>
@@ -341,7 +347,9 @@ const cancellationReasons = [
       setToastMessage(
         <>
           <FaTimesCircle className="me-1" />
-          {err?.response?.data?.message || err.message || "Hủy đơn hàng thất bại"}
+          {err?.response?.data?.message ||
+            err.message ||
+            "Hủy đơn hàng thất bại"}
         </>
       );
       setShowToast(true);
@@ -356,8 +364,7 @@ const cancellationReasons = [
     if (!current) return;
 
     const toStatus = updatedOrderStatus[id];
-    const newPaymentStatus =
-      updatedPaymentStatus[id] ?? current.payment_status;
+    const newPaymentStatus = updatedPaymentStatus[id] ?? current.payment_status;
 
     /* ==== VALIDATIONS ==== */
     if (!canTransition(current.status, toStatus)) {
@@ -434,7 +441,9 @@ const cancellationReasons = [
       setToastMessage(
         <>
           <FaTimesCircle className="me-1" />
-          {err?.response?.data?.message || err.message || "Lỗi cập nhật đơn hàng"}
+          {err?.response?.data?.message ||
+            err.message ||
+            "Lỗi cập nhật đơn hàng"}
         </>
       );
       setTimeout(() => setShowToast(false), 3500);
@@ -583,6 +592,7 @@ const cancellationReasons = [
             hover
             responsive
             className="text-center align-middle"
+            id="table-order"
           >
             <thead className="table-dark">
               <tr>
@@ -636,7 +646,11 @@ const cancellationReasons = [
                     <td>
                       {editingOrderId === order.id ? (
                         order.payment_id === 2 ? (
-                          <Form.Select disabled value={1} style={selectNoArrowStyle}>
+                          <Form.Select
+                            disabled
+                            value={1}
+                            style={selectNoArrowStyle}
+                          >
                             <option value={1}>Đã thanh toán</option>
                           </Form.Select>
                         ) : (
@@ -707,6 +721,7 @@ const cancellationReasons = [
                           <Button
                             variant="success"
                             size="sm"
+                            style={{ padding: "2px 6px", fontSize: "12px" }}
                             onClick={() => handleSave(order.id)}
                           >
                             <FaSave className="me-1" /> Lưu
@@ -714,6 +729,7 @@ const cancellationReasons = [
                           <Button
                             variant="danger"
                             size="sm"
+                            style={{ padding: "2px 6px", fontSize: "12px" }}
                             onClick={handleCancelEdit}
                           >
                             <FaTimes className="me-1" /> Hủy
@@ -726,7 +742,11 @@ const cancellationReasons = [
                           onClick={() => handleEdit(order.id)}
                           className="d-flex align-items-center justify-content-center"
                           disabled={[0, 4].includes(order.status)} // khóa sửa khi Đã hủy/Đã giao
-                          title={[0, 4].includes(order.status) ? "Trạng thái đã kết thúc, không thể sửa" : "Sửa"}
+                          title={
+                            [0, 4].includes(order.status)
+                              ? "Trạng thái đã kết thúc, không thể sửa"
+                              : "Sửa"
+                          }
                         >
                           <FaEdit className="me-1" /> Sửa
                         </Button>
@@ -783,24 +803,31 @@ const cancellationReasons = [
                     <strong>Khách hàng:</strong> {detailOrder.name} <br />
                     <strong>SĐT:</strong> {detailOrder.phone} <br />
                     <strong>Địa chỉ:</strong> {detailOrder.address} <br />
-                    <strong>Thời gian tạo:</strong> {fmtDT(detailOrder.createdAt)} <br />
+                    <strong>Thời gian tạo:</strong>{" "}
+                    {fmtDT(detailOrder.createdAt)} <br />
                     <strong>Thanh toán:</strong>{" "}
                     {paymentBadge(
                       detailOrder.payment_id,
                       detailOrder.payment_status
                     )}{" "}
                     <br />
-                    <strong>Trạng thái:</strong> {statusBadge(detailOrder.status)}
-                    {detailOrder.status === 0 && detailOrder.cancellation_reason && (
-                      <>
-                        <br />
-                        <strong className="text-danger">Lý do hủy:</strong> {detailOrder.cancellation_reason}
-                      </>
-                    )}
+                    <strong>Trạng thái:</strong>{" "}
+                    {statusBadge(detailOrder.status)}
+                    {detailOrder.status === 0 &&
+                      detailOrder.cancellation_reason && (
+                        <>
+                          <br />
+                          <strong className="text-danger">
+                            Lý do hủy:
+                          </strong>{" "}
+                          {detailOrder.cancellation_reason}
+                        </>
+                      )}
                   </div>
                   <hr />
                   <h5 className="mt-3">Danh sách sản phẩm</h5>
-                  {Array.isArray(detailOrder.items) && detailOrder.items.length > 0 ? (
+                  {Array.isArray(detailOrder.items) &&
+                  detailOrder.items.length > 0 ? (
                     <Table size="sm" bordered hover>
                       <thead className="table-light">
                         <tr>
@@ -836,22 +863,34 @@ const cancellationReasons = [
                               )}
                             </td>
                             <td>{item.variation?.name || "--"}</td>
-                            <td>{fmtMoney(item.variation?.price ?? item.price)}đ</td>
+                            <td>
+                              {fmtMoney(item.variation?.price ?? item.price)}đ
+                            </td>
                             <td>{item.quantity}</td>
                             <td className="fw-bold">
-                              {fmtMoney(n(item.variation?.price ?? item.price) * n(item.quantity))}đ
+                              {fmtMoney(
+                                n(item.variation?.price ?? item.price) *
+                                  n(item.quantity)
+                              )}
+                              đ
                             </td>
                           </tr>
                         ))}
                         {(() => {
-                          const { discount, totalForDisplay } = calcTotals(detailOrder);
+                          const { discount, totalForDisplay } =
+                            calcTotals(detailOrder);
                           return (
                             <tr>
-                              <td colSpan={5} className="text-end fw-bold">Tổng cộng</td>
+                              <td colSpan={5} className="text-end fw-bold">
+                                Tổng cộng
+                              </td>
                               <td className="fw-bold text-danger">
                                 {fmtMoney(totalForDisplay)} đ
                                 {discount > 0 && (
-                                  <span className="text-muted"> (-{fmtMoney(discount)} đ)</span>
+                                  <span className="text-muted">
+                                    {" "}
+                                    (-{fmtMoney(discount)} đ)
+                                  </span>
                                 )}
                               </td>
                             </tr>
@@ -922,7 +961,11 @@ const cancellationReasons = [
               </Form>
             </Modal.Body>
             <Modal.Footer>
-              <Button variant="secondary" onClick={closeCancelModal} disabled={isCancelling}>
+              <Button
+                variant="secondary"
+                onClick={closeCancelModal}
+                disabled={isCancelling}
+              >
                 Đóng
               </Button>
               <Button
@@ -932,7 +975,14 @@ const cancellationReasons = [
               >
                 {isCancelling ? (
                   <>
-                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
+                    <Spinner
+                      as="span"
+                      animation="border"
+                      size="sm"
+                      role="status"
+                      aria-hidden="true"
+                      className="me-2"
+                    />
                     Đang hủy...
                   </>
                 ) : (
