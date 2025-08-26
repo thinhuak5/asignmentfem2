@@ -49,5 +49,8 @@
   transform: scale(1.05);
 
 }
+a:hover {
+   transform: scale(1.05);
+}
 
 

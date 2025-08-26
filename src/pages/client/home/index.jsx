@@ -347,7 +347,7 @@ const Home = () => {
                 {icon: faBookmark, label: "Manga - Comic"},
               ].map((item, index) => (
                   <Link
-                      to={`/products?tag=${slugify(item.label)}`}
+                      to={`#`}
                       key={index}
                       className="quick-link-item"
                       style={NO_UNDERLINE}
