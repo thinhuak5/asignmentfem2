@@ -1,18 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import {
-  Alert,
-  Button,
-  Col,
-  Container,
-  Form,
-  InputGroup,
-  Row,
-  Spinner,
-} from "react-bootstrap";
+import React, {useCallback, useEffect, useState} from "react";
+import {useLocation, useNavigate} from "react-router-dom";
+import {Alert, Button, Col, Container, Form, InputGroup, Row, Spinner,} from "react-bootstrap";
 import Constanst from "../../../Constanst";
 import "../../../assets/css/OrderPage.css";
-import { useSnackbar } from "notistack";
+import {useSnackbar} from "notistack";
 
 /* ===== Helpers for VN phone ===== */
 const onlyDigits = (s) => String(s || "").replace(/\D+/g, "");
@@ -505,17 +496,6 @@ const OrderPage = () => {
                     <div className="payment-option-label">
                       <strong>Ví điện tử VNPay</strong>
                       <small>Thanh toán bằng QR Code, thẻ ATM nội địa, thẻ quốc tế.</small>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`payment-option ${paymentMethod === 3 ? "active" : ""}`}
-                    onClick={() => setPaymentMethod(3)}
-                  >
-                    <Form.Check type="radio" id="momo" name="paymentMethod" checked={paymentMethod === 3} readOnly />
-                    <div className="payment-option-label">
-                      <strong>Ví điện tử MoMo</strong>
-                      <small>Quét mã QR để thanh toán bằng ứng dụng MoMo.</small>
                     </div>
                   </div>
                 </div>
