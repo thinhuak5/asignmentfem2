@@ -1,0 +1,63 @@
+/* === General Card Styling === */
+.blog-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: none;
+}
+
+.blog-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1) !important;
+}
+
+.card-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+/* === Sidebar Styling === */
+.sidebar-widget {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.widget-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.category-list .list-group-item {
+    background-color: transparent;
+    border: none;
+    padding: 0.75rem 0;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    font-weight: 500;
+}
+
+.category-list .list-group-item:hover {
+    color: #007bff;
+}
+
+/* Kiểu cho mục danh mục đang được chọn */
+.category-list .list-group-item.active {
+    color: #007bff;
+    font-weight: bold;
+    background-color: transparent;
+}
+
+/* Trên màn hình nhỏ (dưới lg - 992px), sidebar sẽ nằm dưới nội dung chính */
+@media (max-width: 991.98px) {
+    .sidebar-widget {
+        margin-top: 2rem;
+    }
+}

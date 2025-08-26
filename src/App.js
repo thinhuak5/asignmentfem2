@@ -13,7 +13,9 @@ import MainUser from './components/user/MainUser';
 import MainAdmin from './components/admin/MainAdmin';
 import ProductClient from './pages/client/product';
 import About from "./pages/client/about";
-import Blog from './pages/client/blog';
+// import Blog from './pages/client/blog';
+import BlogList from './pages/client/blog/BlogList'
+import BlogPostDetail from './pages/client/blog/BlogPostDetail'; 
 import Contact from './pages/client/contact';
 import Order from './pages/admin/order';
 import User from './pages/admin/user/inex'; // (lưu ý: có thể bạn muốn 'index')
@@ -94,7 +96,9 @@ function App() {
                     <Route path='forgot-password' element={<ForgotPassword/>}/>
                     <Route path='forgot-password/change' element={<ChangePassword/>}/>
                     <Route path='about' element={<About/>}/>
-                    <Route path='blog' element={<Blog/>}/>
+                    {/* <Route path='blog' element={<Blog/>}/> */}
+                    <Route path="/blog" element={<BlogList />} />
+                    <Route path="/blog/:id" element={<BlogPostDetail />} />
                     <Route path='contact' element={<Contact/>}/>
                     <Route path='cartpage' element={<CartPage/>}/>
                     <Route path='register' element={<Register/>}/>
