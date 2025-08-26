@@ -126,9 +126,10 @@ export default function AdminLogin() {
 
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   {/* Dùng chung flow quên mật khẩu của client */}
-                  <Link to="/forgot-password" className="text-decoration-none">
+                  <Link to="/admin/forgot-password" className="text-decoration-none">
                     Quên mật khẩu?
                   </Link>
+
                 </div>
 
                 <button
