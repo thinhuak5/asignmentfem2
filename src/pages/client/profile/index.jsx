@@ -639,7 +639,7 @@ const AddressForm = ({ value, onChange }) => {
       {err && <div style={styles.errorMsg}>{err}</div>}
 
       <div style={{ color: "#d93025", fontSize: 12, marginTop: 6 }}>
-        Mỗi địa chỉ cần: Tên người nhận, SĐT hợp lệ (+84...), Tỉnh/Thành,
+        Mỗi địa chỉ cần: Tên người nhận, SĐT hợp lệ (+84…), Tỉnh/Thành,
         Phường/Xã và Số nhà/địa chỉ.
       </div>
     </div>
@@ -647,6 +647,12 @@ const AddressForm = ({ value, onChange }) => {
 };
 
 /* ======================= Address View (Add/Edit chung 1 popup) ======================= */
+/* YÊU CẦU:
+   - XÓA nút "Lưu" tổng ở dưới. Chỉ còn nút "Thêm địa chỉ".
+   - Khi CHỌN radio "Mặc định" -> GỬI LÊN SERVER NGAY (tự lưu).
+   - Khi THÊM / SỬA trong popup -> GỬI LÊN SERVER NGAY sau khi nhấn Thêm/Cập nhật.
+   - Khi XÓA -> GỬI LÊN SERVER NGAY.
+*/
 const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
   const { enqueueSnackbar } = useSnackbar();
 
@@ -669,12 +675,33 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
   const [editingId, setEditingId] = useState(null); // id khi edit
   const [formValue, setFormValue] = useState(null);
 
-  const line1 = (a) => a.houseNumber || "Chưa đủ thông tin";
-  const line2 = (a) => [a.wardName, a.provinceName].filter(Boolean).join(", ");
 
-  const setDefault = (id) => {
+  const persistNow = async (nextList, nextDefault) => {
+    try {
+      await onSave(nextList, nextDefault);
+      setError("");
+    } catch (e) {
+      enqueueSnackbar(e?.message || "Lỗi lưu địa chỉ", { variant: "error" });
+      setError(e?.message || "Lỗi lưu địa chỉ");
+    }
+  };
+
+  const setDefault = async (id) => {
+    const nextList = addresses.map((a) => ({ ...a, isDefault: a.id === id }));
+    setAddresses(nextList);
     setCurrentDefaultId(id);
-    setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
+    enqueueSnackbar("Đã đặt làm địa chỉ mặc định", { variant: "success" });
+    // LƯU NGAY
+    await persistNow(
+      nextList.map((a) => ({
+        ...a,
+        recipientPhone: toE164VN(a.recipientPhone),
+        fullAddress: [a.houseNumber, a.wardName, a.provinceName]
+          .filter(Boolean)
+          .join(", "),
+      })),
+      id
+    );
   };
 
   const handleDelete = (id) => {
@@ -689,23 +716,35 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const id = deleteId;
     const next = addresses.filter((a) => a.id !== id);
     let nextDefault = currentDefaultId;
     if (id === currentDefaultId) nextDefault = next[0]?.id || null;
 
-    setAddresses(
-      next.map((a, idx) => ({
-        ...a,
-        isDefault:
-          (nextDefault && a.id === nextDefault) || (!nextDefault && idx === 0),
-      }))
-    );
+    const nextWithDefault = next.map((a, idx) => ({
+      ...a,
+      isDefault:
+        (nextDefault && a.id === nextDefault) || (!nextDefault && idx === 0),
+    }));
+
+    setAddresses(nextWithDefault);
     setCurrentDefaultId(nextDefault);
     setShowDeleteModal(false);
     setDeleteId(null);
     enqueueSnackbar("Xóa địa chỉ thành công", { variant: "success" });
+
+    // LƯU NGAY
+    await persistNow(
+      nextWithDefault.map((a) => ({
+        ...a,
+        recipientPhone: toE164VN(a.recipientPhone),
+        fullAddress: [a.houseNumber, a.wardName, a.provinceName]
+          .filter(Boolean)
+          .join(", "),
+      })),
+      nextDefault ?? nextWithDefault[0]?.id ?? null
+    );
   };
 
   const validateOne = (a) => {
@@ -757,7 +796,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
     setError("");
   };
 
-  const handleUpsert = () => {
+  const handleUpsert = async () => {
     if (!formValue) return;
     const a = formValue;
 
@@ -772,64 +811,47 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
     }
     const e164 = toE164VN(a.recipientPhone);
 
+    let nextList;
+    let nextDefault = currentDefaultId;
+
     if (upsertMode === "create") {
       const newId = a.id || uuid();
-      const nextList = [
+      nextList = [
         ...addresses,
         { ...a, id: newId, recipientPhone: e164, fullAddress: full },
       ];
       setAddresses(nextList);
       if (!currentDefaultId && nextList.length === 1) {
+        nextDefault = newId;
         setCurrentDefaultId(newId);
+        nextList = nextList.map((x) => ({ ...x, isDefault: x.id === newId }));
       }
       enqueueSnackbar("Thêm địa chỉ thành công", { variant: "success" });
     } else {
-      setAddresses((prev) =>
-        prev.map((x) =>
-          x.id === editingId
-            ? { ...a, id: editingId, recipientPhone: e164, fullAddress: full }
-            : x
-        )
+      nextList = addresses.map((x) =>
+        x.id === editingId
+          ? { ...a, id: editingId, recipientPhone: e164, fullAddress: full }
+          : x
       );
+      setAddresses(nextList);
       enqueueSnackbar("Cập nhật địa chỉ thành công", { variant: "success" });
     }
 
     setShowUpsertModal(false);
     setFormValue(null);
     setEditingId(null);
-  };
 
-  const handleSaveAll = () => {
-    setError("");
-    if (!addresses.length) {
-      setError("Vui lòng thêm ít nhất một địa chỉ.");
-      return;
-    }
-
-    const normalized = [];
-    for (const a of addresses) {
-      if (!validateOne(a)) return;
-      const full = [a.houseNumber, a.wardName, a.provinceName]
-        .filter(Boolean)
-        .join(", ");
-      if (full.length > 500) {
-        setError("Một địa chỉ quá dài (tối đa 500 ký tự).");
-        return;
-      }
-      normalized.push({
-        ...a,
-        recipientPhone: toE164VN(a.recipientPhone),
-        fullAddress: full,
-      });
-    }
-
-    const defaultId = currentDefaultId || normalized[0].id;
-    const finalList = normalized.map((a) => ({
-      ...a,
-      isDefault: a.id === defaultId,
-    }));
-
-    onSave(finalList, defaultId);
+    // LƯU NGAY
+    await persistNow(
+      nextList.map((x) => ({
+        ...x,
+        recipientPhone: toE164VN(x.recipientPhone),
+        fullAddress: [x.houseNumber, x.wardName, x.provinceName]
+          .filter(Boolean)
+          .join(", "),
+      })),
+      nextDefault ?? (nextList[0] && nextList[0].id) ?? null
+    );
   };
 
   return (
@@ -851,7 +873,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
                     name="defaultAddress"
                     checked={currentDefaultId === a.id}
                     onChange={() => setDefault(a.id)}
-                    title="Chọn làm mặc định"
+                    title="Chọn làm mặc định (tự lưu)"
                     style={{ marginTop: 4 }}
                   />
 
@@ -866,8 +888,12 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
                         <span style={styles.pillDefault}>Mặc định</span>
                       )}
                     </div>
-                    <div style={styles.addrLine}>{line1(a)}</div>
-                    <div style={styles.addrLine}>{line2(a)}</div>
+                    <div style={styles.addrLine}>
+                      {a.houseNumber || "Chưa đủ thông tin"}
+                    </div>
+                    <div style={styles.addrLine}>
+                      {[a.wardName, a.provinceName].filter(Boolean).join(", ")}
+                    </div>
                   </div>
 
                   <div style={styles.addrActions}>
@@ -899,19 +925,13 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
         )}
       </div>
 
+      {/* CHỈ CÒN NÚT THÊM — KHÔNG CÒN NÚT "Lưu" */}
       <div style={{ display: "flex", gap: 10 }}>
         <button
           onClick={openCreateModal}
           style={{ ...styles.button, ...styles.editButton }}
         >
           Thêm địa chỉ
-        </button>
-
-        <button
-          onClick={handleSaveAll}
-          style={{ ...styles.button, ...styles.saveButton }}
-        >
-          Lưu
         </button>
       </div>
 
@@ -979,7 +999,7 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
             Hủy
           </RBButton>
           <RBButton variant="primary" onClick={handleUpsert}>
-            {upsertMode === "create" ? "Thêm" : "Lưu thay đổi"}
+            {upsertMode === "create" ? "Thêm" : "Cập nhật"}
           </RBButton>
         </RBModal.Footer>
       </RBModal>
@@ -989,7 +1009,6 @@ const AddressView = ({ initialAddresses, defaultAddressId, onSave }) => {
 
 /* ======================= Main Profile ======================= */
 const Profile = () => {
-  const { enqueueSnackbar } = useSnackbar();
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -1055,31 +1074,33 @@ const Profile = () => {
     await fetchProfile();
   };
 
-  const handleSaveAddresses = async (addresses, defaultAddressId) => {
-    try {
-      const token = localStorage.getItem("authToken");
-      const decoded = jwtDecode(token);
+const handleSaveAddresses = async (addresses, defaultAddressId) => {
+  try {
+    const token = localStorage.getItem("authToken");
+    const decoded = jwtDecode(token);
 
-      const res = await fetch(
-        `${Constanst.DOMAIN_API}/api/users/${decoded.id}/addresses-bulk`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ addresses, defaultAddressId }),
-        }
-      );
-      if (!res.ok) throw new Error("Cập nhật địa chỉ thất bại.");
-      await fetchProfile();
-      enqueueSnackbar("Lưu địa chỉ thành công", { variant: "success" });
-    } catch (err) {
-      enqueueSnackbar(err.message || "Lưu địa chỉ thất bại", {
-        variant: "error",
-      });
-    }
-  };
+    const res = await fetch(
+      `${Constanst.DOMAIN_API}/api/users/${decoded.id}/addresses-bulk`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ addresses, defaultAddressId }),
+      }
+    );
+
+    if (!res.ok) throw new Error("Cập nhật địa chỉ thất bại.");
+
+    await fetchProfile();
+    // ❌ BỎ enqueueSnackbar ở đây để không bị double
+  } catch (err) {
+    // ❌ Không snackbar ở đây, chỉ throw để AddressView xử lý
+    throw err;
+  }
+};
+
 
   const renderContent = () => {
     if (loading) return <div style={styles.card}>Đang tải...</div>;

@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from "react";
-import {Alert, Button, Col, Container, Form, Row, Table} from "react-bootstrap";
+import {Alert, Button, Button as RBButton, Col, Container, Form, Modal as RBModal, Row, Table,} from "react-bootstrap";
 import Constants from "../../../Constanst";
 import {Link, useNavigate} from "react-router-dom";
 import {FaMinus, FaPlus, FaTrashAlt} from "react-icons/fa";
@@ -7,16 +7,49 @@ import {jwtDecode} from "jwt-decode";
 import "../../../assets/css/CartPage.css";
 import {useSnackbar} from "notistack";
 
+/* ===== SoftBlue modal theme (dùng chung) ===== */
+const SoftBlueCSS = () => (
+    <style>{`
+    .modal-soft-blue .modal-content{
+      background:#ffffff;
+      border:1px solid #cfe3ff;
+      box-shadow:0 10px 30px rgba(20,60,120,.15);
+      border-radius:14px;
+    }
+    .modal-soft-blue .modal-header{
+      background:#eaf3ff;
+      color:#0b3d91;
+      border-bottom:1px solid #cfe3ff;
+      border-top-left-radius:14px;
+      border-top-right-radius:14px;
+    }
+    .modal-soft-blue .modal-title{ font-weight:600; }
+    .modal-soft-blue .modal-body{ color:#193b6a; }
+    .modal-soft-blue .btn-primary{
+      background:#E74C3C; border-color:#E74C3C;
+    }
+    .modal-soft-blue .btn-primary:hover{
+      background:#C0392B; border-color:#C0392B;
+    }
+    .modal-soft-blue .btn-secondary{
+      background:#e9f2ff; color:#0b3d91; border-color:#cfe3ff;
+    }
+    .modal-soft-blue .btn-secondary:hover{
+      background:#dbeaff; color:#0b3d91; border-color:#bed7ff;
+    }
+    .modal-soft-blue .btn-close{
+      filter: invert(24%) sepia(16%) saturate(1783%) hue-rotate(189deg) brightness(90%) contrast(88%);
+    }
+  `}</style>
+);
+
 const formatVND = (value) => {
     const num = Number(value) || 0;
-    // ví dụ: 17000 -> "17.000đ"
-    return num
-        .toLocaleString("vi-VN", {maximumFractionDigits: 0})
-        .replace(/\u00A0/g, "") + "đ";
+    return num.toLocaleString("vi-VN", {maximumFractionDigits: 0}).replace(/\u00A0/g, "") + "đ";
 };
 
 const CartPage = () => {
-  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
+    const {enqueueSnackbar} = useSnackbar();
   const [cart, setCart] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [error, setError] = useState("");
@@ -27,6 +60,7 @@ const CartPage = () => {
 
     /* ===== Helpers ===== */
     const getAvailableQty = (item) => Math.max(0, item?.variation?.quantity ?? 0);
+    const getMaxQuantity = (item) => getAvailableQty(item);
 
   const getCartFromAPI = useCallback(async () => {
     const token = localStorage.getItem("authToken");
@@ -42,12 +76,14 @@ const CartPage = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-          const err = await res.json().catch(() => ({message: "Lỗi không xác định khi tải giỏ hàng."}));
+          const err = await res.json().catch(() => ({
+              message: "Lỗi không xác định khi tải giỏ hàng.",
+          }));
         throw new Error(err.message);
       }
       const data = await res.json();
 
-        // Clamp số lượng theo tồn kho hiện tại
+        // Clamp theo tồn kho hiện tại
         const normalized = data.map((it) => {
             const avail = getAvailableQty(it);
             const safeQty = Math.max(0, Math.min(Number(it.quantity || 1), avail));
@@ -135,7 +171,7 @@ const CartPage = () => {
           });
           return;
         }
-      } catch { /* ignore */
+      } catch {
       }
       localStorage.removeItem("authToken");
       setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
@@ -153,26 +189,22 @@ const CartPage = () => {
     }
   }, [checkLoginStatus, getCartFromAPI]);
 
-    const getMaxQuantity = (item) => getAvailableQty(item);
-
   const handleQuantityChange = async (id, action) => {
     const updated = cart.map((item) => {
         if (item.id !== id) return item;
-
         const max = getMaxQuantity(item);
         let qty = Number(item.quantity) || 1;
 
         if (action === "increase") {
             if (qty >= max) {
                 enqueueSnackbar(`Chỉ còn ${max} sản phẩm trong kho.`, {variant: "warning"});
-                return item; // không tăng nữa
+                return item;
             }
             qty++;
         }
         if (action === "decrease" && qty > 1) {
             qty--;
         }
-
         return {...item, quantity: qty};
     });
 
@@ -182,52 +214,29 @@ const CartPage = () => {
     }
   };
 
-  const removeFromCart = async (id) => {
-      enqueueSnackbar("Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?", {
-          variant: "warning",
-          autoHideDuration: 3000,
-          action: (key) => (
-              <>
-                  <button
-                      onClick={async () => {
-                          if (await deleteCartToAPI(id)) {
-                              setCart((prev) => prev.filter((i) => i.id !== id));
-                              setSelectedItems((sel) => sel.filter((x) => x !== id));
-                              enqueueSnackbar("Đã xóa sản phẩm khỏi giỏ hàng!", {variant: "success"});
-                          } else {
-                              enqueueSnackbar("Xóa thất bại, thử lại sau!", {variant: "error"});
-                          }
-                          closeSnackbar(key);
-                      }}
-                      style={{
-                          background: "#f44336",
-                          border: "none",
-                          color: "white",
-                          padding: "8px 16px",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          marginLeft: "8px",
-                      }}
-                  >
-                      Có
-                  </button>
-                  <button
-                      onClick={() => closeSnackbar(key)}
-                      style={{
-                          background: "#9e9e9e",
-                          border: "none",
-                          color: "white",
-                          padding: "8px 16px",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          marginLeft: "8px",
-                      }}
-                  >
-                      Không
-                  </button>
-              </>
-          ),
-      });
+    /* ====== Popup xác nhận xóa (thay cho snackbar hỏi-đáp) ====== */
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
+    const askRemoveItem = (id) => {
+        setPendingDeleteId(id);
+        setShowDeleteModal(true);
+    };
+
+    const confirmRemoveItem = async () => {
+        if (!pendingDeleteId) return;
+        const ok = await deleteCartToAPI(pendingDeleteId);
+        if (ok) {
+            setCart((prev) => prev.filter((i) => i.id !== pendingDeleteId));
+            setSelectedItems((sel) => sel.filter((x) => x !== pendingDeleteId));
+        }
+        setShowDeleteModal(false);
+        setPendingDeleteId(null);
+    };
+
+    const cancelRemoveItem = () => {
+        setShowDeleteModal(false);
+        setPendingDeleteId(null);
   };
 
   const toggleSelectItem = (id) =>
@@ -254,15 +263,15 @@ const CartPage = () => {
       return;
     }
     const selected = cart.filter((i) => selectedItems.includes(i.id));
-
       const violated = selected.filter((i) => i.quantity > getAvailableQty(i));
       if (violated.length > 0) {
           const names = violated.map((i) => i.variation?.name || "Sản phẩm").join(", ");
           setError(`Một số sản phẩm vượt quá tồn kho: ${names}. Vui lòng điều chỉnh.`);
-          enqueueSnackbar("Có sản phẩm vượt quá tồn kho, vui lòng điều chỉnh.", {variant: "warning"});
+          enqueueSnackbar("Có sản phẩm vượt quá tồn kho, vui lòng điều chỉnh.", {
+              variant: "warning",
+          });
           return;
       }
-
     navigate("/oder", { state: { cartItems: selected, userInfo } });
   };
 
@@ -332,15 +341,11 @@ const CartPage = () => {
                           />
                       </td>
 
-                      {/* Cột TÊN SẢN PHẨM (đã ẩn "Còn X sản phẩm") */}
+                      {/* Cột TÊN SẢN PHẨM */}
                       <td>
                           <Link to={`/product/${item.variation?.product_id}`}>
                               {item.variation?.name || item.variation?.value || "Sản phẩm không tên"}
                           </Link>
-                          {/* ẨN: Còn số sản phẩm
-                      <div style={{ fontSize: 12, color: "#6c757d" }}>
-                        Còn {getAvailableQty(item)} sản phẩm
-                      </div> */}
                     </td>
 
                     <td>
@@ -376,7 +381,9 @@ const CartPage = () => {
                     </td>
 
                     <td>
-                        <strong>{formatVND((item.variation?.price || 0) * (item.quantity || 0))}</strong>
+                        <strong>
+                            {formatVND((item.variation?.price || 0) * (item.quantity || 0))}
+                        </strong>
                     </td>
 
                       <td>
@@ -384,7 +391,8 @@ const CartPage = () => {
                         size="sm"
                         variant="outline-danger"
                         className="delete-btn"
-                        onClick={() => removeFromCart(item.id)}
+                        onClick={() => askRemoveItem(item.id)}
+                        title="Xóa sản phẩm khỏi giỏ"
                       >
                           <FaTrashAlt/>
                       </Button>
@@ -427,6 +435,7 @@ const CartPage = () => {
 
   return (
     <div className="cart-page-wrapper">
+        <SoftBlueCSS/>
       <Container>
         <h2 className="cart-title text-center">Giỏ Hàng Của Bạn</h2>
         {success && (
@@ -439,7 +448,33 @@ const CartPage = () => {
             {error}
           </Alert>
         )}
+
         {renderCartContent()}
+
+          {/* ===== Popup xác nhận xóa (Soft Blue) ===== */}
+          <RBModal
+              show={showDeleteModal}
+              onHide={cancelRemoveItem}
+              centered
+              dialogClassName="modal-soft-blue"
+              backdrop="static"
+              keyboard={false}
+          >
+              <RBModal.Header closeButton>
+                  <RBModal.Title>Xác nhận xóa</RBModal.Title>
+              </RBModal.Header>
+              <RBModal.Body>
+                  <p>Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?</p>
+              </RBModal.Body>
+              <RBModal.Footer>
+                  <RBButton variant="secondary" onClick={cancelRemoveItem}>
+                      Đóng
+                  </RBButton>
+                  <RBButton variant="primary" onClick={confirmRemoveItem}>
+                      Đồng ý xóa
+                  </RBButton>
+              </RBModal.Footer>
+          </RBModal>
       </Container>
     </div>
   );

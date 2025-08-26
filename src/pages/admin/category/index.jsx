@@ -351,7 +351,7 @@ const CategoryList = () => {
                         </option>
                     ))}
                 </select>
-                <Link to="/admin/category/addcategory" className="btn btn-primary ms-3">
+                <Link to="/admin/category/addcategory" className="btn btn-success ms-3">
                     Thêm danh mục
                 </Link>
             </div>
@@ -393,7 +393,7 @@ const CategoryList = () => {
                             <td>
                                 <Link
                                     to={`/admin/category/editcategory/${category.id}`}
-                                    className="btn btn-warning btn-sm me-2"
+                                    className="btn btn-success  btn-sm me-2"
                                 >
                                     Sửa
                                 </Link>

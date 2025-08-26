@@ -16,15 +16,20 @@ const pickDeleteErrorMessage = (err) => {
   const code = data.code;
   const msg = data.message;
   const q = data.remaining_quantity;
-  const detailList = Array.isArray(data.variant_quantities) && data.variant_quantities.length
-    ? ` Chi tiết: ` + data.variant_quantities.map((v) => `#${v.variation_id}: ${v.quantity}`).join(", ")
-    : "";
+  const detailList =
+    Array.isArray(data.variant_quantities) && data.variant_quantities.length
+      ? ` Chi tiết: ` +
+        data.variant_quantities.map((v) => `#${v.variation_id}: ${v.quantity}`).join(", ")
+      : "";
 
   switch (code) {
     case "PRODUCT_STOCK_REMAINING":
       return msg || `Không thể xóa. Sản phẩm còn ${q ?? "tồn kho"}.${detailList}`;
     case "PRODUCT_LINKED_TO_ORDERS":
-      return msg || "Không thể xóa vì sản phẩm đã phát sinh đơn hàng. Vui lòng ngừng hiển thị hoặc lưu trữ sản phẩm.";
+      return (
+        msg ||
+        "Không thể xóa vì sản phẩm đã phát sinh đơn hàng. Vui lòng ngừng hiển thị hoặc lưu trữ sản phẩm."
+      );
     case "PRODUCT_NOT_FOUND":
       return msg || "Không tìm thấy sản phẩm.";
     case "INVALID_ID":
@@ -55,17 +60,18 @@ function ProductList() {
   // Toast
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [toastType, setToastType] = useState("success");
+  const [toastType, setToastType] = useState("success"); // 'success' | 'danger'
 
   // Modal xóa
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const toast = (msg, type = "success") => {
-    setToastType(type);
+  const toast = (msg, type = "success", timeout = 3000) => {
+    setToastType(type === "error" ? "danger" : type);
     setToastMessage(msg);
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    setTimeout(() => setShowToast(false), timeout);
   };
 
   const handleAuthError = (err) => {
@@ -98,21 +104,19 @@ function ProductList() {
         const rawProds = prodRes.data?.data || prodRes.data || [];
         const prods = (Array.isArray(rawProds) ? rawProds : []).map((p) => ({
           ...p,
-          // _catId: id của category_id (có thể là CHA hoặc CON)
           _catId: toId(p.category_id ?? p.categoryId ?? p.category),
-          // _parentId: id của categoryparent_id nếu backend lưu riêng
           _parentId: toId(
             p.categoryparent_id ??
-            p.category_parent_id ??
-            p.categoryParentId ??
-            p.parent_category_id
+              p.category_parent_id ??
+              p.categoryParentId ??
+              p.parent_category_id
           ),
         }));
         setProducts(prods);
       } catch (err) {
         if (handleAuthError(err)) return;
         console.error(err);
-        toast("Lỗi tải dữ liệu", "error");
+        toast("Lỗi tải dữ liệu", "danger");
       }
     };
     load();
@@ -127,29 +131,24 @@ function ProductList() {
   }, [categories]);
 
   // Danh mục cha cho dropdown lọc
-  const parentCategories = (Array.isArray(categories) ? categories : []).filter((c) => c.parent_id === null);
+  const parentCategories = (Array.isArray(categories) ? categories : []).filter(
+    (c) => c.parent_id === null
+  );
 
-  // Tên cha & con cho 1 product (xử lý đủ TH: chỉ cha, cha+con)
+  // Tên cha & con cho 1 product
   const getParentChildNames = (p) => {
-    // TH1: Có category_id
     if (p._catId) {
       const cat = catMap.get(p._catId);
       if (cat) {
-        if (cat.parent_id === null) {
-          // category_id trỏ đến chính danh mục CHA
-          return { parent: cat.name || "Không có", child: "Không có" };
-        }
-        // category_id trỏ đến danh mục CON
+        if (cat.parent_id === null) return { parent: cat.name || "Không có", child: "Không có" };
         const parent = catMap.get(String(cat.parent_id));
         return { parent: parent?.name || "Không có", child: cat.name || "Không có" };
       }
     }
-    // TH2: Không có category_id nhưng có categoryparent_id
     if (p._parentId) {
       const parent = catMap.get(p._parentId);
       return { parent: parent?.name || "Không có", child: "Không có" };
     }
-    // TH3: Không có gì
     return { parent: "Không có", child: "Không có" };
   };
 
@@ -159,12 +158,10 @@ function ProductList() {
     if (p._catId) {
       const cat = catMap.get(p._catId);
       if (!cat) return false;
-      if (cat.parent_id === null) return String(cat.id) === String(parentId); // chính là cha
-      return String(cat.parent_id) === String(parentId); // con thuộc về cha này
+      if (cat.parent_id === null) return String(cat.id) === String(parentId);
+      return String(cat.parent_id) === String(parentId);
     }
-    if (p._parentId) {
-      return String(p._parentId) === String(parentId);
-    }
+    if (p._parentId) return String(p._parentId) === String(parentId);
     return false;
   };
 
@@ -191,45 +188,75 @@ function ProductList() {
 
   // Xoá
   const openDeleteModal = (product) => {
-  const totalQty = calcTotalQty(product);
-  if (totalQty > 0) {
-    // Thông báo số lượng còn nếu không thể xóa
-    toast(`Không thể xóa: sản phẩm còn ${totalQty} tồn kho.`, "error");
-    return;
-  }
-  setDeleteId(product.id);
-  setShowModal(true);
-};
+    const totalQty = calcTotalQty(product);
+    if (totalQty > 0) {
+      toast(`Không thể xóa: sản phẩm còn ${totalQty} tồn kho.`, "danger");
+      return;
+    }
+    setDeleteId(product.id);
+    setShowModal(true);
+  };
 
   const confirmDelete = async () => {
-  setShowModal(false);
-  try {
-    const res = await adminApi.delete(`/products/${deleteId}`);
-    const ok = res?.data?.success !== false; // chấp nhận 200 không có success cũng là OK
-    if (ok) {
-      setProducts((prev) => prev.filter((x) => String(x.id) !== String(deleteId)));
-      toast("Đã xóa!", "success");
-    } else {
-      toast(res?.data?.message || "Xóa thất bại!", "error");
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      const res = await adminApi.delete(`/products/${deleteId}`);
+      const ok = res?.data?.success !== false;
+      if (ok) {
+        setProducts((prev) => prev.filter((x) => String(x.id) !== String(deleteId)));
+        toast("Đã xóa!", "success");
+        setShowModal(false);
+        setDeleteId(null);
+      } else {
+        toast(res?.data?.message || "Xóa thất bại!", "danger");
+      }
+    } catch (err) {
+      if (handleAuthError(err)) return;
+      console.error(err);
+      toast(pickDeleteErrorMessage(err), "danger", 4000);
+    } finally {
+      setIsDeleting(false);
     }
-  } catch (err) {
-    if (handleAuthError(err)) return;
-    console.error(err);
-    toast(pickDeleteErrorMessage(err), "error");
-  }
-};
+  };
 
   return (
     <div className="container position-relative">
-      {/* Toast */}
-      <div aria-live="polite" aria-atomic="true" className="position-fixed top-0 end-0 p-3" style={{ zIndex: 1060 }}>
+      {/* Toast góc phải trên (đồng bộ) */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="position-fixed"
+        style={{ zIndex: 1070, top: 20, right: 20, minWidth: 340 }}
+      >
         {showToast && (
-          <div className={`toast show align-items-center text-white bg-${toastType === "success" ? "success" : "danger"} border-0`} role="alert">
-            <div className="d-flex align-items-center">
-              {toastType === "success" ? <FaCheckCircle className="me-2 fs-4" /> : <FaTimesCircle className="me-2 fs-4" />}
-              <div className="toast-body">{toastMessage}</div>
-              <button type="button" className="btn-close btn-close-white ms-auto me-2" onClick={() => setShowToast(false)} />
-            </div>
+          <div
+            className="d-flex align-items-center shadow rounded-3 px-4 py-2 mb-2 position-relative"
+            style={{
+              background: toastType === "success" ? "#25b864" : "#f44e4e",
+              color: "#fff",
+              minHeight: 46,
+            }}
+          >
+            {toastType === "success" ? (
+              <FaCheckCircle className="me-2 fs-5" />
+            ) : (
+              <FaTimesCircle className="me-2 fs-5" />
+            )}
+            <div style={{ flex: 1 }}>{toastMessage}</div>
+            <button
+              type="button"
+              style={{
+                background: "none",
+                border: "none",
+                color: "#fff",
+                fontSize: 18,
+                cursor: "pointer",
+              }}
+              onClick={() => setShowToast(false)}
+            >
+              ×
+            </button>
           </div>
         )}
       </div>
@@ -377,30 +404,54 @@ function ProductList() {
         </ul>
       </nav>
 
-      {/* Modal xóa */}
+      {/* Modal xác nhận xóa — phong cách Category (vàng/đỏ, overlay mờ, khóa khi đang xóa) */}
       {showModal && (
         <>
-          <div className="modal fade show" style={{ display: "block" }} tabIndex={-1} aria-modal="true" role="dialog">
-            <div className="modal-dialog">
+          <div
+            className="modal fade show"
+            style={{ display: "block", background: "rgba(0,0,0,0.15)" }}
+            tabIndex={-1}
+            aria-modal="true"
+            role="dialog"
+          >
+            <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
-                <div className="modal-header">
+                <div className="modal-header border-0 pb-0">
                   <h5 className="modal-title">Xác nhận xóa</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowModal(false)} />
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => !isDeleting && setShowModal(false)}
+                    disabled={isDeleting}
+                  />
                 </div>
                 <div className="modal-body">
                   <p>Bạn chắc chắn muốn xóa sản phẩm này?</p>
                 </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                <div className="modal-footer border-0 pt-0">
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ background: "#FFD600", color: "#333", minWidth: 70, fontWeight: 500 }}
+                    onClick={() => setShowModal(false)}
+                    disabled={isDeleting}
+                  >
                     Hủy
                   </button>
-                  <button type="button" className="btn btn-danger" onClick={confirmDelete}>
-                    Xóa
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ background: "#f44e4e", color: "#fff", minWidth: 70, fontWeight: 500 }}
+                    onClick={confirmDelete}
+                    disabled={isDeleting || !deleteId}
+                  >
+                    {isDeleting ? "Đang xóa..." : "Xóa"}
                   </button>
                 </div>
               </div>
             </div>
           </div>
+          {/* backdrop */}
           <div className="modal-backdrop fade show"></div>
         </>
       )}
