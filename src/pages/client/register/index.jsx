@@ -303,7 +303,7 @@ const Register = () => {
                 </button>
               </form>
 
-              <div className="text-center mt-3">
+              <div className="d-flex flex-column justify-content-center mt-3 mx-auto w-100%">
                 <GoogleOAuthProvider clientId="174189579193-5an9p6b13u20aeut0qdhkrudiflha8gk.apps.googleusercontent.com">
                   <GoogleLogin
                     onSuccess={handleSuccess}

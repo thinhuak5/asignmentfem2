@@ -336,8 +336,8 @@ const ProductDetail = () => {
       if (res.ok) {
           notify(data.message || "Thêm vào giỏ thành công!", "success");
       } else {
-          notify(data.message || "Vui lòng đăng nhập!", "error");
-          if (res.status === 401) navigate("/login");
+          notify("Vui lòng đăng nhập để tiếp tục.", "warning");
+          navigate("/login");
       }
     } catch (error) {
       console.error("Error adding to cart:", error);

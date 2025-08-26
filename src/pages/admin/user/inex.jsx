@@ -147,7 +147,9 @@ const UserList = () => {
         } catch (err) {
             if (handleAuthError(err)) return;
             console.error("Lỗi khi xóa người dùng:", err);
-            const msg = err?.response?.data?.message || "Có lỗi xảy ra khi xóa người dùng.";
+            console.log(err);
+            
+            const msg = err?.response?.data?.message || "Giỏ hàng hoặc đơn hàng của người dùng đang chờ xử lý!";
             toast(msg, "error");
         }
     };

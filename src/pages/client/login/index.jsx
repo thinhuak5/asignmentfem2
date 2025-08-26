@@ -68,7 +68,7 @@ const Login = () => {
       localStorage.setItem("authToken", res.data.token);
       console.log(res.data.token); // Phải là chuỗi JWT
       // alert(res.data.message || "Đăng nhập Google thành công!");
-      enqueueSnackbar(res.data.message, { variant: 'success' });
+      enqueueSnackbar(res.data.message, { variant: "success" });
       window.location.href = "/";
     } catch (err) {
       console.error("Lỗi đăng nhập Google:", err);
@@ -76,9 +76,11 @@ const Login = () => {
         err?.response?.data?.message ||
           "Đăng nhập Google thất bại, vui lòng thử lại!"
       );
-      enqueueSnackbar( err?.response?.data?.message ||
-          "Đăng nhập Google thất bại, vui lòng thử lại!", { variant: 'error' });
-
+      enqueueSnackbar(
+        err?.response?.data?.message ||
+          "Đăng nhập Google thất bại, vui lòng thử lại!",
+        { variant: "error" }
+      );
     }
   };
   return (
@@ -170,6 +172,8 @@ const Login = () => {
                     "Đăng nhập"
                   )}
                 </button>
+              </form>
+              <div className="d-flex flex-column justify-content-center mt-3 mx-auto">
                 <GoogleOAuthProvider clientId="174189579193-5an9p6b13u20aeut0qdhkrudiflha8gk.apps.googleusercontent.com">
                   <GoogleLogin
                     onSuccess={handleSuccess}
@@ -184,7 +188,7 @@ const Login = () => {
                     width="300"
                   />
                 </GoogleOAuthProvider>
-              </form>
+              </div>
 
               <p className="mt-4 text-center">
                 Chưa có tài khoản? <a href="/register">Đăng ký ngay</a>
