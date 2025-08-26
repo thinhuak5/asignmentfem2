@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 
 const Notification = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +36,6 @@ const Notification = () => {
         onClick={toggleDropdown}
         aria-expanded={isOpen}
       >
-        <i className="ti ti-bell"></i>
         <div className="notification bg-primary rounded-circle"></div>
       </button>
       
