@@ -4,7 +4,7 @@ const SupportFloatingButtons = () => {
   const phoneNumber = "0795-895-167";
   const zaloPhone = "0795895167";
   const facebookShareLink =
-    "https://www.facebook.com/share/14FenYdyB3H/?mibextid=wwXIfr";
+    "https://www.facebook.com/share/1ADfFnarQ6/?mibextid=wwXIfr";
   const tiktokUsername = "daynguyen129";
 
   const [showPhone, setShowPhone] = React.useState(false);
