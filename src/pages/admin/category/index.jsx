@@ -1,20 +1,27 @@
 // src/pages/admin/category/CategoryList.jsx
-import React, {useEffect, useState} from "react";
-import {Link, useNavigate} from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import adminApi from "../../../api/adminApi";
-import {FaCheckCircle, FaTimesCircle} from "react-icons/fa";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 const CategoryList = () => {
     const navigate = useNavigate();
 
+    // Data
     const [categories, setCategories] = useState([]);
+
+    // Filters & pagination
     const [searchTerm, setSearchTerm] = useState("");
     const [filterParentId, setFilterParentId] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
 
+    // Modal & delete
     const [showModal, setShowModal] = useState(false);
     const [deleteId, setDeleteId] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Toast
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [toastType, setToastType] = useState("success");
@@ -33,7 +40,7 @@ const CategoryList = () => {
         } catch (error) {
             const status = error?.response?.status;
             if (status === 401 || status === 403) {
-                navigate("/admin-login", {replace: true});
+                navigate("/admin-login", { replace: true });
                 return;
             }
             showToastMessage("Lỗi khi tải dữ liệu!", "error");
@@ -73,8 +80,8 @@ const CategoryList = () => {
      * Trích xuất code/message từ nhiều format payload phổ biến
      */
     const extractErrorPayload = (data) => {
-        if (!data) return {code: undefined, message: ""};
-        if (typeof data === "string") return {code: undefined, message: String(data)};
+        if (!data) return { code: undefined, message: "" };
+        if (typeof data === "string") return { code: undefined, message: String(data) };
         if (data?.error && typeof data.error === "object") {
             return {
                 code: data.error.code || data.error.errorCode || data.error.name || data.error.error_code,
@@ -83,7 +90,7 @@ const CategoryList = () => {
         }
         if (Array.isArray(data?.errors) && data.errors.length > 0) {
             const e0 = data.errors[0];
-            if (typeof e0 === "string") return {code: undefined, message: e0};
+            if (typeof e0 === "string") return { code: undefined, message: e0 };
             if (typeof e0 === "object") {
                 return {
                     code: e0.code || e0.errorCode || e0.name || e0.error_code,
@@ -103,7 +110,7 @@ const CategoryList = () => {
     const getDeleteBlockReason = (error, ctx = {}) => {
         const status = error?.response?.status;
         const data = error?.response?.data;
-        const {code, message} = extractErrorPayload(data);
+        const { code, message } = extractErrorPayload(data);
         const msg = String(message || "").toLowerCase();
         const isChild = !!ctx.isChild;
 
@@ -186,13 +193,13 @@ const CategoryList = () => {
         } catch (error) {
             const status = error?.response?.status;
             if (status === 401 || status === 403) {
-                navigate("/admin-login", {replace: true});
+                navigate("/admin-login", { replace: true });
                 return;
             }
 
             const cat = findCategoryById(deleteId);
             const isChild = !!(cat && cat.parent_id != null);
-            const reason = getDeleteBlockReason(error, {isChild});
+            const reason = getDeleteBlockReason(error, { isChild });
 
             if (reason === "children") {
                 showToastMessage("Không thể xóa: danh mục đang chứa danh mục con.", "error");
@@ -223,23 +230,28 @@ const CategoryList = () => {
 
     const getParentName = (parent_id) => {
         if (parent_id == null) return "Không có";
-        const parent = (Array.isArray(categories) ? categories : []).find(
-            (cat) => cat && cat.id == parent_id
-        );
+        const parent = (Array.isArray(categories) ? categories : []).find((cat) => cat && cat.id == parent_id);
         return parent ? parent.name : "Không có";
     };
 
-    const parentCategories = (Array.isArray(categories) ? categories : []).filter(
-        (cat) => cat?.parent_id == null
+    // Danh mục cha cho dropdown lọc
+    const parentCategories = useMemo(
+        () => (Array.isArray(categories) ? categories : []).filter((cat) => cat?.parent_id == null),
+        [categories]
     );
 
+    // Filtered list (search + parent)
     const filteredCategories = (Array.isArray(categories) ? categories : []).filter((category) => {
-        const matchesSearch = String(category.name || "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase());
+        const matchesSearch = String(category.name || "").toLowerCase().includes(searchTerm.toLowerCase());
         const matchesParent = filterParentId ? category.parent_id == filterParentId : true;
         return matchesSearch && matchesParent;
     });
+
+    // Pagination
+    const indexOfLast = currentPage * itemsPerPage;
+    const indexOfFirst = indexOfLast - itemsPerPage;
+    const currentItems = filteredCategories.slice(indexOfFirst, indexOfLast);
+    const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
 
     return (
         <div className="container position-relative">
@@ -248,7 +260,7 @@ const CategoryList = () => {
                 aria-live="polite"
                 aria-atomic="true"
                 className="position-fixed"
-                style={{zIndex: 1070, top: 20, right: 20, minWidth: 340}}
+                style={{ zIndex: 1070, top: 20, right: 20, minWidth: 340 }}
             >
                 {showToast && (
                     <div
@@ -260,11 +272,11 @@ const CategoryList = () => {
                         }}
                     >
                         {toastType === "success" ? (
-                            <FaCheckCircle className="me-2 fs-5"/>
+                            <FaCheckCircle className="me-2 fs-5" />
                         ) : (
-                            <FaTimesCircle className="me-2 fs-5"/>
+                            <FaTimesCircle className="me-2 fs-5" />
                         )}
-                        <div style={{flex: 1}}>{toastMessage}</div>
+                        <div style={{ flex: 1 }}>{toastMessage}</div>
                         <button
                             type="button"
                             style={{
@@ -290,12 +302,18 @@ const CategoryList = () => {
                     className="form-control w-50"
                     placeholder="Tìm kiếm theo tên danh mục..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                    }}
                 />
                 <select
                     className="form-select w-25 ms-3"
                     value={filterParentId}
-                    onChange={(e) => setFilterParentId(e.target.value)}
+                    onChange={(e) => {
+                        setFilterParentId(e.target.value);
+                        setCurrentPage(1);
+                    }}
                 >
                     <option value="">-- Lọc theo danh mục cha --</option>
                     {parentCategories.map((parent) => (
@@ -323,11 +341,11 @@ const CategoryList = () => {
                 </tr>
                 </thead>
                 <tbody>
-                {filteredCategories.length > 0 ? (
-                    filteredCategories.map((category, index) => (
+                {currentItems.length > 0 ? (
+                    currentItems.map((category, index) => (
                         <tr key={category.id}>
                             {/* HIỂN THỊ STT THEO DANH SÁCH ĐANG HIỂN THỊ */}
-                            <td>{index + 1}</td>
+                            <td>{indexOfFirst + index + 1}</td>
                             <td>{category.name}</td>
                             <td>
                                 {category.images ? (
@@ -336,7 +354,7 @@ const CategoryList = () => {
                                         alt="category"
                                         width="60"
                                         height="60"
-                                        style={{objectFit: "cover"}}
+                                        style={{ objectFit: "cover" }}
                                     />
                                 ) : (
                                     <span>Không có ảnh</span>
@@ -372,12 +390,40 @@ const CategoryList = () => {
                 </tbody>
             </table>
 
+            {/* Pagination (giống product) */}
+            <nav>
+                <ul className="pagination justify-content-center">
+                    <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                        <button className="page-link" onClick={() => setCurrentPage((c) => Math.max(1, c - 1))}>
+                            Prev
+                        </button>
+                    </li>
+                    {[...Array(totalPages)].map((_, i) => (
+                        <li key={i} className={`page-item ${i + 1 === currentPage ? "active" : ""}`}>
+                            <button className="page-link" onClick={() => setCurrentPage(i + 1)}>
+                                {i + 1}
+                            </button>
+                        </li>
+                    ))}
+                    <li className={`page-item ${currentPage === totalPages || totalPages === 0 ? "disabled" : ""}`}>
+                        <button
+                            className="page-link"
+                            onClick={() =>
+                                setCurrentPage((c) => (totalPages === 0 ? 1 : Math.min(totalPages, c + 1)))
+                            }
+                        >
+                            Next
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+
             {/* Modal xác nhận xóa */}
             {showModal && (
                 <>
                     <div
                         className="modal fade show"
-                        style={{display: "block", background: "rgba(0,0,0,0.15)"}}
+                        style={{ display: "block", background: "rgba(0,0,0,0.15)" }}
                         tabIndex={-1}
                         aria-modal="true"
                         role="dialog"
@@ -400,7 +446,7 @@ const CategoryList = () => {
                                     <button
                                         type="button"
                                         className="btn"
-                                        style={{background: "#FFD600", color: "#333", minWidth: 70, fontWeight: 500}}
+                                        style={{ background: "#FFD600", color: "#333", minWidth: 70, fontWeight: 500 }}
                                         onClick={() => setShowModal(false)}
                                         disabled={isDeleting}
                                     >
@@ -409,7 +455,7 @@ const CategoryList = () => {
                                     <button
                                         type="button"
                                         className="btn"
-                                        style={{background: "#f44e4e", color: "#fff", minWidth: 70, fontWeight: 500}}
+                                        style={{ background: "#f44e4e", color: "#fff", minWidth: 70, fontWeight: 500 }}
                                         onClick={confirmDelete}
                                         disabled={isDeleting}
                                     >
