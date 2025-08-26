@@ -36,3 +36,18 @@
     transform: rotate(360deg);
   }
 }
+#bglogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  transition: all 0.3s ease-in-out;
+  margin-top: 1.5%;
+}
+
+#bglogo:hover {
+  transform: scale(1.05);
+
+}
+
+

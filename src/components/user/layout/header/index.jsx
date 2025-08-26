@@ -1,8 +1,8 @@
 // HeaderClient.js - PHIÊN BẢN CẬP NHẬT (dùng logo.png)
 
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import React, { useEffect, useState } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 
 import "../../../../assets/css/header-client.css";
 
@@ -14,7 +14,7 @@ const HeaderClient = () => {
 
   useEffect(() => {
     const checkAuthStatus = () => {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem("authToken");
       if (token) {
         try {
           const decodedToken = jwtDecode(token);
@@ -35,33 +35,35 @@ const HeaderClient = () => {
     };
 
     checkAuthStatus();
-    window.addEventListener('storage', checkAuthStatus);
-    window.addEventListener('authChange', checkAuthStatus);
+    window.addEventListener("storage", checkAuthStatus);
+    window.addEventListener("authChange", checkAuthStatus);
 
     return () => {
-      window.removeEventListener('storage', checkAuthStatus);
-      window.removeEventListener('authChange', checkAuthStatus);
+      window.removeEventListener("storage", checkAuthStatus);
+      window.removeEventListener("authChange", checkAuthStatus);
     };
   }, []);
 
   const handleLogout = (shouldNavigate = true) => {
-    localStorage.removeItem('authToken');
-    window.dispatchEvent(new Event('authChange'));
-    if (shouldNavigate) navigate('/login');
+    localStorage.removeItem("authToken");
+    window.dispatchEvent(new Event("authChange"));
+    if (shouldNavigate) navigate("/login");
   };
 
   return (
     <header className="header-client">
       <div className="header-container">
-        {/* Logo thay cho chữ Book Man. */}
-        <Link to="/" className="header-brand" aria-label="Trang chủ">
-          <img
-            src="/images/logo.png"
-            alt="BookMan"
-            className="header-logo"
-          />
-        </Link>
-
+        <div id="bglogo">
+          {/* Logo thay cho chữ Book Man. */}
+          <Link to="/" className="header-brand" aria-label="Trang chủ">
+            <img
+              id="logo"
+              src="/images/logo4.png"
+              alt="BookMan"
+              className="header-logo"
+            />
+          </Link>
+        </div>
         <button
           className="header-toggler"
           aria-label="Toggle navigation"
@@ -70,38 +72,84 @@ const HeaderClient = () => {
           <span className="toggler-icon"></span>
         </button>
 
-        <nav className={`header-nav ${isMenuOpen ? 'is-open' : ''}`}>
+        <nav className={`header-nav ${isMenuOpen ? "is-open" : ""}`}>
           <ul className="nav-list nav-list-main">
-            <li><NavLink className="nav-link" to="/">Trang Chủ</NavLink></li>
-            <li><NavLink className="nav-link" to="/product">Sản Phẩm</NavLink></li>
-            <li><NavLink className="nav-link" to="/about">Thông tin</NavLink></li>
-            <li><NavLink className="nav-link" to="/blog">Bài viết</NavLink></li>
-            <li><NavLink className="nav-link" to="/contact">Liên hệ</NavLink></li>
+            <li>
+              <NavLink className="nav-link" to="/">
+                Trang Chủ
+              </NavLink>
+            </li>
+            <li>
+              <NavLink className="nav-link" to="/product">
+                Sản Phẩm
+              </NavLink>
+            </li>
+            <li>
+              <NavLink className="nav-link" to="/about">
+                Thông tin
+              </NavLink>
+            </li>
+            <li>
+              <NavLink className="nav-link" to="/blog">
+                Bài viết
+              </NavLink>
+            </li>
+            <li>
+              <NavLink className="nav-link" to="/contact">
+                Liên hệ
+              </NavLink>
+            </li>
           </ul>
 
           <ul className="nav-list nav-list-cta">
             <li>
-              <NavLink className="nav-link nav-link-icon" to="/cartpage" aria-label="Giỏ hàng">
+              <NavLink
+                className="nav-link nav-link-icon"
+                to="/cartpage"
+                aria-label="Giỏ hàng"
+              >
                 <i className="fas fa-shopping-cart"></i>
               </NavLink>
             </li>
 
             {!isLoggedIn ? (
               <>
-                <li><NavLink className="nav-link" to="/login">Đăng nhập</NavLink></li>
-                <li><NavLink className="nav-link cta-button" to="/register">Đăng ký</NavLink></li>
+                <li>
+                  <NavLink className="nav-link" to="/login">
+                    Đăng nhập
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink className="nav-link cta-button" to="/register">
+                    Đăng ký
+                  </NavLink>
+                </li>
               </>
             ) : (
               <li className="bm-user-nav">
-                <a className="bm-user-nav__trigger" href="#" onClick={(e) => e.preventDefault()}>
+                <a
+                  className="bm-user-nav__trigger"
+                  href="#"
+                  onClick={(e) => e.preventDefault()}
+                >
                   <i className="fas fa-user"></i>
-                  <span>{userName || 'Tài khoản'}</span>
+                  <span>{userName || "Tài khoản"}</span>
                   <i className="fas fa-chevron-down bm-user-nav__arrow"></i>
                 </a>
                 <ul className="bm-user-nav__menu">
-                  <li><Link className="bm-user-nav__item" to="/profile">Hồ sơ</Link></li>
-                  <li><Link className="bm-user-nav__item" to="/order-history">Lịch sử đơn hàng</Link></li>
-                  <li><hr className="bm-user-nav__divider" /></li>
+                  <li>
+                    <Link className="bm-user-nav__item" to="/profile">
+                      Hồ sơ
+                    </Link>
+                  </li>
+                  <li>
+                    <Link className="bm-user-nav__item" to="/order-history">
+                      Lịch sử đơn hàng
+                    </Link>
+                  </li>
+                  <li>
+                    <hr className="bm-user-nav__divider" />
+                  </li>
                   <li>
                     <button
                       className="bm-user-nav__item bm-user-nav__item--logout"

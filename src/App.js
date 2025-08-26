@@ -45,7 +45,6 @@ import ChatBoxMessage from './components/ChatBoxMessage';
 import DiscountAdmin from './pages/admin/discount';
 import AddDiscount from './pages/admin/discount/addDiscount';
 import EditDiscount from './pages/admin/discount/editDiscount';
-
 /** Guard cho khu vực /admin: Bắt buộc qua admin-login + token role admin (0/1) */
 function AdminGate({children}) {
     const adminAuthed = typeof window !== 'undefined' && sessionStorage.getItem('adminAuthed') === '1';
