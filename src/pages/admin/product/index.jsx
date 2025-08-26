@@ -1,7 +1,7 @@
 // src/pages/admin/product/ProductList.jsx
-import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { FaCheckCircle, FaEdit, FaTimesCircle, FaTrashAlt } from "react-icons/fa";
+import React, {useEffect, useMemo, useState} from "react";
+import {Link, useNavigate} from "react-router-dom";
+import {FaCheckCircle, FaEdit, FaTimesCircle, FaTrashAlt} from "react-icons/fa";
 import adminApi from "../../../api/adminApi";
 
 // Chuẩn hoá ID: null/""/"null"/0 -> null, còn lại -> string
@@ -386,7 +386,7 @@ function ProductList() {
         <ul className="pagination justify-content-center">
           <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
             <button className="page-link" onClick={() => setCurrentPage((c) => c - 1)}>
-              Prev
+                Sau
             </button>
           </li>
           {[...Array(totalPages)].map((_, i) => (
@@ -398,7 +398,7 @@ function ProductList() {
           ))}
           <li className={`page-item ${currentPage === totalPages || totalPages === 0 ? "disabled" : ""}`}>
             <button className="page-link" onClick={() => setCurrentPage((c) => c + 1)}>
-              Next
+                Trước
             </button>
           </li>
         </ul>
