@@ -26,6 +26,19 @@ const SPEC_PRESET = [
   { label: "Hình thức", value: "Bìa mềm" },
 ];
 
+/** ===== Helpers format tiền VNĐ (không có ,00) & lọc số ===== */
+const formatCurrencyVN = (v) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n);
+};
+const onlyDigits = (s) => String(s || "").replace(/[^\d]/g, "");
+
 /** Component con cho 1 biến thể */
 function VariationItem({
   index,
@@ -67,11 +80,15 @@ function VariationItem({
                 {...register(`variations.${index}.name`, {
                   required: "Bắt buộc",
                   validate: (val) => {
-                    const cur = String(val || "").trim().toLowerCase();
+                    const cur = String(val || "")
+                      .trim()
+                      .toLowerCase();
                     if (!cur) return "Bắt buộc";
                     const vars = getValues("variations") || [];
                     const names = vars.map((v) =>
-                      String(v?.name || "").trim().toLowerCase()
+                      String(v?.name || "")
+                        .trim()
+                        .toLowerCase()
                     );
                     const firstIdx = names.indexOf(cur);
                     if (firstIdx !== -1 && firstIdx !== index) {
@@ -89,15 +106,33 @@ function VariationItem({
             </div>
 
             <div className="col">
-              <input
-                type="number"
-                className="form-control"
-                placeholder="Giá"
-                {...register(`variations.${index}.price`, {
+              <Controller
+                name={`variations.${index}.price`}
+                control={control}
+                rules={{
                   required: "Bắt buộc",
-                  valueAsNumber: true,
-                  min: { value: 0, message: "Không được nhỏ hơn 0" },
-                })}
+                  validate: (v) =>
+                    v === "" || v == null
+                      ? "Bắt buộc"
+                      : Number(v) >= 0 || "Không được nhỏ hơn 0",
+                }}
+                render={({ field: { value, onChange, onBlur, ref } }) => (
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Giá (VD: 100000)"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    value={value ?? ""}
+                    onChange={(e) => {
+                      const raw = onlyDigits(e.target.value);
+                      onChange(raw === "" ? "" : Number(raw));
+                    }}
+                    onBlur={onBlur}
+                    ref={ref}
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
+                )}
               />
               {errors.variations?.[index]?.price && (
                 <small style={errorStyle}>
@@ -116,6 +151,7 @@ function VariationItem({
                   valueAsNumber: true,
                   min: { value: 0, message: "Không được nhỏ hơn 0" },
                 })}
+                onWheel={(e) => e.currentTarget.blur()}
               />
               {errors.variations?.[index]?.quantity && (
                 <small style={errorStyle}>
@@ -208,12 +244,16 @@ function VariationItem({
                         {...register(`variations.${index}.specs.${j}.label`, {
                           required: "Bắt buộc",
                           validate: (v) => {
-                            const val = String(v || "").trim().toLowerCase();
+                            const val = String(v || "")
+                              .trim()
+                              .toLowerCase();
                             if (!val) return "Bắt buộc";
                             const specs =
                               getValues(`variations.${index}.specs`) || [];
                             const labels = specs.map((s) =>
-                              String(s?.label || "").trim().toLowerCase()
+                              String(s?.label || "")
+                                .trim()
+                                .toLowerCase()
                             );
                             const first = labels.indexOf(val);
                             if (first !== -1 && first !== j) {
@@ -233,10 +273,9 @@ function VariationItem({
                       <input
                         className="form-control"
                         placeholder="Giá trị (VD: Đỏ, XL...)"
-                        {...register(
-                          `variations.${index}.specs.${j}.value`,
-                          { required: "Bắt buộc" }
-                        )}
+                        {...register(`variations.${index}.specs.${j}.value`, {
+                          required: "Bắt buộc",
+                        })}
                       />
                       {errors.variations?.[index]?.specs?.[j]?.value && (
                         <small style={errorStyle}>
@@ -302,10 +341,30 @@ export default function EditProduct() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [productNames, setProductNames] = useState([]);
 
-  const { fields: variationFields, append, remove } = useFieldArray({
+  const {
+    fields: variationFields,
+    append,
+    remove,
+  } = useFieldArray({
     control,
     name: "variations",
   });
+
+  // === CHẶN XÓA KHI CÒN 1 BIẾN THỂ ===
+  const attemptRemoveVariation = React.useCallback(
+    (idx) => {
+      const vars = getValues("variations") || [];
+      if (vars.length <= 1) {
+        setToastType("error");
+        setToastMessage("Phải còn ít nhất 1 biến thể, không được xóa.");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+        return;
+      }
+      remove(idx);
+    },
+    [getValues, remove]
+  );
 
   useEffect(() => {
     register("description", { required: "Bắt buộc" });
@@ -384,18 +443,18 @@ export default function EditProduct() {
         const raw = res?.data;
         const data = raw?.data ?? raw;
 
-        const vars = (Array.isArray(data?.variations) ? data.variations : []).map(
-          (v) => ({
-            id: v.id,
-            name: v.name,
-            price: v.price ?? "",
-            quantity: v.quantity ?? "",
-            images: [],
-            specs: (Array.isArray(v.specs) ? v.specs : [])
-              .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-              .map((s) => ({ label: s.label, value: s.value })),
-          })
-        );
+        const vars = (
+          Array.isArray(data?.variations) ? data.variations : []
+        ).map((v) => ({
+          id: v.id,
+          name: v.name,
+          price: v.price ?? "",
+          quantity: v.quantity ?? "",
+          images: [],
+          specs: (Array.isArray(v.specs) ? v.specs : [])
+            .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+            .map((s) => ({ label: s.label, value: s.value })),
+        }));
 
         const allCats = Array.isArray(categories) ? categories : [];
         let parentId = "";
@@ -438,9 +497,9 @@ export default function EditProduct() {
         const map = {};
         (Array.isArray(data?.variations) ? data.variations : []).forEach(
           (v, i) => {
-            map[i] = (Array.isArray(v?.productImages) ? v.productImages : []).map(
-              (img) => img.image_url
-            );
+            map[i] = (
+              Array.isArray(v?.productImages) ? v.productImages : []
+            ).map((img) => img.image_url);
           }
         );
         setVariationImageUrls(map);
@@ -485,7 +544,9 @@ export default function EditProduct() {
 
     // 2) Không trùng tên biến thể (final gate)
     const names = (data.variations || []).map((v) =>
-      String(v?.name || "").trim().toLowerCase()
+      String(v?.name || "")
+        .trim()
+        .toLowerCase()
     );
     const seen = new Map();
     let dup = false;
@@ -537,7 +598,11 @@ export default function EditProduct() {
       // Validate specs: label không trống, không trùng (đã validate ở input)
       const specs = data.variations[idx]?.specs || [];
       const labels = specs
-        .map((s) => String(s?.label || "").trim().toLowerCase())
+        .map((s) =>
+          String(s?.label || "")
+            .trim()
+            .toLowerCase()
+        )
         .filter(Boolean);
       const setLabels = new Set(labels);
       if (labels.length !== setLabels.size) {
@@ -562,7 +627,10 @@ export default function EditProduct() {
     formData.append("categoryparent_id", parentId);
     formData.append("category_id", childId ? childId : parentId);
 
-    formData.append("removedVariationImages", JSON.stringify(removedVarImgsMap));
+    formData.append(
+      "removedVariationImages",
+      JSON.stringify(removedVarImgsMap)
+    );
 
     formData.append(
       "variations",
@@ -703,9 +771,7 @@ export default function EditProduct() {
                 />
               </div>
               {errors.description && (
-                <small style={errorStyle}>
-                  {errors.description.message}
-                </small>
+                <small style={errorStyle}>{errors.description.message}</small>
               )}
             </div>
 
@@ -756,7 +822,9 @@ export default function EditProduct() {
               </div>
 
               <div className="col-12 col-md-4">
-                <label className="form-label">Danh mục con (không bắt buộc)</label>
+                <label className="form-label">
+                  Danh mục con (không bắt buộc)
+                </label>
                 <Controller
                   name="category_id"
                   control={control}
@@ -790,7 +858,7 @@ export default function EditProduct() {
               register={register}
               errors={errors}
               getValues={getValues}
-              removeVariation={remove}
+              removeVariation={attemptRemoveVariation} // dùng hàm chặn xóa
               variationImageUrls={variationImageUrls}
               onRemoveImage={handleRemoveImage}
             />
@@ -806,14 +874,18 @@ export default function EditProduct() {
               price: "",
               quantity: "",
               images: [],
-              specs: SPEC_PRESET.map((s) => ({ ...s })), // vẫn dùng preset nhưng đã CHO SỬA label
+              specs: SPEC_PRESET.map((s) => ({ ...s })), // preset có thể sửa label
             })
           }
         >
           Thêm biến thể
         </button>
 
-        <button type="submit" className="btn btn-success me-2" disabled={isSubmitting}>
+        <button
+          type="submit"
+          className="btn btn-success me-2"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? (
             <>
               <span
