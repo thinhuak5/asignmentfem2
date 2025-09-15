@@ -1,15 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Alert, Button, Form, Modal, Spinner, Table } from "react-bootstrap";
-import {
-  FaCheckCircle,
-  FaEdit,
-  FaEye,
-  FaSave,
-  FaSearch,
-  FaTimes,
-  FaTimesCircle,
-} from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {Alert, Button, Form, Modal, Spinner, Table} from "react-bootstrap";
+import {FaCheckCircle, FaEdit, FaEye, FaSave, FaSearch, FaTimes, FaTimesCircle,} from "react-icons/fa";
+import {useNavigate} from "react-router-dom";
 import adminApi from "../../../api/adminApi";
 import "../../../assets/css/OrderList.css";
 
@@ -51,7 +43,6 @@ const paymentStatusOptions = [
 ];
 
 const orderStatusOptions = [
-  { value: "", label: "-- Tất cả trạng thái --" },
   { value: "1", label: "Chờ xác nhận" },
   { value: "2", label: "Đã xác nhận" },
   { value: "3", label: "Đang giao hàng" },
@@ -329,7 +320,7 @@ const OrderList = () => {
       setToastMessage(
         <>
           <FaCheckCircle className="me-1" />
-          Hủy đơn #{orderToCancel} thành công.
+          Hủy đơn #{orderToCancel} thànhcông.
         </>
       );
       setShowToast(true);
